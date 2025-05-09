@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Confession, Comment, Room, Reaction, Report, 
@@ -49,7 +48,10 @@ export const getCurrentUser = async (): Promise<User | null> => {
 export const updateUsername = async (userId: string, username: string): Promise<boolean> => {
   const { error } = await supabase
     .from('profiles')
-    .update({ username, updated_at: new Date() })
+    .update({ 
+      username, 
+      updated_at: new Date().toISOString() // Fix Date to string conversion
+    })
     .eq('id', userId);
   
   if (error) {
@@ -72,7 +74,7 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
       .from('confessions')
       .select(`
         *,
-        comment_count:comments(count),
+        comments!comments_confession_id_fkey (count),
         reaction_data:get_reaction_counts(id)
       `)
       .order('created_at', { ascending: false });
@@ -85,15 +87,27 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
     
     if (error) throw error;
     
-    let confessions: Confession[] = (data || []).map(item => ({
-      id: item.id,
-      content: item.content,
-      room: item.room_id as Room,
-      userId: item.user_id,
-      timestamp: formatTimestamp(item.created_at),
-      reactions: mapReactionCounts(item.reaction_data),
-      commentCount: parseInt(item.comment_count) || 0
-    }));
+    let confessions: Confession[] = (data || []).map(item => {
+      // Extract comment count - handle both count as number and as array
+      let commentCount = 0;
+      if (Array.isArray(item.comments)) {
+        commentCount = item.comments.length;
+      } else if (typeof item.comments === 'number') {
+        commentCount = item.comments;
+      } else if (item.comments && typeof item.comments === 'object') {
+        commentCount = parseInt(String(item.comments.count || 0));
+      }
+      
+      return {
+        id: item.id,
+        content: item.content,
+        room: item.room_id as Room,
+        userId: item.user_id,
+        timestamp: formatTimestamp(item.created_at),
+        reactions: mapReactionCounts(item.reaction_data),
+        commentCount: commentCount
+      };
+    });
     
     // If userId is provided, get user reactions
     if (userId && confessions.length > 0) {
@@ -131,41 +145,55 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
 
 export const getTrendingConfessions = async (limit = 5, userId?: string): Promise<Confession[]> => {
   try {
-    const { data: reactions, error: reactionsError } = await supabase
-      .from('reactions')
-      .select('confession_id, count(*)')
-      .group('confession_id')
-      .order('count', { ascending: false })
-      .limit(limit);
+    // Count reactions grouped by confession_id
+    const { data: reactionCounts, error: countError } = await supabase
+      .rpc('get_reaction_counts_for_all_confessions');
       
-    if (reactionsError) throw reactionsError;
+    if (countError) throw countError;
     
-    if (!reactions || reactions.length === 0) return [];
+    if (!reactionCounts || reactionCounts.length === 0) return [];
     
-    const confessionIds = reactions.map(r => r.confession_id);
+    // Sort by total reactions and take top N
+    const topConfessionIds = reactionCounts
+      .sort((a: any, b: any) => b.total_reactions - a.total_reactions)
+      .slice(0, limit)
+      .map((item: any) => item.confession_id);
     
-    let query = supabase
+    if (topConfessionIds.length === 0) return [];
+    
+    // Fetch the actual confession data
+    const { data: confessionsData, error } = await supabase
       .from('confessions')
       .select(`
         *,
-        comment_count:comments(count),
+        comments!comments_confession_id_fkey (count),
         reaction_data:get_reaction_counts(id)
       `)
-      .in('id', confessionIds);
-    
-    const { data, error } = await query;
+      .in('id', topConfessionIds);
     
     if (error) throw error;
     
-    let confessions: Confession[] = (data || []).map(item => ({
-      id: item.id,
-      content: item.content,
-      room: item.room_id as Room,
-      userId: item.user_id,
-      timestamp: formatTimestamp(item.created_at),
-      reactions: mapReactionCounts(item.reaction_data),
-      commentCount: parseInt(item.comment_count) || 0
-    }));
+    let confessions: Confession[] = (confessionsData || []).map(item => {
+      // Extract comment count - handle both count as number and as array
+      let commentCount = 0;
+      if (Array.isArray(item.comments)) {
+        commentCount = item.comments.length;
+      } else if (typeof item.comments === 'number') {
+        commentCount = item.comments;
+      } else if (item.comments && typeof item.comments === 'object') {
+        commentCount = parseInt(String(item.comments.count || 0));
+      }
+      
+      return {
+        id: item.id,
+        content: item.content,
+        room: item.room_id as Room,
+        userId: item.user_id,
+        timestamp: formatTimestamp(item.created_at),
+        reactions: mapReactionCounts(item.reaction_data),
+        commentCount: commentCount
+      };
+    });
     
     // If userId is provided, get user reactions
     if (userId && confessions.length > 0) {
@@ -173,7 +201,7 @@ export const getTrendingConfessions = async (limit = 5, userId?: string): Promis
         .from('reactions')
         .select('*')
         .eq('user_id', userId)
-        .in('confession_id', confessionIds);
+        .in('confession_id', topConfessionIds);
       
       if (!userReactionsError && userReactions) {
         const reactionMap = new Map();
@@ -211,7 +239,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       .from('confessions')
       .select(`
         *,
-        comment_count:comments(count),
+        comments!comments_confession_id_fkey (count),
         reaction_data:get_reaction_counts(id)
       `)
       .eq('id', id)
@@ -227,7 +255,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       userId: data.user_id,
       timestamp: formatTimestamp(data.created_at),
       reactions: mapReactionCounts(data.reaction_data),
-      commentCount: parseInt(data.comment_count) || 0
+      commentCount: parseInt(data.comments.count || 0)
     };
     
     // If userId is provided, get user reactions
@@ -597,7 +625,7 @@ export const resolveReport = async (id: string, resolvedBy: string): Promise<boo
       .update({ 
         resolved: true,
         resolved_by: resolvedBy,
-        resolved_at: new Date()
+        resolved_at: new Date().toISOString() // Fix Date to string conversion
       })
       .eq('id', id);
     
@@ -794,7 +822,7 @@ export const updateRoom = async (id: string, name: string, description: string, 
         name,
         description,
         is_pinned: isPinned,
-        updated_at: new Date()
+        updated_at: new Date().toISOString() // Fix Date to string conversion
       })
       .eq('id', id)
       .select()
@@ -978,3 +1006,26 @@ export const rooms: { id: Room; name: string; description: string }[] = [
     description: 'For everything else that doesn\'t fit elsewhere.'
   }
 ];
+
+// Add a function needed for trending confessions
+export const getRoomByType = async (roomType: Room): Promise<RoomInfo | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', roomType)
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id as Room,
+      name: data.name,
+      description: data.description,
+      isPinned: data.is_pinned
+    };
+  } catch (error) {
+    console.error(`Error fetching room by type ${roomType}:`, error);
+    return null;
+  }
+};

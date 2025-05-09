@@ -297,7 +297,7 @@ export const getReports = () => {
 export const addReport = (
   type: 'confession' | 'comment',
   itemId: string,
-  reason: string,
+  reason: ReportReason, // Changed from string to ReportReason
   userId: string
 ) => {
   const newReport: Report = {

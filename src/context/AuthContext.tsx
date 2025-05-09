@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
   isModerator: boolean;
+  isAuthenticated: boolean; // Added missing property
   isLoading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAdmin: false,
   isModerator: false,
+  isAuthenticated: false, // Added missing property
   isLoading: true,
   login: async () => {},
   logout: async () => {},
@@ -143,7 +145,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       const { error } = await supabase
         .from('profiles')
-        .update({ username, updated_at: new Date() })
+        .update({ 
+          username, 
+          updated_at: new Date().toISOString() // Fix Date to string conversion
+        })
         .eq('id', user.id);
       
       if (error) {
@@ -254,12 +259,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
+  const isAuthenticated = user !== null;
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isAdmin: user?.isAdmin || false,
         isModerator: user?.isModerator || false,
+        isAuthenticated, // Added this
         isLoading,
         login: loginAnonymously, // Use anonymous login for simplicity
         logout,
