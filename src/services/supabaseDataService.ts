@@ -50,7 +50,7 @@ export const updateUsername = async (userId: string, username: string): Promise<
     .from('profiles')
     .update({ 
       username, 
-      updated_at: new Date().toISOString() // Fix Date to string conversion
+      updated_at: new Date().toISOString() 
     })
     .eq('id', userId);
   
@@ -74,7 +74,7 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
       .from('confessions')
       .select(`
         *,
-        comments!comments_confession_id_fkey (count),
+        comments:comments(count),
         reaction_data:get_reaction_counts(id)
       `)
       .order('created_at', { ascending: false });
@@ -88,13 +88,9 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
     if (error) throw error;
     
     let confessions: Confession[] = (data || []).map(item => {
-      // Extract comment count - handle both count as number and as array
+      // Extract comment count
       let commentCount = 0;
-      if (Array.isArray(item.comments)) {
-        commentCount = item.comments.length;
-      } else if (typeof item.comments === 'number') {
-        commentCount = item.comments;
-      } else if (item.comments && typeof item.comments === 'object') {
+      if (item.comments && typeof item.comments === 'object') {
         commentCount = parseInt(String(item.comments.count || 0));
       }
       
@@ -145,7 +141,7 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
 
 export const getTrendingConfessions = async (limit = 5, userId?: string): Promise<Confession[]> => {
   try {
-    // Count reactions grouped by confession_id
+    // Get reaction counts using the custom SQL function
     const { data: reactionCounts, error: countError } = await supabase
       .rpc('get_reaction_counts_for_all_confessions');
       
@@ -155,9 +151,8 @@ export const getTrendingConfessions = async (limit = 5, userId?: string): Promis
     
     // Sort by total reactions and take top N
     const topConfessionIds = reactionCounts
-      .sort((a: any, b: any) => b.total_reactions - a.total_reactions)
       .slice(0, limit)
-      .map((item: any) => item.confession_id);
+      .map((item: { confession_id: string }) => item.confession_id);
     
     if (topConfessionIds.length === 0) return [];
     
@@ -166,7 +161,7 @@ export const getTrendingConfessions = async (limit = 5, userId?: string): Promis
       .from('confessions')
       .select(`
         *,
-        comments!comments_confession_id_fkey (count),
+        comments:comments(count),
         reaction_data:get_reaction_counts(id)
       `)
       .in('id', topConfessionIds);
@@ -174,13 +169,9 @@ export const getTrendingConfessions = async (limit = 5, userId?: string): Promis
     if (error) throw error;
     
     let confessions: Confession[] = (confessionsData || []).map(item => {
-      // Extract comment count - handle both count as number and as array
+      // Extract comment count
       let commentCount = 0;
-      if (Array.isArray(item.comments)) {
-        commentCount = item.comments.length;
-      } else if (typeof item.comments === 'number') {
-        commentCount = item.comments;
-      } else if (item.comments && typeof item.comments === 'object') {
+      if (item.comments && typeof item.comments === 'object') {
         commentCount = parseInt(String(item.comments.count || 0));
       }
       
@@ -239,7 +230,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       .from('confessions')
       .select(`
         *,
-        comments!comments_confession_id_fkey (count),
+        comments:comments(count),
         reaction_data:get_reaction_counts(id)
       `)
       .eq('id', id)
@@ -248,6 +239,11 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
     if (error) throw error;
     if (!data) return null;
     
+    let commentCount = 0;
+    if (data.comments && typeof data.comments === 'object') {
+      commentCount = parseInt(String(data.comments.count || 0));
+    }
+    
     let confession: Confession = {
       id: data.id,
       content: data.content,
@@ -255,7 +251,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       userId: data.user_id,
       timestamp: formatTimestamp(data.created_at),
       reactions: mapReactionCounts(data.reaction_data),
-      commentCount: parseInt(data.comments.count || 0)
+      commentCount: commentCount
     };
     
     // If userId is provided, get user reactions
@@ -625,7 +621,7 @@ export const resolveReport = async (id: string, resolvedBy: string): Promise<boo
       .update({ 
         resolved: true,
         resolved_by: resolvedBy,
-        resolved_at: new Date().toISOString() // Fix Date to string conversion
+        resolved_at: new Date().toISOString()
       })
       .eq('id', id);
     
@@ -822,7 +818,7 @@ export const updateRoom = async (id: string, name: string, description: string, 
         name,
         description,
         is_pinned: isPinned,
-        updated_at: new Date().toISOString() // Fix Date to string conversion
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select()

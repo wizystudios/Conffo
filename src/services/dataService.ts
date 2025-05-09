@@ -1,6 +1,5 @@
-
 import { v4 as uuidv4 } from 'uuid';
-import { Confession, Comment, Room, Reaction, Report } from '@/types';
+import { Confession, Comment, Room, Reaction, Report, ReportReason } from '@/types';
 
 // Mock data storage - in a real app, this would be replaced with API calls
 let confessions: Confession[] = [];
@@ -297,7 +296,7 @@ export const getReports = () => {
 export const addReport = (
   type: 'confession' | 'comment',
   itemId: string,
-  reason: ReportReason, // Changed from string to ReportReason
+  reason: ReportReason,
   userId: string
 ) => {
   const newReport: Report = {

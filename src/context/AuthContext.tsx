@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
   isModerator: boolean;
-  isAuthenticated: boolean; // Added missing property
+  isAuthenticated: boolean;
   isLoading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAdmin: false,
   isModerator: false,
-  isAuthenticated: false, // Added missing property
+  isAuthenticated: false,
   isLoading: true,
   login: async () => {},
   logout: async () => {},
@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('profiles')
         .update({ 
           username, 
-          updated_at: new Date().toISOString() // Fix Date to string conversion
+          updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
       
@@ -267,7 +267,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         user,
         isAdmin: user?.isAdmin || false,
         isModerator: user?.isModerator || false,
-        isAuthenticated, // Added this
+        isAuthenticated,
         isLoading,
         login: loginAnonymously, // Use anonymous login for simplicity
         logout,

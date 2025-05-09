@@ -300,6 +300,13 @@ export type Database = {
         Args: { confession_uuid: string }
         Returns: Json
       }
+      get_reaction_counts_for_all_confessions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          confession_id: string
+          total_reactions: number
+        }[]
+      }
       get_user_reactions: {
         Args: { confession_uuid: string; user_uuid: string }
         Returns: string[]
