@@ -12,29 +12,33 @@ import ConfessionPage from "./pages/ConfessionPage";
 import TrendingPage from "./pages/TrendingPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
+import { useState } from "react";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/rooms" element={<RoomsPage />} />
-            <Route path="/room/:roomId" element={<RoomPage />} />
-            <Route path="/confession/:confessionId" element={<ConfessionPage />} />
-            <Route path="/trending" element={<TrendingPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Create a new QueryClient instance within the component
+  const [queryClient] = useState(() => new QueryClient());
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/rooms" element={<RoomsPage />} />
+              <Route path="/room/:roomId" element={<RoomPage />} />
+              <Route path="/confession/:confessionId" element={<ConfessionPage />} />
+              <Route path="/trending" element={<TrendingPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
