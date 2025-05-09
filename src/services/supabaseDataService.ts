@@ -88,10 +88,16 @@ export const getConfessions = async (room?: Room, userId?: string): Promise<Conf
     if (error) throw error;
     
     let confessions: Confession[] = (data || []).map(item => {
-      // Extract comment count
+      // Extract comment count - fix the type issue here
       let commentCount = 0;
       if (item.comments && typeof item.comments === 'object') {
-        commentCount = parseInt(String(item.comments.count || 0));
+        // Access the first element's count property if it's an array
+        if (Array.isArray(item.comments) && item.comments[0] && 'count' in item.comments[0]) {
+          commentCount = parseInt(String(item.comments[0].count || 0));
+        } else if ('count' in item.comments) {
+          // Direct access if it's not an array
+          commentCount = parseInt(String(item.comments.count || 0));
+        }
       }
       
       return {
@@ -169,10 +175,16 @@ export const getTrendingConfessions = async (limit = 5, userId?: string): Promis
     if (error) throw error;
     
     let confessions: Confession[] = (confessionsData || []).map(item => {
-      // Extract comment count
+      // Extract comment count - fix the type issue here
       let commentCount = 0;
       if (item.comments && typeof item.comments === 'object') {
-        commentCount = parseInt(String(item.comments.count || 0));
+        // Access the first element's count property if it's an array
+        if (Array.isArray(item.comments) && item.comments[0] && 'count' in item.comments[0]) {
+          commentCount = parseInt(String(item.comments[0].count || 0));
+        } else if ('count' in item.comments) {
+          // Direct access if it's not an array
+          commentCount = parseInt(String(item.comments.count || 0));
+        }
       }
       
       return {
@@ -239,9 +251,16 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
     if (error) throw error;
     if (!data) return null;
     
+    // Extract comment count - fix the type issue here
     let commentCount = 0;
     if (data.comments && typeof data.comments === 'object') {
-      commentCount = parseInt(String(data.comments.count || 0));
+      // Access the first element's count property if it's an array
+      if (Array.isArray(data.comments) && data.comments[0] && 'count' in data.comments[0]) {
+        commentCount = parseInt(String(data.comments[0].count || 0));
+      } else if ('count' in data.comments) {
+        // Direct access if it's not an array
+        commentCount = parseInt(String(data.comments.count || 0));
+      }
     }
     
     let confession: Confession = {
