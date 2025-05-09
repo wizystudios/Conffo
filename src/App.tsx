@@ -11,6 +11,7 @@ import RoomPage from "./pages/RoomPage";
 import ConfessionPage from "./pages/ConfessionPage";
 import TrendingPage from "./pages/TrendingPage";
 import AdminPage from "./pages/AdminPage";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -32,6 +33,7 @@ const App = () => {
               <Route path="/confession/:confessionId" element={<ConfessionPage />} />
               <Route path="/trending" element={<TrendingPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/auth" element={<AuthPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

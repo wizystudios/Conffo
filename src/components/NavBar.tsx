@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MessageSquare, Home, User, LogOut, Bell } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, MessageSquare, Home, User, LogOut, Bell, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -34,12 +34,17 @@ export function NavBar() {
   const [usernameDialogOpen, setUsernameDialogOpen] = useState(false);
   const [username, setUsername] = useState(user?.username || '');
   const location = useLocation();
+  const navigate = useNavigate();
   
   const handleSaveUsername = () => {
     if (username.trim()) {
       updateUsername(username.trim());
     }
     setUsernameDialogOpen(false);
+  };
+
+  const handleLoginClick = () => {
+    navigate('/auth');
   };
   
   return (
@@ -106,7 +111,13 @@ export function NavBar() {
               </DropdownMenu>
             </>
           ) : (
-            <Button onClick={login}>Enter Anonymously</Button>
+            <>
+              <Button variant="ghost" onClick={handleLoginClick}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </Button>
+              <Button onClick={handleLoginClick}>Register</Button>
+            </>
           )}
           
           <Sheet>
@@ -152,11 +163,28 @@ export function NavBar() {
                       </SheetClose>
                     ))}
                   </div>
-                  {isAdmin && (
+                  {isAuthenticated ? (
+                    <>
+                      {isAdmin && (
+                        <SheetClose asChild>
+                          <Link to="/admin" className="flex items-center py-2">
+                            <Bell className="mr-2 h-4 w-4" />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        </SheetClose>
+                      )}
+                      <SheetClose asChild>
+                        <Button variant="ghost" className="justify-start px-2" onClick={logout}>
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Log Out</span>
+                        </Button>
+                      </SheetClose>
+                    </>
+                  ) : (
                     <SheetClose asChild>
-                      <Link to="/admin" className="flex items-center py-2">
-                        <Bell className="mr-2 h-4 w-4" />
-                        <span>Admin Dashboard</span>
+                      <Link to="/auth" className="flex items-center py-2">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        <span>Sign In / Register</span>
                       </Link>
                     </SheetClose>
                   )}

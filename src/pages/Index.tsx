@@ -1,16 +1,10 @@
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
-import HomePage from "./HomePage";
+import { Navigate } from 'react-router-dom';
 
 const Index = () => {
-  const [queryClient] = useState(() => new QueryClient());
-  
-  return (
-    <QueryClientProvider client={queryClient}>
-      <HomePage />
-    </QueryClientProvider>
-  );
+  // This file is not needed as we have a HomePage.tsx already
+  // Redirect to the homepage
+  return <Navigate to="/" replace />;
 };
 
 export default Index;
