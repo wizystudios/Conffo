@@ -26,50 +26,60 @@ import { CommentForm } from '@/components/CommentForm';
 import { Layout } from '@/components/Layout';
 import { ReportDialog } from '@/components/ReportDialog';
 import { useAuth } from '@/context/AuthContext';
-import { getConfessionById, getCommentsByConfessionId, deleteConfession } from '@/services/dataService';
+import { getConfessionById, getCommentsByConfessionId, deleteConfession } from '@/services/supabaseDataService';
 import { useToast } from '@/hooks/use-toast';
 import { Confession, Comment } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 
 export default function ConfessionPage() {
   const { confessionId } = useParams<{ confessionId: string }>();
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [confession, setConfession] = useState<Confession | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
-  const loadConfession = () => {
-    if (!confessionId) return;
+  // Fetch confession data
+  const { 
+    data: confession,
+    isLoading: isLoadingConfession,
+    refetch: refetchConfession
+  } = useQuery({
+    queryKey: ['confession', confessionId, user?.id],
+    queryFn: () => confessionId ? getConfessionById(confessionId, user?.id) : null,
+    enabled: !!confessionId,
+  });
+
+  // Fetch comments data
+  const {
+    data: comments = [],
+    isLoading: isLoadingComments,
+    refetch: refetchComments
+  } = useQuery({
+    queryKey: ['comments', confessionId],
+    queryFn: () => confessionId ? getCommentsByConfessionId(confessionId) : [],
+    enabled: !!confessionId,
+  });
+  
+  const handleDeleteConfession = async () => {
+    if (!confessionId || !user) return;
     
-    setIsLoading(true);
-    const conf = getConfessionById(confessionId, user?.id);
-    setConfession(conf);
-    
-    if (conf) {
-      const confComments = getCommentsByConfessionId(confessionId);
-      setComments(confComments);
+    const success = await deleteConfession(confessionId, user.id, isAdmin);
+    if (success) {
+      toast({
+        title: "Confession deleted",
+        description: "The confession has been removed.",
+      });
+      
+      navigate('/');
     }
-    
-    setIsLoading(false);
   };
   
-  const handleDeleteConfession = () => {
-    if (!confessionId) return;
-    
-    deleteConfession(confessionId);
-    toast({
-      title: "Confession deleted",
-      description: "The confession has been removed.",
-    });
-    
-    navigate('/');
+  const handleUpdateData = () => {
+    refetchConfession();
+    refetchComments();
   };
   
-  useEffect(() => {
-    loadConfession();
-  }, [confessionId, user]);
+  const isLoading = isLoadingConfession || isLoadingComments;
   
   if (isLoading) {
     return (
@@ -154,14 +164,14 @@ export default function ConfessionPage() {
         <ConfessionCard 
           confession={confession}
           detailed 
-          onUpdate={loadConfession}
+          onUpdate={handleUpdateData}
         />
         
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Comments ({comments.length})</h2>
           
           {user ? (
-            <CommentForm confessionId={confession.id} onSuccess={loadConfession} />
+            <CommentForm confessionId={confession.id} onSuccess={handleUpdateData} />
           ) : (
             <p className="text-center py-4 text-sm text-muted-foreground">
               <Link to="/" className="text-primary underline">Log in</Link> to leave a comment
@@ -174,7 +184,7 @@ export default function ConfessionPage() {
                 <CommentCard 
                   key={comment.id} 
                   comment={comment}
-                  onUpdate={loadConfession} 
+                  onUpdate={handleUpdateData} 
                 />
               ))}
             </div>

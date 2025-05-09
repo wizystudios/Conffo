@@ -1,9 +1,7 @@
 
 import { useState } from 'react';
-import { Room } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -11,9 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { addConfession, rooms } from '@/services/dataService';
 import { useAuth } from '@/context/AuthContext';
+import { addConfession, getRooms } from '@/services/supabaseDataService';
+import { Room } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 
 interface ConfessionFormProps {
   onSuccess?: () => void;
@@ -21,63 +20,34 @@ interface ConfessionFormProps {
 }
 
 export function ConfessionForm({ onSuccess, initialRoom }: ConfessionFormProps) {
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [room, setRoom] = useState<Room>(initialRoom || 'random');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
+
+  const { data: rooms = [] } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: getRooms,
+  });
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You need to log in to post a confession.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!content.trim()) {
-      toast({
-        title: "Error",
-        description: "Confession content cannot be empty.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (content.length > 300) {
-      toast({
-        title: "Error",
-        description: "Confession must be 300 characters or less.",
-        variant: "destructive"
-      });
+    if (!user || content.trim() === '' || isSubmitting) {
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      addConfession(content.trim(), room, user.id);
-      
+      await addConfession(content, room, user.id);
       setContent('');
-      toast({
-        title: "Success",
-        description: "Your confession has been posted!",
-      });
       
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.error('Error posting confession:', error);
-      toast({
-        title: "Error",
-        description: "Failed to post confession. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Error submitting confession:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -85,41 +55,40 @@ export function ConfessionForm({ onSuccess, initialRoom }: ConfessionFormProps) 
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="content">Your Confession</Label>
-        <Textarea
-          id="content"
-          placeholder="Share your secret... (300 characters max)"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="min-h-[100px]"
-          maxLength={300}
-          required
-        />
-        <div className="text-xs text-right text-muted-foreground">
-          {content.length}/300 characters
-        </div>
-      </div>
+      <Textarea
+        placeholder="Share your confession anonymously..."
+        className="min-h-[100px]"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        required
+      />
       
-      <div className="space-y-2">
-        <Label htmlFor="room">Select Room</Label>
-        <Select value={room} onValueChange={(value) => setRoom(value as Room)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a room" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <Select value={room} onValueChange={(value) => setRoom(value as Room)} disabled={!!initialRoom}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Select room" />
           </SelectTrigger>
           <SelectContent>
-            {rooms.map((roomOption) => (
-              <SelectItem key={roomOption.id} value={roomOption.id}>
-                {roomOption.name}
+            {rooms.map((room) => (
+              <SelectItem key={room.id} value={room.id}>
+                {room.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        
+        <Button 
+          type="submit" 
+          disabled={content.trim() === '' || isSubmitting}
+          className="w-full sm:w-auto"
+        >
+          {isSubmitting ? 'Posting...' : 'Post Confession'}
+        </Button>
       </div>
       
-      <Button type="submit" disabled={isSubmitting || !content.trim() || content.length > 300}>
-        {isSubmitting ? "Posting..." : "Post Confession"}
-      </Button>
+      <p className="text-xs text-muted-foreground">
+        By posting, you agree to our community guidelines. Your identity is not publicly visible.
+      </p>
     </form>
   );
 }

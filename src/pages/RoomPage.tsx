@@ -8,29 +8,30 @@ import { ConfessionCard } from '@/components/ConfessionCard';
 import { ConfessionForm } from '@/components/ConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
-import { getConfessions, rooms } from '@/services/dataService';
-import { Confession, Room } from '@/types';
+import { getConfessions, getRooms } from '@/services/supabaseDataService';
+import { Confession, Room, RoomInfo } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const { user } = useAuth();
-  const [confessions, setConfessions] = useState<Confession[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { data: rooms = [] } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: getRooms,
+  });
   
   const roomInfo = rooms.find(r => r.id === roomId);
   
-  const loadConfessions = () => {
-    if (!roomId) return;
-    
-    setIsLoading(true);
-    const roomConfessions = getConfessions(roomId as Room, user?.id);
-    setConfessions(roomConfessions);
-    setIsLoading(false);
-  };
+  const { data: confessions = [], isLoading, refetch } = useQuery({
+    queryKey: ['confessions', roomId, user?.id],
+    queryFn: () => getConfessions(roomId as Room, user?.id),
+    enabled: !!roomId,
+  });
   
-  useEffect(() => {
-    loadConfessions();
-  }, [roomId, user]);
+  const handleConfessionSuccess = () => {
+    refetch();
+  };
   
   if (!roomInfo) {
     return (
@@ -66,7 +67,7 @@ export default function RoomPage() {
         {user && (
           <Card className="p-4">
             <h2 className="font-medium mb-4">Share Your Confession in {roomInfo.name}</h2>
-            <ConfessionForm onSuccess={loadConfessions} initialRoom={roomId as Room} />
+            <ConfessionForm onSuccess={handleConfessionSuccess} initialRoom={roomId as Room} />
           </Card>
         )}
         
@@ -80,7 +81,7 @@ export default function RoomPage() {
               <ConfessionCard 
                 key={confession.id} 
                 confession={confession}
-                onUpdate={loadConfessions} 
+                onUpdate={handleConfessionSuccess} 
               />
             ))
           ) : (

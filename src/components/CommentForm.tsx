@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { addComment } from '@/services/dataService';
 import { useAuth } from '@/context/AuthContext';
+import { addComment } from '@/services/supabaseDataService';
 
 interface CommentFormProps {
   confessionId: string;
@@ -12,83 +11,49 @@ interface CommentFormProps {
 }
 
 export function CommentForm({ confessionId, onSuccess }: CommentFormProps) {
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You need to log in to post a comment.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!content.trim()) {
-      toast({
-        title: "Error",
-        description: "Comment cannot be empty.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (content.length > 300) {
-      toast({
-        title: "Error",
-        description: "Comment must be 300 characters or less.",
-        variant: "destructive"
-      });
+    if (!user || content.trim() === '' || isSubmitting) {
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      addComment(content.trim(), confessionId, user.id);
-      
+      await addComment(content, confessionId, user.id);
       setContent('');
-      toast({
-        title: "Success",
-        description: "Your comment has been posted!",
-      });
       
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      console.error('Error posting comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to post comment. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Error submitting comment:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       <Textarea
         placeholder="Add a comment..."
+        className="min-h-[80px]"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        className="min-h-[80px]"
-        maxLength={300}
         required
       />
-      <div className="flex justify-between items-center">
-        <div className="text-xs text-muted-foreground">
-          {content.length}/300 characters
-        </div>
-        <Button type="submit" disabled={isSubmitting || !content.trim() || content.length > 300}>
-          {isSubmitting ? "Posting..." : "Post Comment"}
+      
+      <div className="flex justify-end">
+        <Button 
+          type="submit" 
+          disabled={content.trim() === '' || isSubmitting}
+        >
+          {isSubmitting ? 'Posting...' : 'Post Comment'}
         </Button>
       </div>
     </form>

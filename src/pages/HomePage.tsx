@@ -7,30 +7,48 @@ import { ConfessionCard } from '@/components/ConfessionCard';
 import { ConfessionForm } from '@/components/ConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
-import { getConfessions, getTrendingConfessions } from '@/services/dataService';
+import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 
 export default function HomePage() {
   const { user, login } = useAuth();
-  const [recentConfessions, setRecentConfessions] = useState<Confession[]>([]);
-  const [trendingConfessions, setTrendingConfessions] = useState<Confession[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const loadConfessions = () => {
-    setIsLoading(true);
-    
-    const recent = getConfessions(undefined, user?.id);
-    setRecentConfessions(recent);
-    
-    const trending = getTrendingConfessions();
-    setTrendingConfessions(trending);
-    
-    setIsLoading(false);
+  const [activeTab, setActiveTab] = useState<string>('recent');
+
+  // Using React Query for data fetching
+  const { 
+    data: recentConfessions = [],
+    isLoading: isLoadingRecent,
+    refetch: refetchRecent 
+  } = useQuery({
+    queryKey: ['confessions', 'recent', user?.id],
+    queryFn: () => getConfessions(undefined, user?.id),
+    enabled: true,
+  });
+
+  const {
+    data: trendingConfessions = [],
+    isLoading: isLoadingTrending,
+    refetch: refetchTrending
+  } = useQuery({
+    queryKey: ['confessions', 'trending', user?.id],
+    queryFn: () => getTrendingConfessions(5, user?.id),
+    enabled: activeTab === 'trending',
+  });
+
+  const handleConfessionSuccess = () => {
+    refetchRecent();
+    if (activeTab === 'trending') {
+      refetchTrending();
+    }
   };
-  
-  useEffect(() => {
-    loadConfessions();
-  }, [user]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'trending') {
+      refetchTrending();
+    }
+  };
   
   return (
     <Layout>
@@ -38,7 +56,7 @@ export default function HomePage() {
         {user ? (
           <Card className="p-4">
             <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
-            <ConfessionForm onSuccess={loadConfessions} />
+            <ConfessionForm onSuccess={handleConfessionSuccess} />
           </Card>
         ) : (
           <Card className="p-6 text-center border-dashed animate-pulse-soft">
@@ -50,20 +68,20 @@ export default function HomePage() {
           </Card>
         )}
         
-        <Tabs defaultValue="recent" className="w-full">
+        <Tabs defaultValue="recent" className="w-full" onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="recent">Recent</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
           </TabsList>
           <TabsContent value="recent" className="mt-4 space-y-4">
-            {isLoading ? (
+            {isLoadingRecent ? (
               <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
             ) : recentConfessions.length > 0 ? (
               recentConfessions.map((confession) => (
                 <ConfessionCard 
                   key={confession.id} 
                   confession={confession}
-                  onUpdate={loadConfessions} 
+                  onUpdate={handleConfessionSuccess} 
                 />
               ))
             ) : (
@@ -71,14 +89,14 @@ export default function HomePage() {
             )}
           </TabsContent>
           <TabsContent value="trending" className="mt-4 space-y-4">
-            {isLoading ? (
+            {isLoadingTrending ? (
               <p className="text-center py-8 text-muted-foreground">Loading trending confessions...</p>
             ) : trendingConfessions.length > 0 ? (
               trendingConfessions.map((confession) => (
                 <ConfessionCard 
                   key={confession.id} 
                   confession={confession}
-                  onUpdate={loadConfessions} 
+                  onUpdate={handleConfessionSuccess} 
                 />
               ))
             ) : (

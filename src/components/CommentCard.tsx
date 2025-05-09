@@ -1,18 +1,9 @@
 
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { MoreVertical, Trash2 } from 'lucide-react';
-import { Comment } from '@/types';
+import { Trash2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/context/AuthContext';
-import { deleteComment } from '@/services/dataService';
-import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +16,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { UsernameDisplay } from './UsernameDisplay';
-import { ReportDialog } from './ReportDialog';
+import { useAuth } from '@/context/AuthContext';
+import { deleteComment } from '@/services/supabaseDataService';
+import { Comment } from '@/types';
 
 interface CommentCardProps {
   comment: Comment;
@@ -34,85 +27,75 @@ interface CommentCardProps {
 
 export function CommentCard({ comment, onUpdate }: CommentCardProps) {
   const { user, isAdmin } = useAuth();
-  const { toast } = useToast();
-  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const isAuthor = user?.id === comment.userId;
   const canDelete = isAuthor || isAdmin;
   
-  const handleDelete = () => {
-    deleteComment(comment.id);
-    toast({
-      title: "Comment deleted",
-      description: "The comment has been removed.",
-    });
-    if (onUpdate) onUpdate();
+  const handleDelete = async () => {
+    if (!user || isDeleting) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      await deleteComment(comment.id, user.id, isAdmin);
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
   
   return (
-    <div className="bg-secondary p-3 rounded-md mb-3 animate-fade-in">
-      <div className="flex justify-between items-start mb-1">
-        <div className="flex items-center space-x-2">
-          <UsernameDisplay 
-            user={{ 
-              username: comment.userId === user?.id 
-                ? (user?.username || 'You (Anonymous)') 
-                : null,
-              isAdmin: comment.userId === user?.id ? !!user?.isAdmin : false
-            }} 
-          />
-          <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
-          </span>
+    <Card className="shadow-sm">
+      <CardContent className="pt-4 pb-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <p className="text-sm">{comment.content}</p>
+            
+            <div className="flex items-center mt-2 gap-2">
+              <span className="text-xs text-muted-foreground">
+                {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
+              </span>
+              <UsernameDisplay userId={comment.userId} />
+            </div>
+          </div>
+          
+          {canDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={isDeleting}
+                  className="h-7 w-7"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this comment?
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
-        
-        {user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canDelete ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Delete</span>
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this comment? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : (
-                <DropdownMenuItem onSelect={() => setReportDialogOpen(true)}>
-                  Report
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-      
-      <div className="text-foreground">{comment.content}</div>
-      
-      <ReportDialog 
-        open={reportDialogOpen} 
-        onOpenChange={setReportDialogOpen} 
-        type="comment" 
-        itemId={comment.id} 
-      />
-    </div>
+      </CardContent>
+    </Card>
   );
 }

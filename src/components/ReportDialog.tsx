@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -16,10 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { addReport } from '@/services/dataService';
 import { useAuth } from '@/context/AuthContext';
+import { addReport } from '@/services/supabaseDataService';
+import { ReportReason } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportDialogProps {
   open: boolean;
@@ -28,60 +29,36 @@ interface ReportDialogProps {
   itemId: string;
 }
 
-const reportReasons = [
-  { value: 'offensive', label: 'Offensive content' },
-  { value: 'spam', label: 'Spam' },
-  { value: 'harassment', label: 'Harassment' },
-  { value: 'inappropriate', label: 'Inappropriate content' },
-  { value: 'other', label: 'Other' }
-];
-
 export function ReportDialog({ open, onOpenChange, type, itemId }: ReportDialogProps) {
-  const [reason, setReason] = useState('');
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [reason, setReason] = useState<ReportReason>('inappropriate');
   const [details, setDetails] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
   
-  const handleSubmit = () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "You need to log in to report content.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!reason) {
-      toast({
-        title: "Error",
-        description: "Please select a reason for reporting.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleSubmit = async () => {
+    if (!user || isSubmitting) return;
     
     setIsSubmitting(true);
     
     try {
-      const reportReason = reason + (details ? `: ${details}` : '');
-      addReport(type, itemId, reportReason, user.id);
+      await addReport(type, itemId, reason, details, user.id);
       
       toast({
-        title: "Report Submitted",
-        description: "Thank you for reporting. Our moderators will review it.",
+        title: 'Report Submitted',
+        description: 'Thank you for helping keep our community safe.',
       });
       
-      setReason('');
+      setReason('inappropriate');
       setDetails('');
       onOpenChange(false);
     } catch (error) {
       console.error('Error submitting report:', error);
+      
       toast({
-        title: "Error",
-        description: "Failed to submit report. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to submit report. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
@@ -92,34 +69,35 @@ export function ReportDialog({ open, onOpenChange, type, itemId }: ReportDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report {type}</DialogTitle>
+          <DialogTitle>Report {type === 'confession' ? 'Confession' : 'Comment'}</DialogTitle>
           <DialogDescription>
-            Please provide details about why you're reporting this content.
+            Let us know why this content is inappropriate or violates our community guidelines.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Select value={reason} onValueChange={setReason}>
+            <label className="text-sm font-medium">Reason</label>
+            <Select value={reason} onValueChange={(value) => setReason(value as ReportReason)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
               <SelectContent>
-                {reportReasons.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="offensive">Offensive content</SelectItem>
+                <SelectItem value="spam">Spam</SelectItem>
+                <SelectItem value="harassment">Harassment</SelectItem>
+                <SelectItem value="inappropriate">Inappropriate content</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
+            <label className="text-sm font-medium">Details (optional)</label>
             <Textarea
-              placeholder="Additional details (optional)"
+              placeholder="Provide additional details..."
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              className="min-h-[80px]"
             />
           </div>
         </div>
@@ -128,8 +106,11 @@ export function ReportDialog({ open, onOpenChange, type, itemId }: ReportDialogP
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !reason}>
-            {isSubmitting ? "Submitting..." : "Submit Report"}
+          <Button 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Report'}
           </Button>
         </DialogFooter>
       </DialogContent>

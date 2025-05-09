@@ -1,219 +1,208 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { formatDistanceToNow } from 'date-fns';
-import { getReports, resolveReport, deleteConfession, deleteComment, getConfessionById, getCommentsByConfessionId } from '@/services/dataService';
-import { useToast } from '@/hooks/use-toast';
-import { Report } from '@/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
-import { RoomBadge } from '@/components/RoomBadge';
-import { MessageSquare, ShieldAlert } from 'lucide-react';
+import { getReports, resolveReport } from '@/services/supabaseDataService';
+import { Report } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
+import { CheckCircle, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminPage() {
-  const { user, isAdmin } = useAuth();
-  const { toast } = useToast();
-  const [reports, setReports] = useState<Report[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isAdmin, isModerator } = useAuth();
+  const navigate = useNavigate();
+  const [isResolvingReport, setIsResolvingReport] = useState<string | null>(null);
   
-  const loadReports = () => {
-    setIsLoading(true);
-    const allReports = getReports();
-    setReports(allReports);
-    setIsLoading(false);
-  };
-  
-  const handleDeleteItem = (report: Report) => {
-    if (report.type === 'confession') {
-      deleteConfession(report.itemId);
-    } else {
-      deleteComment(report.itemId);
-    }
-    
-    resolveReport(report.id);
-    loadReports();
-    
-    toast({
-      title: `${report.type.charAt(0).toUpperCase() + report.type.slice(1)} deleted`,
-      description: "The reported content has been removed.",
-    });
-  };
-  
-  const handleDismissReport = (reportId: string) => {
-    resolveReport(reportId);
-    loadReports();
-    
-    toast({
-      title: "Report dismissed",
-      description: "The report has been marked as resolved.",
-    });
-  };
-  
-  const getReportedContent = (report: Report) => {
-    if (report.type === 'confession') {
-      const confession = getConfessionById(report.itemId);
-      return confession ? (
-        <div className="mt-2 p-3 bg-secondary/50 rounded text-sm">
-          <div className="flex justify-between items-center mb-1">
-            <RoomBadge room={confession.room} />
-          </div>
-          <p className="text-foreground">{confession.content}</p>
-        </div>
-      ) : <p className="text-muted-foreground mt-2">Content no longer available</p>;
-    } else {
-      const comments = getCommentsByConfessionId(report.itemId);
-      const comment = comments.find(c => c.id === report.itemId);
-      return comment ? (
-        <div className="mt-2 p-3 bg-secondary/50 rounded text-sm">
-          <p className="text-foreground">{comment.content}</p>
-        </div>
-      ) : <p className="text-muted-foreground mt-2">Content no longer available</p>;
-    }
-  };
-  
-  useEffect(() => {
-    loadReports();
-  }, []);
-  
-  if (!user || !isAdmin) {
+  // Redirect non-admin users
+  if (!user || (!isAdmin && !isModerator)) {
     return (
       <Layout>
         <div className="text-center py-10">
-          <ShieldAlert className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
           <p className="text-muted-foreground mb-6">
-            You don't have permission to access this area.
+            You don't have permission to view this page.
           </p>
-          <Button onClick={() => window.history.back()}>Go Back</Button>
+          <Button onClick={() => navigate('/')}>Back to Home</Button>
         </div>
       </Layout>
     );
   }
   
-  const activeReports = reports.filter(r => !r.resolved);
-  const resolvedReports = reports.filter(r => r.resolved);
+  // Fetch reports
+  const { data: activeReports = [], refetch: refetchActive } = useQuery({
+    queryKey: ['reports', 'active'],
+    queryFn: () => getReports(false), // false = not resolved
+    enabled: isAdmin || isModerator,
+  });
+  
+  const { data: resolvedReports = [], refetch: refetchResolved } = useQuery({
+    queryKey: ['reports', 'resolved'],
+    queryFn: () => getReports(true), // true = resolved
+    enabled: isAdmin || isModerator,
+  });
+  
+  const handleResolveReport = async (reportId: string) => {
+    if (!user) return;
+    
+    setIsResolvingReport(reportId);
+    
+    try {
+      await resolveReport(reportId, user.id);
+      refetchActive();
+      refetchResolved();
+    } catch (error) {
+      console.error('Error resolving report:', error);
+    } finally {
+      setIsResolvingReport(null);
+    }
+  };
+  
+  const handleViewReportedItem = (report: Report) => {
+    if (report.type === 'confession') {
+      navigate(`/confession/${report.itemId}`);
+    }
+    // For comments, navigate to the confession and highlight the comment somehow
+    // This would require additional API work to get the confession ID from a comment ID
+  };
+  
+  const renderReportReason = (reason: string) => {
+    const colors = {
+      offensive: 'bg-red-500',
+      spam: 'bg-yellow-500',
+      harassment: 'bg-orange-500',
+      inappropriate: 'bg-purple-500',
+      other: 'bg-gray-500'
+    };
+    
+    const color = colors[reason as keyof typeof colors] || 'bg-gray-500';
+    
+    return (
+      <Badge variant="secondary" className={`${color} text-white`}>
+        {reason}
+      </Badge>
+    );
+  };
   
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <ShieldAlert className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Review and handle reported content
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground">
+            Manage reports and moderate content
+          </p>
         </div>
         
-        <Tabs defaultValue="active" className="w-full">
+        <Tabs defaultValue="active">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="active">
-              Active Reports
-              {activeReports.length > 0 && (
-                <span className="ml-2 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                  {activeReports.length}
-                </span>
-              )}
+              Active Reports ({activeReports.length})
             </TabsTrigger>
-            <TabsTrigger value="resolved">Resolved</TabsTrigger>
+            <TabsTrigger value="resolved">
+              Resolved Reports ({resolvedReports.length})
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="active" className="mt-4 space-y-4">
-            {isLoading ? (
-              <p className="text-center py-8 text-muted-foreground">Loading reports...</p>
-            ) : activeReports.length > 0 ? (
-              activeReports.map((report) => (
-                <Card key={report.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Reported {report.type.charAt(0).toUpperCase() + report.type.slice(1)}
-                    </CardTitle>
-                    <CardDescription>
-                      Reported {formatDistanceToNow(report.timestamp, { addSuffix: true })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div>
-                      <p className="font-medium">Reason:</p>
-                      <p className="text-muted-foreground">{report.reason}</p>
-                      {getReportedContent(report)}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive">Delete Content</Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Reported Content</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this {report.type}? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteItem(report)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    
-                    <Button variant="outline" onClick={() => handleDismissReport(report.id)}>
-                      Dismiss Report
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))
+          <TabsContent value="active" className="mt-4">
+            {activeReports.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground">No active reports</p>
+                </CardContent>
+              </Card>
             ) : (
-              <p className="text-center py-8 text-muted-foreground">No active reports!</p>
+              <div className="space-y-4">
+                {activeReports.map((report) => (
+                  <Card key={report.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-base">
+                            Reported {report.type}{' '}
+                            {renderReportReason(report.reason)}
+                          </CardTitle>
+                          <CardDescription>
+                            {formatDistanceToNow(report.timestamp, { addSuffix: true })}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      {report.details && (
+                        <p className="text-sm mb-4 italic">
+                          "{report.details}"
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleViewReportedItem(report)}
+                        >
+                          View Content
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleResolveReport(report.id)}
+                          disabled={isResolvingReport === report.id}
+                        >
+                          {isResolvingReport === report.id ? 'Resolving...' : 'Mark Resolved'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </TabsContent>
           
-          <TabsContent value="resolved" className="mt-4 space-y-4">
-            {isLoading ? (
-              <p className="text-center py-8 text-muted-foreground">Loading reports...</p>
-            ) : resolvedReports.length > 0 ? (
-              resolvedReports.map((report) => (
-                <Card key={report.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Resolved {report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report
-                    </CardTitle>
-                    <CardDescription>
-                      Reported {formatDistanceToNow(report.timestamp, { addSuffix: true })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-medium">Reason:</p>
-                    <p className="text-muted-foreground">{report.reason}</p>
-                  </CardContent>
-                </Card>
-              ))
+          <TabsContent value="resolved" className="mt-4">
+            {resolvedReports.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground">No resolved reports</p>
+                </CardContent>
+              </Card>
             ) : (
-              <p className="text-center py-8 text-muted-foreground">No resolved reports yet</p>
+              <div className="space-y-4">
+                {resolvedReports.map((report) => (
+                  <Card key={report.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            Resolved {report.type}{' '}
+                            {renderReportReason(report.reason)}
+                          </CardTitle>
+                          <CardDescription>
+                            {report.resolvedAt && `Resolved ${formatDistanceToNow(report.resolvedAt, { addSuffix: true })}`}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      {report.details && (
+                        <p className="text-sm mb-4 italic">
+                          "{report.details}"
+                        </p>
+                      )}
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleViewReportedItem(report)}
+                      >
+                        View Content
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>

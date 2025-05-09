@@ -9,16 +9,317 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      comments: {
+        Row: {
+          confession_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          confession_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          confession_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      confessions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          room_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          room_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confessions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          related_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          related_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          related_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean
+          is_moderator: boolean
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_admin?: boolean
+          is_moderator?: boolean
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          is_moderator?: boolean
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      reactions: {
+        Row: {
+          confession_id: string | null
+          created_at: string
+          id: string
+          type: Database["public"]["Enums"]["reaction_type"]
+          user_id: string
+        }
+        Insert: {
+          confession_id?: string | null
+          created_at?: string
+          id?: string
+          type: Database["public"]["Enums"]["reaction_type"]
+          user_id: string
+        }
+        Update: {
+          confession_id?: string | null
+          created_at?: string
+          id?: string
+          type?: Database["public"]["Enums"]["reaction_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reactions_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          item_id: string
+          item_type: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      room_follows: {
+        Row: {
+          created_at: string
+          id: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_follows_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_pinned: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id: string
+          is_pinned?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_pinned?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_activity_log: {
+        Row: {
+          activity_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_comment_count: {
+        Args: { confession_uuid: string }
+        Returns: number
+      }
+      get_reaction_counts: {
+        Args: { confession_uuid: string }
+        Returns: Json
+      }
+      get_user_reactions: {
+        Args: { confession_uuid: string; user_uuid: string }
+        Returns: string[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      reaction_type: "like" | "laugh" | "shock" | "heart"
+      report_reason:
+        | "offensive"
+        | "spam"
+        | "harassment"
+        | "inappropriate"
+        | "other"
+      room_type:
+        | "relationships"
+        | "school"
+        | "work"
+        | "family"
+        | "friends"
+        | "random"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +434,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      reaction_type: ["like", "laugh", "shock", "heart"],
+      report_reason: [
+        "offensive",
+        "spam",
+        "harassment",
+        "inappropriate",
+        "other",
+      ],
+      room_type: [
+        "relationships",
+        "school",
+        "work",
+        "family",
+        "friends",
+        "random",
+      ],
+    },
   },
 } as const

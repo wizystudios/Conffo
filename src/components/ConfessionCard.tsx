@@ -2,13 +2,44 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { Heart, ThumbsUp, MessagesSquare } from 'lucide-react';
-import { Confession } from '@/types';
-import { RoomBadge } from './RoomBadge';
+import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RoomBadge } from './RoomBadge';
+import { UsernameDisplay } from './UsernameDisplay';
 import { useAuth } from '@/context/AuthContext';
-import { toggleReaction } from '@/services/dataService';
-import { Card } from '@/components/ui/card';
+import { toggleReaction } from '@/services/supabaseDataService';
+import { Confession, Reaction } from '@/types';
+
+interface ReactionButtonProps {
+  icon: React.ReactNode;
+  count: number;
+  isActive?: boolean;
+  onClick: () => void;
+  label: string;
+}
+
+const ReactionButton = ({ icon, count, isActive, onClick, label }: ReactionButtonProps) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className={`flex items-center gap-1 ${isActive ? 'bg-secondary' : ''}`}
+          onClick={onClick}
+        >
+          {icon}
+          <span>{count}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{label}</p>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
 
 interface ConfessionCardProps {
   confession: Confession;
@@ -18,71 +49,94 @@ interface ConfessionCardProps {
 
 export function ConfessionCard({ confession, detailed = false, onUpdate }: ConfessionCardProps) {
   const { user } = useAuth();
-  const [isReacting, setIsReacting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
-  const handleReaction = async (reaction: 'like' | 'heart') => {
-    if (!user || isReacting) return;
+  const handleReaction = async (reaction: Reaction) => {
+    if (!user || isUpdating) return;
     
-    setIsReacting(true);
-    toggleReaction(confession.id, user.id, reaction);
-    if (onUpdate) onUpdate();
-    setIsReacting(false);
+    setIsUpdating(true);
+    
+    await toggleReaction(confession.id, user.id, reaction);
+    
+    if (onUpdate) {
+      onUpdate();
+    }
+    
+    setIsUpdating(false);
   };
   
-  const hasLiked = confession.userReactions?.includes('like');
-  const hasHearted = confession.userReactions?.includes('heart');
+  const userReactions = confession.userReactions || [];
   
   return (
-    <Card className={`confession-card animate-fade-in ${detailed ? 'mb-6' : 'mb-4'}`}>
-      <div className="flex justify-between items-start mb-2">
-        <RoomBadge room={confession.room} />
-        <span className="text-xs text-muted-foreground">
-          {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-        </span>
-      </div>
-      
-      <div className={`confession-content ${detailed ? 'text-lg mb-6' : 'mb-4'}`}>
-        {detailed ? confession.content : (
-          <Link to={`/confession/${confession.id}`} className="hover:underline">
-            {confession.content.length > 200 
-              ? `${confession.content.substring(0, 200)}...` 
-              : confession.content}
-          </Link>
+    <Card>
+      <CardContent className={detailed ? "pt-6" : "pt-4"}>
+        {!detailed && (
+          <div className="flex justify-between items-center mb-2">
+            <RoomBadge room={confession.room} />
+            <span className="text-sm text-muted-foreground">
+              {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
+            </span>
+          </div>
         )}
-      </div>
+        
+        <div className={`${detailed ? 'text-lg' : ''}`}>
+          {confession.content}
+        </div>
+        
+        {detailed && (
+          <div className="flex justify-between items-center mt-4">
+            <RoomBadge room={confession.room} />
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
+              </span>
+              <UsernameDisplay userId={confession.userId} />
+            </div>
+          </div>
+        )}
+      </CardContent>
       
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`p-1 h-8 ${hasLiked ? 'text-primary' : ''}`}
+      <CardFooter className="flex justify-between border-t pt-3 pb-2">
+        <div className="flex gap-1">
+          <ReactionButton 
+            icon={<ThumbsUp className="h-4 w-4" />} 
+            count={confession.reactions.like} 
+            isActive={userReactions.includes('like')}
             onClick={() => handleReaction('like')}
-            disabled={!user}
-          >
-            <ThumbsUp className="h-4 w-4 mr-1" />
-            <span>{confession.reactions.like}</span>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`p-1 h-8 ${hasHearted ? 'text-destructive' : ''}`}
+            label="Like"
+          />
+          <ReactionButton 
+            icon={<MessageSquare className="h-4 w-4" />} 
+            count={confession.reactions.laugh} 
+            isActive={userReactions.includes('laugh')}
+            onClick={() => handleReaction('laugh')}
+            label="Laugh"
+          />
+          <ReactionButton 
+            icon={<AlertCircle className="h-4 w-4" />} 
+            count={confession.reactions.shock} 
+            isActive={userReactions.includes('shock')}
+            onClick={() => handleReaction('shock')}
+            label="Shock"
+          />
+          <ReactionButton 
+            icon={<Heart className="h-4 w-4" />} 
+            count={confession.reactions.heart} 
+            isActive={userReactions.includes('heart')}
             onClick={() => handleReaction('heart')}
-            disabled={!user}
-          >
-            <Heart className="h-4 w-4 mr-1" />
-            <span>{confession.reactions.heart}</span>
-          </Button>
+            label="Love"
+          />
         </div>
         
         {!detailed && (
-          <Link to={`/confession/${confession.id}`} className="flex items-center text-muted-foreground text-sm">
-            <MessagesSquare className="h-4 w-4 mr-1" />
-            <span>{confession.commentCount}</span>
+          <Link to={`/confession/${confession.id}`}>
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <MessageCircle className="h-4 w-4" />
+              <span>{confession.commentCount}</span>
+            </Button>
           </Link>
         )}
-      </div>
+      </CardFooter>
     </Card>
   );
 }
