@@ -11,7 +11,7 @@ import { getConfessions, getTrendingConfessions } from '@/services/dataService';
 import { Confession } from '@/types';
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [recentConfessions, setRecentConfessions] = useState<Confession[]>([]);
   const [trendingConfessions, setTrendingConfessions] = useState<Confession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +46,7 @@ export default function HomePage() {
             <p className="text-muted-foreground mb-4">
               A safe space to share your thoughts anonymously.
             </p>
-            <Button onClick={() => null}>Enter Anonymously</Button>
+            <Button onClick={login}>Enter Anonymously</Button>
           </Card>
         )}
         
