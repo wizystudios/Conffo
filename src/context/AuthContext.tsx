@@ -1,268 +1,215 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User as UserType } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
-interface AuthContextType {
-  user: UserType | null;
-  isLoading: boolean;
+interface User {
+  id: string;
+  email: string;
+  username: string | null;
+  isAdmin: boolean;
+  isModerator: boolean;
+}
+
+interface AuthContextProps {
+  user: User | null;
   isAuthenticated: boolean;
-  signIn: (email: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
-  updateUser: (username: string) => Promise<void>;
+  isLoading: boolean;
   isAdmin: boolean;
   isModerator: boolean;
   login: () => void;
-  logout: () => Promise<void>;
+  logout: () => void;
   updateUsername: (username: string) => Promise<void>;
   getSavedConfessions: () => Promise<string[]>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  isAdmin: false,
+  isModerator: false,
+  login: () => {},
+  logout: () => {},
+  updateUsername: async () => {},
+  getSavedConfessions: async () => [],
+});
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserType | null>(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isModerator, setIsModerator] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    const loadUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        const { user } = session;
-        
-        const profileData = await refreshUserProfile(user.id);
-        
-        if (profileData) {
-          setUser({
-            id: user.id,
-            username: profileData.username,
-            isAdmin: profileData.is_admin || false,
-            isModerator: profileData.is_moderator || false,
-            savedConfessions: [] // Initialize as empty array
-          });
-          setIsAdmin(profileData.is_admin || false);
-          setIsModerator(profileData.is_moderator || false);
-          setIsAuthenticated(true);
-        }
-      }
-      setIsLoading(false);
-    };
-    
-    loadUser();
-    
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const profileData = await refreshUserProfile(session.user.id);
-        
-        if (profileData) {
-          setUser({
-            id: session.user.id,
-            username: profileData.username,
-            isAdmin: profileData.is_admin || false,
-            isModerator: profileData.is_moderator || false,
-            savedConfessions: [] // Initialize as empty array
-          });
-          setIsAdmin(profileData.is_admin || false);
-          setIsModerator(profileData.is_moderator || false);
-          setIsAuthenticated(true);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setIsAdmin(false);
-        setIsModerator(false);
-        setIsAuthenticated(false);
-      }
-    });
-  }, []);
-  
-  const signIn = async (email: string) => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (error) throw error;
-      alert('Check your email for the magic link to sign in.');
-    } catch (error: any) {
-      alert(error.error_description || error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const signUp = async (email: string, password: string, username: string) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username,
-          },
-        },
-      });
-      if (error) throw error;
-      
-      // After successful signup, update the user's profile
-      if (data.user) {
-        await updateUserProfile(data.user.id, username);
-        
-        // Refresh the user profile to get the updated data
-        await refreshUserProfile(data.user.id);
-      }
-      
-      alert('Check your email for the verification link.');
-    } catch (error: any) {
-      alert(error.error_description || error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const updateUser = async (username: string) => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      await updateUserProfile(user.id, username);
-      
-      // Refresh the user profile to get the updated data
-      await refreshUserProfile(user.id);
-      
-      setUser({
-        ...user,
-        username: username,
-      });
-    } catch (error: any) {
-      alert(error.error_description || error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const updateUserProfile = async (userId: string, username: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ username: username })
-        .eq('id', userId);
-      
-      if (error) {
-        console.error('Error updating user profile:', error);
-        return null;
-      }
-      
-      return { username };
-    } catch (error) {
-      console.error('Error in updateUserProfile:', error);
-      return null;
-    }
-  };
 
-  const refreshUserProfile = async (userId: string) => {
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          await setUserData(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error fetching session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Set up the auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session && event === 'SIGNED_IN') {
+          await setUserData(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
+    fetchSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const setUserData = async (userId: string) => {
     try {
+      // Try to get user profile data
       const { data, error } = await supabase
         .from('profiles')
         .select('username, is_admin, is_moderator')
         .eq('id', userId)
         .single();
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        return null;
+      // If profile doesn't exist, create it
+      if (error && error.code === 'PGRST116') {
+        await supabase
+          .from('profiles')
+          .insert([{ id: userId, username: null, is_admin: false, is_moderator: false }]);
       }
 
-      // Set user profile data safely
-      setUser((prevUser) => 
-        prevUser ? {
-          ...prevUser,
-          username: data.username,
-          isAdmin: data.is_admin || false,
-          isModerator: data.is_moderator || false,
-          savedConfessions: [] // Initialize as empty array since it doesn't exist in DB yet
-        } : null
-      );
+      // Set user data
+      const userData: User = {
+        id: userId,
+        email: '',
+        username: data?.username || null,
+        isAdmin: data?.is_admin || false,
+        isModerator: data?.is_moderator || false,
+      };
 
-      return data;
+      setUser(userData);
     } catch (error) {
-      console.error('Error in refreshUserProfile:', error);
-      return null;
+      console.error('Error setting user data:', error);
     }
   };
-  
-  const signOut = async () => {
-    setIsLoading(true);
+
+  const login = async () => {
+    try {
+      // For demo purposes, create an anonymous user
+      const { error } = await supabase.auth.signInAnonymously();
+
+      if (error) throw error;
+
+      toast({
+        title: "Signed in anonymously",
+        description: "You are now signed in anonymously.",
+      });
+    } catch (error: any) {
+      console.error('Error logging in:', error);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message || "An error occurred during login.",
+      });
+    }
+  };
+
+  const logout = async () => {
     try {
       await supabase.auth.signOut();
-      setUser(null);
-      setIsAdmin(false);
-      setIsModerator(false);
-      setIsAuthenticated(false);
-      navigate('/login');
+      toast({
+        title: "Signed out",
+        description: "You have been signed out.",
+      });
+      navigate('/');
     } catch (error: any) {
-      alert(error.error_description || error.message);
-    } finally {
-      setIsLoading(false);
+      console.error('Error logging out:', error);
+      toast({
+        variant: "destructive",
+        title: "Logout failed",
+        description: error.message || "An error occurred during logout.",
+      });
     }
   };
-  
-  const login = () => {
-    navigate('/auth');
-  };
-  
-  const logout = async () => {
-    return signOut();
-  };
-  
+
   const updateUsername = async (username: string) => {
-    return updateUser(username);
-  };
-  
-  const getSavedConfessions = async (): Promise<string[]> => {
-    if (!user) return [];
-    
     try {
-      // Here we would fetch saved confessions from a database table
-      // For now, return an empty array as this functionality isn't implemented yet
-      return [];
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setUser(prev => prev ? { ...prev, username } : null);
+
+      toast({
+        title: "Username updated",
+        description: "Your username has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error updating username:', error);
+      toast({
+        variant: "destructive",
+        title: "Update failed",
+        description: error.message || "An error occurred while updating your username.",
+      });
+    }
+  };
+
+  const getSavedConfessions = async (): Promise<string[]> => {
+    try {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('saved_confessions')
+        .select('confession_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      return data.map(item => item.confession_id);
     } catch (error) {
       console.error('Error fetching saved confessions:', error);
       return [];
     }
   };
-  
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isAuthenticated,
-    signIn,
-    signOut,
-    signUp,
-    updateUser,
-    isAdmin,
-    isModerator,
-    login,
-    logout,
-    updateUsername,
-    getSavedConfessions
-  };
-  
+
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        isAdmin: user?.isAdmin || false,
+        isModerator: user?.isModerator || false,
+        login,
+        logout,
+        updateUsername,
+        getSavedConfessions,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
+};

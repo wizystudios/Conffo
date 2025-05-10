@@ -296,6 +296,56 @@ export const toggleReaction = async (
   }
 };
 
+export const saveConfession = async (
+  confessionId: string,
+  userId: string
+): Promise<boolean> => {
+  try {
+    // Check if already saved
+    const { data: existingData, error: checkError } = await supabase
+      .from('saved_confessions')
+      .select('id')
+      .eq('confession_id', confessionId)
+      .eq('user_id', userId)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+      throw checkError;
+    }
+    
+    // If already saved, remove it (toggle behavior)
+    if (existingData) {
+      const { error: deleteError } = await supabase
+        .from('saved_confessions')
+        .delete()
+        .eq('id', existingData.id);
+      
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      return true;
+    }
+    
+    // Otherwise, save it
+    const { error } = await supabase
+      .from('saved_confessions')
+      .insert({
+        confession_id: confessionId,
+        user_id: userId
+      });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving confession:', error);
+    return false;
+  }
+};
+
 export const getComments = async (confessionId: string): Promise<Comment[]> => {
   try {
     const { data, error } = await supabase

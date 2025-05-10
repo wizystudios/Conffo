@@ -2,15 +2,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle, Bookmark } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RoomBadge } from './RoomBadge';
 import { UsernameDisplay } from './UsernameDisplay';
 import { useAuth } from '@/context/AuthContext';
-import { toggleReaction } from '@/services/supabaseDataService';
+import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
+import { toast } from '@/hooks/use-toast';
 
 interface ReactionButtonProps {
   icon: React.ReactNode;
@@ -56,13 +57,47 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     
     setIsUpdating(true);
     
-    await toggleReaction(confession.id, user.id, reaction);
-    
-    if (onUpdate) {
-      onUpdate();
+    try {
+      await toggleReaction(confession.id, user.id, reaction);
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      toast({
+        description: "Your reaction has been recorded",
+      });
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to record your reaction",
+      });
+    } finally {
+      setIsUpdating(false);
     }
+  };
+  
+  const handleSaveConfession = async () => {
+    if (!user || isUpdating) return;
     
-    setIsUpdating(false);
+    setIsUpdating(true);
+    
+    try {
+      await saveConfession(confession.id, user.id);
+      
+      toast({
+        description: "Confession saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving confession:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to save confession",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
   
   const userReactions = confession.userReactions || [];
@@ -70,28 +105,28 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   return (
     <Card>
       <CardContent className={detailed ? "pt-6" : "pt-4"}>
-        {!detailed && (
-          <div className="flex justify-between items-center mb-2">
-            <RoomBadge room={confession.room} />
-            <span className="text-sm text-muted-foreground">
-              {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-            </span>
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <UsernameDisplay userId={confession.userId} size="md" />
           </div>
-        )}
+          <span className="text-sm text-muted-foreground">
+            {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
+          </span>
+        </div>
         
-        <div className={`${detailed ? 'text-lg' : ''}`}>
+        <div className={`${detailed ? 'text-lg' : ''} mt-2`}>
           {confession.content}
         </div>
+        
+        {!detailed && (
+          <div className="flex mt-4">
+            <RoomBadge room={confession.room} />
+          </div>
+        )}
         
         {detailed && (
           <div className="flex justify-between items-center mt-4">
             <RoomBadge room={confession.room} />
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-              </span>
-              <UsernameDisplay userId={confession.userId} />
-            </div>
           </div>
         )}
       </CardContent>
@@ -128,14 +163,22 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
           />
         </div>
         
-        {!detailed && (
-          <Link to={`/confession/${confession.id}`}>
-            <Button variant="ghost" size="sm" className="flex items-center gap-1">
-              <MessageCircle className="h-4 w-4" />
-              <span>{confession.commentCount}</span>
+        <div className="flex items-center gap-1">
+          {user && (
+            <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={handleSaveConfession}>
+              <Bookmark className="h-4 w-4" />
+              <span>Save</span>
             </Button>
-          </Link>
-        )}
+          )}
+          {!detailed && (
+            <Link to={`/confession/${confession.id}`}>
+              <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                <MessageCircle className="h-4 w-4" />
+                <span>{confession.commentCount}</span>
+              </Button>
+            </Link>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );
