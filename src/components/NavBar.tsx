@@ -19,11 +19,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { rooms } from '@/services/dataService';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function NavBar() {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [username, setUsername] = useState<string | null>(null);
   
   useEffect(() => {
@@ -42,13 +44,13 @@ export function NavBar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-      <div className="container flex h-16 max-w-screen-lg items-center">
-        <Link to="/" className="flex items-center mr-4">
-          <Avatar className="h-8 w-8 mr-2">
-            <AvatarImage src="/lovable-uploads/631c953f-60e9-4a18-bc15-d5f86cfce136.png" alt="Logo" />
-            <AvatarFallback><MessageSquare className="h-5 w-5 text-primary" /></AvatarFallback>
+      <div className="container flex h-14 sm:h-16 max-w-screen-lg items-center px-2 sm:px-4">
+        <Link to="/" className="flex items-center mr-2 sm:mr-4">
+          <Avatar className="h-7 w-7 sm:h-8 sm:w-8 mr-1 sm:mr-2 bg-primary/10">
+            <AvatarImage src="" alt="ConfessZone" />
+            <AvatarFallback><MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></AvatarFallback>
           </Avatar>
-          <span className="font-bold text-xl">Confession Room</span>
+          <span className="font-bold text-lg sm:text-xl hidden xs:block">ConfessZone</span>
         </Link>
         
         <nav className="hidden md:flex items-center space-x-4 ml-4">
@@ -90,36 +92,36 @@ export function NavBar() {
           )}
         </nav>
         
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex flex-1 items-center justify-end space-x-1 sm:space-x-2">
           {isAuthenticated ? (
             <>
               {isAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="icon">
-                    <Bell className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
+                    <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </Link>
               )}
               <Link to="/">
-                <Button variant="ghost" size="icon" className="bg-primary/10 text-primary">
-                  <Plus className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="bg-primary/10 text-primary h-8 w-8 sm:h-9 sm:w-9">
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
               <Link to="/profile">
-                <Button variant="ghost" size="icon">
-                  <Save className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
+                  <Save className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
+                  <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 sm:h-9 sm:w-9 p-0">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${user?.id}`} />
                       <AvatarFallback>{getInitials(username || 'A')}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center px-2 py-2">
                     <Avatar className="h-8 w-8 mr-2">
                       <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${user?.id}`} />
@@ -148,29 +150,29 @@ export function NavBar() {
             </>
           ) : (
             <>
-              <Button variant="ghost" onClick={handleLoginClick}>
-                <LogIn className="mr-2 h-4 w-4" />
+              <Button variant="ghost" onClick={handleLoginClick} className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
+                <LogIn className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 Sign In
               </Button>
-              <Button onClick={handleLoginClick}>Register</Button>
+              <Button onClick={handleLoginClick} className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">Register</Button>
             </>
           )}
           
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="md:hidden h-8 w-8 sm:h-9 sm:w-9">
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
+            <SheetContent side="right" className="w-3/4 max-w-xs">
               <div className="grid gap-4 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Avatar className="h-8 w-8 mr-2">
-                      <AvatarImage src="/lovable-uploads/631c953f-60e9-4a18-bc15-d5f86cfce136.png" alt="Logo" />
+                    <Avatar className="h-8 w-8 mr-2 bg-primary/10">
+                      <AvatarImage src="" alt="ConfessZone" />
                       <AvatarFallback><MessageSquare className="h-5 w-5 text-primary" /></AvatarFallback>
                     </Avatar>
-                    <span className="font-bold">Confession Room</span>
+                    <span className="font-bold">ConfessZone</span>
                   </div>
                   <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                     <X className="h-4 w-4" />
