@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Confession, Room, Comment, RoomInfo, ReportReason, Reaction } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -60,7 +59,13 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
       }
       
       const commentCount = commentError ? 0 : count || 0;
-      const reactions = reactionData || { like: 0, laugh: 0, shock: 0, heart: 0 };
+      // Handle the reaction data with proper type checking
+      const reactions = {
+        like: typeof reactionData === 'object' && reactionData !== null ? (reactionData.like || 0) : 0,
+        laugh: typeof reactionData === 'object' && reactionData !== null ? (reactionData.laugh || 0) : 0,
+        shock: typeof reactionData === 'object' && reactionData !== null ? (reactionData.shock || 0) : 0,
+        heart: typeof reactionData === 'object' && reactionData !== null ? (reactionData.heart || 0) : 0
+      };
       
       return {
         id: row.id,
@@ -68,12 +73,7 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         room: row.room_id as Room,
         userId: row.user_id || '',
         timestamp: new Date(row.created_at).getTime(),
-        reactions: {
-          like: reactions.like || 0,
-          laugh: reactions.laugh || 0,
-          shock: reactions.shock || 0,
-          heart: reactions.heart || 0
-        },
+        reactions,
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
         mediaUrl: null,
@@ -135,7 +135,13 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
     }
     
     const commentCount = commentError ? 0 : count || 0;
-    const reactions = reactionData || { like: 0, laugh: 0, shock: 0, heart: 0 };
+    // Handle the reaction data with proper type checking
+    const reactions = {
+      like: typeof reactionData === 'object' && reactionData !== null ? (reactionData.like || 0) : 0,
+      laugh: typeof reactionData === 'object' && reactionData !== null ? (reactionData.laugh || 0) : 0,
+      shock: typeof reactionData === 'object' && reactionData !== null ? (reactionData.shock || 0) : 0,
+      heart: typeof reactionData === 'object' && reactionData !== null ? (reactionData.heart || 0) : 0
+    };
     
     return {
       id: data.id,
@@ -143,12 +149,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       room: data.room_id as Room,
       userId: data.user_id || '',
       timestamp: new Date(data.created_at).getTime(),
-      reactions: {
-        like: reactions.like || 0,
-        laugh: reactions.laugh || 0,
-        shock: reactions.shock || 0,
-        heart: reactions.heart || 0
-      },
+      reactions,
       commentCount: typeof commentCount === 'number' ? commentCount : 0,
       userReactions,
       mediaUrl: null,
@@ -390,15 +391,13 @@ export const addReport = async (
   try {
     const { error } = await supabase
       .from('reports')
-      .insert([
-        {
-          item_type: type,
-          item_id: itemId,
-          reason,
-          details,
-          user_id: userId
-        }
-      ]);
+      .insert({
+        item_type: type,
+        item_id: itemId,
+        reason,
+        details,
+        user_id: userId
+      });
     
     if (error) {
       throw error;
