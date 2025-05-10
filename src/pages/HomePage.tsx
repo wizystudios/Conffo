@@ -1,14 +1,13 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfessionCard } from '@/components/ConfessionCard';
-import { ConfessionForm } from '@/components/ConfessionForm';
+import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
-import { Confession } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -56,7 +55,7 @@ export default function HomePage() {
         {user ? (
           <Card className="p-4">
             <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
-            <ConfessionForm onSuccess={handleConfessionSuccess} />
+            <EnhancedConfessionForm onSuccess={handleConfessionSuccess} />
           </Card>
         ) : (
           <Card className="p-6 text-center border-dashed animate-pulse-soft">

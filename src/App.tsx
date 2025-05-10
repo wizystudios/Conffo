@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import HomePage from "./pages/HomePage";
 import RoomsPage from "./pages/RoomsPage";
 import RoomPage from "./pages/RoomPage";
+import ProfilePage from "./pages/ProfilePage";
 import ConfessionPage from "./pages/ConfessionPage";
 import TrendingPage from "./pages/TrendingPage";
 import AdminPage from "./pages/AdminPage";
@@ -30,6 +31,7 @@ const App = () => {
               <Route path="/" element={<HomePage />} />
               <Route path="/rooms" element={<RoomsPage />} />
               <Route path="/room/:roomId" element={<RoomPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/confession/:confessionId" element={<ConfessionPage />} />
               <Route path="/trending" element={<TrendingPage />} />
               <Route path="/admin" element={<AdminPage />} />

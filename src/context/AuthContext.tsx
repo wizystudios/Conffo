@@ -13,6 +13,8 @@ interface AuthContextType {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   updateUsername: (username: string) => Promise<void>;
+  saveConfession: (confessionId: string) => Promise<void>;
+  getSavedConfessions: () => Promise<string[]>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,6 +26,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   updateUsername: async () => {},
+  saveConfession: async () => {},
+  getSavedConfessions: async () => [],
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -35,12 +39,13 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [savedConfessions, setSavedConfessions] = useState<string[]>([]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, is_admin, is_moderator')
+        .select('username, is_admin, is_moderator, saved_confessions')
         .eq('id', userId)
         .single();
       
@@ -53,7 +58,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         id: userId,
         username: data.username,
         isAdmin: data.is_admin,
-        isModerator: data.is_moderator
+        isModerator: data.is_moderator,
+        savedConfessions: data.saved_confessions || []
       };
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -127,6 +133,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       setUser(null);
+      setSavedConfessions([]);
+      
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out',
+      });
     } catch (error) {
       console.error('Error during logout:', error);
       toast({
@@ -174,6 +186,64 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const saveConfession = async (confessionId: string) => {
+    try {
+      if (!user) return;
+      
+      // Get current saved confessions
+      const newSavedConfessions = [...(user.savedConfessions || [])];
+      
+      // Toggle saved status
+      const index = newSavedConfessions.indexOf(confessionId);
+      if (index === -1) {
+        // Add confession if not already saved
+        newSavedConfessions.push(confessionId);
+        toast({
+          title: 'Confession Saved',
+          description: 'This confession has been added to your saved items',
+        });
+      } else {
+        // Remove confession if already saved
+        newSavedConfessions.splice(index, 1);
+        toast({
+          title: 'Confession Removed',
+          description: 'This confession has been removed from your saved items',
+        });
+      }
+      
+      // Update in database
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          saved_confessions: newSavedConfessions,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setUser(prev => {
+        if (!prev) return null;
+        return { ...prev, savedConfessions: newSavedConfessions };
+      });
+      setSavedConfessions(newSavedConfessions);
+      
+    } catch (error) {
+      console.error('Error saving confession:', error);
+      toast({
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const getSavedConfessions = async (): Promise<string[]> => {
+    if (!user) return [];
+    return user.savedConfessions || [];
+  };
+
   useEffect(() => {
     // First set up the auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -188,18 +258,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             
             if (userProfile) {
               setUser(userProfile);
+              setSavedConfessions(userProfile.savedConfessions || []);
             } else {
               // If profile doesn't exist, create it
               try {
                 await supabase
                   .from('profiles')
-                  .insert([{ id: session.user.id }]);
+                  .insert([{ 
+                    id: session.user.id,
+                    saved_confessions: []
+                  }]);
                 
                 setUser({
                   id: session.user.id,
                   username: null,
                   isAdmin: false,
-                  isModerator: false
+                  isModerator: false,
+                  savedConfessions: []
                 });
               } catch (error) {
                 console.error('Error creating user profile:', error);
@@ -210,6 +285,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }, 0);
         } else {
           setUser(null);
+          setSavedConfessions([]);
           setIsLoading(false);
         }
       }
@@ -227,18 +303,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           if (userProfile) {
             setUser(userProfile);
+            setSavedConfessions(userProfile.savedConfessions || []);
           } else {
             // If profile doesn't exist, create it
             try {
               await supabase
                 .from('profiles')
-                .insert([{ id: session.user.id }]);
+                .insert([{ 
+                  id: session.user.id,
+                  saved_confessions: []
+                }]);
               
               setUser({
                 id: session.user.id,
                 username: null,
                 isAdmin: false,
-                isModerator: false
+                isModerator: false,
+                savedConfessions: []
               });
             } catch (error) {
               console.error('Error creating user profile:', error);
@@ -272,6 +353,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         login: loginAnonymously, // Use anonymous login for simplicity
         logout,
         updateUsername,
+        saveConfession,
+        getSavedConfessions,
       }}
     >
       {children}

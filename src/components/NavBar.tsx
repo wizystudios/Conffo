@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, MessageSquare, Home, User, LogOut, Bell, LogIn } from 'lucide-react';
+import { Menu, X, MessageSquare, Home, User, LogOut, Bell, LogIn, Save, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -16,37 +16,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 import { rooms } from '@/services/dataService';
 
 export function NavBar() {
-  const { user, isAuthenticated, isAdmin, login, logout, updateUsername } = useAuth();
-  const [usernameDialogOpen, setUsernameDialogOpen] = useState(false);
-  const [username, setUsername] = useState(user?.username || '');
+  const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
-  const handleSaveUsername = () => {
-    if (username.trim()) {
-      updateUsername(username.trim());
-    }
-    setUsernameDialogOpen(false);
-  };
-
   const handleLoginClick = () => {
     navigate('/auth');
   };
-  
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 max-w-screen-lg items-center">
@@ -62,6 +43,7 @@ export function NavBar() {
               location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'
             }`}
           >
+            <Home className="h-4 w-4 inline-block mr-1" />
             Home
           </Link>
           <Link 
@@ -80,6 +62,17 @@ export function NavBar() {
           >
             Trending
           </Link>
+          {isAuthenticated && (
+            <Link 
+              to="/profile" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <User className="h-4 w-4 inline-block mr-1" />
+              Profile
+            </Link>
+          )}
         </nav>
         
         <div className="flex flex-1 items-center justify-end space-x-2">
@@ -92,6 +85,16 @@ export function NavBar() {
                   </Button>
                 </Link>
               )}
+              <Link to="/">
+                <Button variant="ghost" size="icon" className="bg-primary/10 text-primary">
+                  <Plus className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button variant="ghost" size="icon">
+                  <Save className="h-5 w-5" />
+                </Button>
+              </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -99,8 +102,8 @@ export function NavBar() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setUsernameDialogOpen(true)}>
-                    Set Username
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    Profile Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>
@@ -150,6 +153,22 @@ export function NavBar() {
                       <span>Trending Confessions</span>
                     </Link>
                   </SheetClose>
+                  {isAuthenticated && (
+                    <SheetClose asChild>
+                      <Link to="/profile" className="flex items-center py-2">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
+                    </SheetClose>
+                  )}
+                  {isAuthenticated && (
+                    <SheetClose asChild>
+                      <Link to="/profile" className="flex items-center py-2">
+                        <Save className="mr-2 h-4 w-4" />
+                        <span>Saved Confessions</span>
+                      </Link>
+                    </SheetClose>
+                  )}
                   <div className="py-2">
                     <h4 className="mb-2 font-semibold">Rooms</h4>
                     {rooms.map((room) => (
@@ -194,41 +213,6 @@ export function NavBar() {
           </Sheet>
         </div>
       </div>
-      
-      <Dialog open={usernameDialogOpen} onOpenChange={setUsernameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Set Username</DialogTitle>
-            <DialogDescription>
-              Set a username to identify yourself across the app.
-              You'll still remain anonymous to other users.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="username" className="text-right">
-                Username
-              </Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                maxLength={20}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setUsernameDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSaveUsername}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </header>
   );
 }

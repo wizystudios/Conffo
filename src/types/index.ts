@@ -16,6 +16,7 @@ export interface User {
   username: string | null;
   isAdmin: boolean;
   isModerator: boolean;
+  savedConfessions?: string[];
 }
 
 export interface Confession {
@@ -32,6 +33,9 @@ export interface Confession {
   };
   commentCount: number;
   userReactions?: Reaction[];
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+  tags?: string[];
 }
 
 export interface Comment {
