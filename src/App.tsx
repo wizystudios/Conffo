@@ -13,6 +13,8 @@ import ConfessionPage from "./pages/ConfessionPage";
 import TrendingPage from "./pages/TrendingPage";
 import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -36,6 +38,8 @@ const App = () => {
               <Route path="/trending" element={<TrendingPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
