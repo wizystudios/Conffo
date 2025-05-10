@@ -59,12 +59,17 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
       }
       
       const commentCount = commentError ? 0 : count || 0;
+      
       // Handle the reaction data with proper type checking
       const reactions = {
-        like: typeof reactionData === 'object' && reactionData !== null ? (reactionData.like || 0) : 0,
-        laugh: typeof reactionData === 'object' && reactionData !== null ? (reactionData.laugh || 0) : 0,
-        shock: typeof reactionData === 'object' && reactionData !== null ? (reactionData.shock || 0) : 0,
-        heart: typeof reactionData === 'object' && reactionData !== null ? (reactionData.heart || 0) : 0
+        like: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'like' in reactionData ? Number(reactionData.like) || 0 : 0) : 0,
+        laugh: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'laugh' in reactionData ? Number(reactionData.laugh) || 0 : 0) : 0,
+        shock: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'shock' in reactionData ? Number(reactionData.shock) || 0 : 0) : 0,
+        heart: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
       };
       
       return {
@@ -135,12 +140,17 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
     }
     
     const commentCount = commentError ? 0 : count || 0;
+    
     // Handle the reaction data with proper type checking
     const reactions = {
-      like: typeof reactionData === 'object' && reactionData !== null ? (reactionData.like || 0) : 0,
-      laugh: typeof reactionData === 'object' && reactionData !== null ? (reactionData.laugh || 0) : 0,
-      shock: typeof reactionData === 'object' && reactionData !== null ? (reactionData.shock || 0) : 0,
-      heart: typeof reactionData === 'object' && reactionData !== null ? (reactionData.heart || 0) : 0
+      like: typeof reactionData === 'object' && reactionData !== null ? 
+            (typeof reactionData === 'object' && 'like' in reactionData ? Number(reactionData.like) || 0 : 0) : 0,
+      laugh: typeof reactionData === 'object' && reactionData !== null ? 
+            (typeof reactionData === 'object' && 'laugh' in reactionData ? Number(reactionData.laugh) || 0 : 0) : 0,
+      shock: typeof reactionData === 'object' && reactionData !== null ? 
+            (typeof reactionData === 'object' && 'shock' in reactionData ? Number(reactionData.shock) || 0 : 0) : 0,
+      heart: typeof reactionData === 'object' && reactionData !== null ? 
+            (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
     };
     
     return {

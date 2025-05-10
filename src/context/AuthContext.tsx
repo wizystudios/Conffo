@@ -6,12 +6,17 @@ import { User as UserType } from '@/types';
 interface AuthContextType {
   user: UserType | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
   signIn: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   updateUser: (username: string) => Promise<void>;
   isAdmin: boolean;
   isModerator: boolean;
+  login: () => void;
+  logout: () => Promise<void>;
+  updateUsername: (username: string) => Promise<void>;
+  getSavedConfessions: () => Promise<string[]>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -50,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           setIsAdmin(profileData.is_admin || false);
           setIsModerator(profileData.is_moderator || false);
+          setIsAuthenticated(true);
         }
       }
       setIsLoading(false);
@@ -71,11 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           setIsAdmin(profileData.is_admin || false);
           setIsModerator(profileData.is_moderator || false);
+          setIsAuthenticated(true);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
         setIsModerator(false);
+        setIsAuthenticated(false);
       }
     });
   }, []);
@@ -201,6 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setIsAdmin(false);
       setIsModerator(false);
+      setIsAuthenticated(false);
       navigate('/login');
     } catch (error: any) {
       alert(error.error_description || error.message);
@@ -209,15 +219,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
+  const login = () => {
+    navigate('/auth');
+  };
+  
+  const logout = async () => {
+    return signOut();
+  };
+  
+  const updateUsername = async (username: string) => {
+    return updateUser(username);
+  };
+  
+  const getSavedConfessions = async (): Promise<string[]> => {
+    if (!user) return [];
+    
+    try {
+      // Here we would fetch saved confessions from a database table
+      // For now, return an empty array as this functionality isn't implemented yet
+      return [];
+    } catch (error) {
+      console.error('Error fetching saved confessions:', error);
+      return [];
+    }
+  };
+  
   const value: AuthContextType = {
     user,
     isLoading,
+    isAuthenticated,
     signIn,
     signOut,
     signUp,
     updateUser,
     isAdmin,
     isModerator,
+    login,
+    logout,
+    updateUsername,
+    getSavedConfessions
   };
   
   return (
