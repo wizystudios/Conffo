@@ -181,14 +181,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (!user) return [];
 
+      // Using raw SQL query as a workaround for type issues
       const { data, error } = await supabase
-        .from('saved_confessions')
-        .select('confession_id')
-        .eq('user_id', user.id);
+        .rpc('get_user_saved_confessions', { user_uuid: user.id });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching saved confessions:', error);
+        return [];
+      }
 
-      return data.map(item => item.confession_id);
+      return data ? data.map((item: any) => item.confession_id) : [];
     } catch (error) {
       console.error('Error fetching saved confessions:', error);
       return [];

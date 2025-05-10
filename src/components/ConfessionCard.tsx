@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle, Bookmark } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -49,11 +49,20 @@ interface ConfessionCardProps {
 }
 
 export function ConfessionCard({ confession, detailed = false, onUpdate }: ConfessionCardProps) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   const handleReaction = async (reaction: Reaction) => {
     if (!user || isUpdating) return;
+    
+    if (!isAuthenticated) {
+      toast({
+        variant: "destructive",
+        description: "Please sign in to react to confessions",
+      });
+      return;
+    }
     
     setIsUpdating(true);
     
@@ -81,14 +90,25 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   const handleSaveConfession = async () => {
     if (!user || isUpdating) return;
     
+    if (!isAuthenticated) {
+      toast({
+        variant: "destructive",
+        description: "Please sign in to save confessions",
+      });
+      return;
+    }
+    
     setIsUpdating(true);
     
     try {
-      await saveConfession(confession.id, user.id);
+      const result = await saveConfession(confession.id, user.id);
       
-      toast({
-        description: "Confession saved successfully",
-      });
+      if (result) {
+        setIsSaved(!isSaved);
+        toast({
+          description: isSaved ? "Confession removed from saved" : "Confession saved successfully",
+        });
+      }
     } catch (error) {
       console.error('Error saving confession:', error);
       toast({
@@ -106,9 +126,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     <Card>
       <CardContent className={detailed ? "pt-6" : "pt-4"}>
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center">
-            <UsernameDisplay userId={confession.userId} size="md" />
-          </div>
+          <UsernameDisplay userId={confession.userId} size="md" />
           <span className="text-sm text-muted-foreground">
             {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
           </span>
@@ -164,9 +182,14 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
         </div>
         
         <div className="flex items-center gap-1">
-          {user && (
-            <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={handleSaveConfession}>
-              <Bookmark className="h-4 w-4" />
+          {isAuthenticated && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center gap-1" 
+              onClick={handleSaveConfession}
+            >
+              {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
               <span>Save</span>
             </Button>
           )}

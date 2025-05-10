@@ -45,10 +45,10 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <BrowserRouter>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
           <AuthProvider>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
@@ -66,8 +66,8 @@ const App = () => {
               </Routes>
             </Suspense>
           </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };

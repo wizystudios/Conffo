@@ -260,6 +260,35 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_confessions: {
+        Row: {
+          confession_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          confession_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          confession_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_confessions_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity_log: {
         Row: {
           activity_type: string

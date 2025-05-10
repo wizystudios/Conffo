@@ -12,6 +12,7 @@ interface UsernameDisplayProps {
 
 export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: UsernameDisplayProps) {
   const [username, setUsername] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -30,6 +31,10 @@ export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: User
         }
         
         setUsername(data?.username);
+        
+        // Generate avatar URL using DiceBear API
+        const avatarSeed = userId || 'anonymous';
+        setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}`);
       } catch (error) {
         console.error('Error in fetchUsername:', error);
       } finally {
@@ -75,7 +80,7 @@ export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: User
     <div className="flex items-center gap-2">
       {showAvatar && (
         <Avatar className={avatarSizeClass[size]}>
-          <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`} />
+          <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
           <AvatarFallback className="bg-primary/20">{getInitials(username || 'A')}</AvatarFallback>
         </Avatar>
       )}
