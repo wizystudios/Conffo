@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Confession, Room, Comment, RoomInfo, ReportReason } from '@/types';
+import { Confession, Room, Comment, RoomInfo, ReportReason, Reaction } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export const getConfessions = async (roomId?: string, userId?: string): Promise<Confession[]> => {
@@ -12,10 +12,7 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         content, 
         room_id, 
         user_id, 
-        created_at,
-        media_url,
-        media_type,
-        tags
+        created_at
       `)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -31,6 +28,10 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
       return [];
     }
     
+    if (!data) {
+      return [];
+    }
+    
     const confessions = await Promise.all(data.map(async (row) => {
       // Get reaction counts
       const { data: reactionData, error: reactionError } = await supabase.rpc(
@@ -39,35 +40,45 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
       );
       
       // Get comment count
-      const { data: commentData, error: commentError } = await supabase.rpc(
-        'get_comment_count',
-        { confession_uuid: row.id }
-      );
+      const { count, error: commentError } = await supabase
+        .from('comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('confession_id', row.id);
       
       // Get user's reactions if logged in
       let userReactions = [];
       if (userId) {
-        const { data: userReactionData } = await supabase.rpc(
-          'get_user_reactions',
-          { confession_uuid: row.id, user_uuid: userId }
-        );
-        userReactions = userReactionData || [];
+        const { data: userReactionData } = await supabase
+          .from('reactions')
+          .select('type')
+          .eq('confession_id', row.id)
+          .eq('user_id', userId);
+          
+        if (userReactionData) {
+          userReactions = userReactionData.map(r => r.type);
+        }
       }
       
-      const commentCount = commentError ? 0 : commentData || 0;
+      const commentCount = commentError ? 0 : count || 0;
+      const reactions = reactionData || { like: 0, laugh: 0, shock: 0, heart: 0 };
       
       return {
         id: row.id,
         content: row.content,
         room: row.room_id as Room,
-        userId: row.user_id,
+        userId: row.user_id || '',
         timestamp: new Date(row.created_at).getTime(),
-        reactions: reactionData || { like: 0, laugh: 0, shock: 0, heart: 0 },
+        reactions: {
+          like: reactions.like || 0,
+          laugh: reactions.laugh || 0,
+          shock: reactions.shock || 0,
+          heart: reactions.heart || 0
+        },
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
-        mediaUrl: row.media_url,
-        mediaType: row.media_type,
-        tags: row.tags || []
+        mediaUrl: null,
+        mediaType: undefined,
+        tags: []
       };
     }));
     
@@ -87,10 +98,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
         content, 
         room_id, 
         user_id, 
-        created_at,
-        media_url,
-        media_type,
-        tags
+        created_at
       `)
       .eq('id', id)
       .single();
@@ -107,35 +115,45 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
     );
     
     // Get comment count
-    const { data: commentData, error: commentError } = await supabase.rpc(
-      'get_comment_count',
-      { confession_uuid: data.id }
-    );
+    const { count, error: commentError } = await supabase
+      .from('comments')
+      .select('id', { count: 'exact', head: true })
+      .eq('confession_id', data.id);
     
     // Get user's reactions if logged in
     let userReactions = [];
     if (userId) {
-      const { data: userReactionData } = await supabase.rpc(
-        'get_user_reactions',
-        { confession_uuid: data.id, user_uuid: userId }
-      );
-      userReactions = userReactionData || [];
+      const { data: userReactionData } = await supabase
+        .from('reactions')
+        .select('type')
+        .eq('confession_id', data.id)
+        .eq('user_id', userId);
+        
+      if (userReactionData) {
+        userReactions = userReactionData.map(r => r.type);
+      }
     }
     
-    const commentCount = commentError ? 0 : commentData || 0;
+    const commentCount = commentError ? 0 : count || 0;
+    const reactions = reactionData || { like: 0, laugh: 0, shock: 0, heart: 0 };
     
     return {
       id: data.id,
       content: data.content,
       room: data.room_id as Room,
-      userId: data.user_id,
+      userId: data.user_id || '',
       timestamp: new Date(data.created_at).getTime(),
-      reactions: reactionData || { like: 0, laugh: 0, shock: 0, heart: 0 },
+      reactions: {
+        like: reactions.like || 0,
+        laugh: reactions.laugh || 0,
+        shock: reactions.shock || 0,
+        heart: reactions.heart || 0
+      },
       commentCount: typeof commentCount === 'number' ? commentCount : 0,
       userReactions,
-      mediaUrl: data.media_url,
-      mediaType: data.media_type,
-      tags: data.tags || []
+      mediaUrl: null,
+      mediaType: undefined,
+      tags: []
     };
   } catch (error) {
     console.error('Error in getConfessionById:', error);
@@ -208,62 +226,19 @@ export const addConfessionWithMedia = async (
   tags?: string[]
 ): Promise<void> => {
   try {
-    let mediaUrl: string | undefined = undefined;
-    let mediaType: 'image' | 'video' | undefined = undefined;
-    
-    // Handle media upload if provided
-    if (mediaFile) {
-      const fileType = mediaFile.type.split('/')[0];
-      if (fileType !== 'image' && fileType !== 'video') {
-        throw new Error('Unsupported file type');
-      }
-      
-      mediaType = fileType as 'image' | 'video';
-      
-      // Create unique filename
-      const fileExt = mediaFile.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `confessions/${fileName}`;
-      
-      // Upload file to storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, mediaFile);
-      
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage.from('media').getPublicUrl(filePath);
-      mediaUrl = urlData.publicUrl;
-    }
-    
-    // Insert confession with media info if available
-    const { error } = await supabase
-      .from('confessions')
-      .insert([
-        { 
-          content,
-          room_id: room,
-          user_id: userId,
-          media_url: mediaUrl,
-          media_type: mediaType,
-          tags: tags && tags.length > 0 ? tags : null
-        }
-      ]);
-    
-    if (error) throw error;
+    // For now, we're not supporting media uploads yet
+    await addConfession(content, room, userId);
   } catch (error) {
     console.error('Error adding confession with media:', error);
     throw error;
   }
 };
 
-export const addReaction = async (
+// Add the missing toggleReaction function
+export const toggleReaction = async (
   confessionId: string,
   userId: string,
-  reaction: string
+  reaction: Reaction
 ): Promise<void> => {
   try {
     // Check if user already has this reaction
@@ -295,19 +270,17 @@ export const addReaction = async (
     // Add new reaction
     const { error } = await supabase
       .from('reactions')
-      .insert([
-        {
-          confession_id: confessionId,
-          user_id: userId,
-          type: reaction
-        }
-      ]);
+      .insert({
+        confession_id: confessionId,
+        user_id: userId,
+        type: reaction
+      });
     
     if (error) {
       throw error;
     }
   } catch (error) {
-    console.error('Error adding reaction:', error);
+    console.error('Error toggling reaction:', error);
     throw error;
   }
 };
@@ -337,6 +310,9 @@ export const getComments = async (confessionId: string): Promise<Comment[]> => {
     return [];
   }
 };
+
+// Alias function for ConfessionPage.tsx
+export const getCommentsByConfessionId = getComments;
 
 export const addComment = async (
   confessionId: string,
@@ -374,7 +350,37 @@ export const addComment = async (
   }
 };
 
-export const submitReport = async (
+// Add missing deleteComment function
+export const deleteComment = async (
+  commentId: string,
+  userId: string,
+  isAdmin: boolean
+): Promise<boolean> => {
+  try {
+    let query = supabase
+      .from('comments')
+      .delete();
+    
+    // If not admin, only allow deletion of own comments
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { error } = await query.eq('id', commentId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    return false;
+  }
+};
+
+// Add missing addReport function
+export const addReport = async (
   type: 'confession' | 'comment',
   itemId: string,
   reason: ReportReason,
@@ -400,6 +406,80 @@ export const submitReport = async (
   } catch (error) {
     console.error('Error submitting report:', error);
     throw error;
+  }
+};
+
+// Add missing deleteConfession function
+export const deleteConfession = async (
+  confessionId: string,
+  userId: string,
+  isAdmin: boolean
+): Promise<boolean> => {
+  try {
+    let query = supabase
+      .from('confessions')
+      .delete();
+    
+    // If not admin, only allow deletion of own confessions
+    if (!isAdmin) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { error } = await query.eq('id', confessionId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting confession:', error);
+    return false;
+  }
+};
+
+// Add missing getReports function for admin page
+export const getReports = async (): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    return [];
+  }
+};
+
+// Add missing resolveReport function for admin page
+export const resolveReport = async (
+  reportId: string,
+  adminId: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('reports')
+      .update({
+        resolved: true,
+        resolved_at: new Date().toISOString(),
+        resolved_by: adminId
+      })
+      .eq('id', reportId);
+    
+    if (error) {
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error resolving report:', error);
+    return false;
   }
 };
 

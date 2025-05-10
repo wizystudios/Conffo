@@ -33,7 +33,7 @@ export interface Confession {
   };
   commentCount: number;
   userReactions?: Reaction[];
-  mediaUrl?: string;
+  mediaUrl?: string | null;
   mediaType?: 'image' | 'video';
   tags?: string[];
 }

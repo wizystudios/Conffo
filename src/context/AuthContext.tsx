@@ -43,9 +43,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      // Check if the profile exists
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, is_admin, is_moderator, saved_confessions')
+        .select('username, is_admin, is_moderator')
         .eq('id', userId)
         .single();
       
@@ -56,10 +57,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       return {
         id: userId,
-        username: data.username,
-        isAdmin: data.is_admin,
-        isModerator: data.is_moderator,
-        savedConfessions: data.saved_confessions || []
+        username: data?.username || null,
+        isAdmin: data?.is_admin || false,
+        isModerator: data?.is_moderator || false,
+        savedConfessions: [] // We'll implement this later when DB is updated
       };
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -187,61 +188,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const saveConfession = async (confessionId: string) => {
-    try {
-      if (!user) return;
-      
-      // Get current saved confessions
-      const newSavedConfessions = [...(user.savedConfessions || [])];
-      
-      // Toggle saved status
-      const index = newSavedConfessions.indexOf(confessionId);
-      if (index === -1) {
-        // Add confession if not already saved
-        newSavedConfessions.push(confessionId);
-        toast({
-          title: 'Confession Saved',
-          description: 'This confession has been added to your saved items',
-        });
-      } else {
-        // Remove confession if already saved
-        newSavedConfessions.splice(index, 1);
-        toast({
-          title: 'Confession Removed',
-          description: 'This confession has been removed from your saved items',
-        });
-      }
-      
-      // Update in database
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          saved_confessions: newSavedConfessions,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setUser(prev => {
-        if (!prev) return null;
-        return { ...prev, savedConfessions: newSavedConfessions };
-      });
-      setSavedConfessions(newSavedConfessions);
-      
-    } catch (error) {
-      console.error('Error saving confession:', error);
-      toast({
-        title: 'Save Failed',
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
-        variant: 'destructive',
-      });
-    }
+    // This will be implemented later when DB is updated
+    toast({
+      title: 'Feature Coming Soon',
+      description: 'Saving confessions will be available soon!',
+    });
   };
   
   const getSavedConfessions = async (): Promise<string[]> => {
-    if (!user) return [];
-    return user.savedConfessions || [];
+    // This will be implemented later when DB is updated
+    return [];
   };
 
   useEffect(() => {
@@ -265,8 +221,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 await supabase
                   .from('profiles')
                   .insert([{ 
-                    id: session.user.id,
-                    saved_confessions: []
+                    id: session.user.id
                   }]);
                 
                 setUser({
@@ -310,8 +265,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               await supabase
                 .from('profiles')
                 .insert([{ 
-                  id: session.user.id,
-                  saved_confessions: []
+                  id: session.user.id
                 }]);
               
               setUser({
