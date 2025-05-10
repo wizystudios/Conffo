@@ -301,14 +301,15 @@ export const saveConfession = async (
   userId: string
 ): Promise<boolean> => {
   try {
-    // Check if already saved using RPC function to avoid type errors
+    // Check if already saved using direct query instead of RPC
     const { data: existingData, error: checkError } = await supabase
-      .rpc('check_saved_confession', { 
-        confession_uuid: confessionId,
-        user_uuid: userId
-      });
+      .from('saved_confessions')
+      .select('id')
+      .eq('confession_id', confessionId)
+      .eq('user_id', userId)
+      .maybeSingle();
     
-    const isAlreadySaved = existingData === true;
+    const isAlreadySaved = !!existingData;
     
     if (checkError) {
       console.error('Error checking saved confession:', checkError);
@@ -318,10 +319,10 @@ export const saveConfession = async (
     // If already saved, remove it (toggle behavior)
     if (isAlreadySaved) {
       const { error: deleteError } = await supabase
-        .rpc('remove_saved_confession', {
-          confession_uuid: confessionId,
-          user_uuid: userId
-        });
+        .from('saved_confessions')
+        .delete()
+        .eq('confession_id', confessionId)
+        .eq('user_id', userId);
       
       if (deleteError) {
         console.error('Error removing saved confession:', deleteError);
@@ -333,9 +334,10 @@ export const saveConfession = async (
     
     // Otherwise, save it
     const { error } = await supabase
-      .rpc('add_saved_confession', {
-        confession_uuid: confessionId,
-        user_uuid: userId
+      .from('saved_confessions')
+      .insert({
+        confession_id: confessionId,
+        user_id: userId
       });
     
     if (error) {

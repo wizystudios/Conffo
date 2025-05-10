@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle, Bookmark, BookmarkCheck } from 'lucide-react';
@@ -12,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReactionButtonProps {
   icon: React.ReactNode;
@@ -52,6 +52,30 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   const { user, isAuthenticated } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Check if this confession is saved by the current user
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('saved_confessions')
+          .select('id')
+          .eq('confession_id', confession.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (!error && data) {
+          setIsSaved(true);
+        }
+      } catch (error) {
+        console.error('Error checking saved status:', error);
+      }
+    };
+    
+    checkIfSaved();
+  }, [confession.id, user]);
   
   const handleReaction = async (reaction: Reaction) => {
     if (!user || isUpdating) return;

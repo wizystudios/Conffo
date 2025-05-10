@@ -181,16 +181,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (!user) return [];
 
-      // Using raw SQL query as a workaround for type issues
+      // Use a direct SQL query instead of RPC to avoid TypeScript errors
       const { data, error } = await supabase
-        .rpc('get_user_saved_confessions', { user_uuid: user.id });
+        .from('saved_confessions')
+        .select('confession_id')
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error fetching saved confessions:', error);
         return [];
       }
 
-      return data ? data.map((item: any) => item.confession_id) : [];
+      return data ? data.map(item => item.confession_id) : [];
     } catch (error) {
       console.error('Error fetching saved confessions:', error);
       return [];
