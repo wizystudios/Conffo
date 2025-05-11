@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,10 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         
         if (session) {
-          const userData = await fetchUserData(session.user.id);
-          setUser(userData);
-          setIsAdmin(userData?.isAdmin || false);
-          setIsModerator(userData?.isModerator || false);
+          // Defer data fetching to prevent potential deadlocks
+          setTimeout(async () => {
+            const userData = await fetchUserData(session.user.id);
+            setUser(userData);
+            setIsAdmin(userData?.isAdmin || false);
+            setIsModerator(userData?.isModerator || false);
+          }, 0);
         }
       } catch (error) {
         console.error("Error loading session:", error);
@@ -76,10 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       
       if (session) {
-        const userData = await fetchUserData(session.user.id);
-        setUser(userData);
-        setIsAdmin(userData?.isAdmin || false);
-        setIsModerator(userData?.isModerator || false);
+        // Defer data fetching to prevent potential deadlocks
+        setTimeout(async () => {
+          const userData = await fetchUserData(session.user.id);
+          setUser(userData);
+          setIsAdmin(userData?.isAdmin || false);
+          setIsModerator(userData?.isModerator || false);
+        }, 0);
       } else {
         setUser(null);
         setIsAdmin(false);
@@ -140,11 +145,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signOut();
+      // Clean up auth state
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) throw error;
+      
       setSession(null);
       setUser(null);
-      navigate('/auth');
+      
+      // Force page reload for clean state
+      window.location.href = '/auth';
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {

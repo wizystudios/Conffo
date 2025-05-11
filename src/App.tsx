@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, lazy, Suspense } from "react";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import HomePage from "./pages/HomePage";
 
 // Use lazy loading for non-critical pages
@@ -46,27 +47,29 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AuthProvider>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/rooms" element={<RoomsPage />} />
-                <Route path="/room/:roomId" element={<RoomPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/confession/:confessionId" element={<ConfessionPage />} />
-                <Route path="/trending" element={<TrendingPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
-        </TooltipProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AuthProvider>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/rooms" element={<RoomsPage />} />
+                  <Route path="/room/:roomId" element={<RoomPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/confession/:confessionId" element={<ConfessionPage />} />
+                  <Route path="/trending" element={<TrendingPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AuthProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

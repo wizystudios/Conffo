@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { rooms } from '@/services/dataService';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -93,6 +94,8 @@ export function NavBar() {
         </nav>
         
         <div className="flex flex-1 items-center justify-end space-x-1 sm:space-x-2">
+          <ThemeToggle className="h-8 w-8 sm:h-9 sm:w-9" />
+          
           {isAuthenticated ? (
             <>
               {isAdmin && (

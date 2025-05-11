@@ -68,7 +68,8 @@ export default function AuthPage() {
         description: "You have been logged in successfully.",
       });
       
-      navigate('/');
+      // Force a full page reload to ensure clean state
+      window.location.href = '/';
     } catch (error) {
       toast({
         title: "Login failed",
@@ -99,6 +100,14 @@ export default function AuthPage() {
         title: "Registration successful",
         description: "Please check your email for confirmation instructions.",
       });
+      
+      // If auto-confirm is enabled (recommended for development), redirect to home
+      if (data?.user && !data?.user?.email_confirmed_at) {
+        // Wait a moment to ensure the registration is processed
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      }
     } catch (error) {
       toast({
         title: "Registration failed",
