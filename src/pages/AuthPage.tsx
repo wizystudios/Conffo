@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import { toast } from '@/hooks/use-toast';
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,9 +22,10 @@ export default function AuthPage() {
   // If user is already authenticated, redirect to home page
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
+      console.log("User authenticated, redirecting to home page:", user);
       navigate('/');
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, user]);
 
   // Clean up auth state to prevent issues
   const cleanupAuthState = () => {
@@ -59,8 +60,10 @@ export default function AuthPage() {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
         // Continue even if this fails
+        console.log("Sign out before sign in failed, continuing anyway");
       }
       
+      console.log("Attempting to sign in with:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -68,14 +71,19 @@ export default function AuthPage() {
       
       if (error) throw error;
       
+      console.log("Sign in successful, user data:", data);
+      
       toast({
         title: "Login successful",
         description: "You have been logged in successfully.",
       });
       
       // Force a full page reload to ensure clean state
-      window.location.href = '/';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     } catch (error: any) {
+      console.error("Login error:", error);
       setAuthError(error?.message || "Failed to sign in");
       toast({
         title: "Login failed",
@@ -97,12 +105,18 @@ export default function AuthPage() {
       // Clean up existing state
       cleanupAuthState();
       
+      console.log("Attempting to sign up with:", email);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
       
       if (error) throw error;
+      
+      console.log("Sign up successful, user data:", data);
       
       toast({
         title: "Registration successful",
@@ -117,6 +131,7 @@ export default function AuthPage() {
         }, 1000);
       }
     } catch (error: any) {
+      console.error("Registration error:", error);
       setAuthError(error?.message || "Failed to sign up");
       toast({
         title: "Registration failed",
@@ -126,6 +141,11 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reset auth error when changing tabs
+  const handleTabChange = () => {
+    setAuthError(null);
   };
 
   return (
@@ -141,7 +161,7 @@ export default function AuthPage() {
               <p className="text-sm font-medium text-destructive">{authError}</p>
             )}
           </CardHeader>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>

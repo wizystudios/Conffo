@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,8 +11,18 @@ import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataS
 import { useQuery } from '@tanstack/react-query';
 
 export default function HomePage() {
-  const { user, login } = useAuth();
+  const { user, isAuthenticated, isLoading, login } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('recent');
+
+  // Debug authentication status
+  useEffect(() => {
+    console.log("HomePage - Auth status:", {
+      isAuthenticated,
+      userId: user?.id,
+      username: user?.username,
+      isLoading
+    });
+  }, [isAuthenticated, user, isLoading]);
 
   // Using React Query for data fetching
   const { 
@@ -49,10 +59,14 @@ export default function HomePage() {
     }
   };
   
+  const handleLoginClick = () => {
+    window.location.href = '/auth';
+  };
+  
   return (
     <Layout>
       <div className="space-y-6">
-        {user ? (
+        {isAuthenticated ? (
           <Card className="p-4">
             <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
             <EnhancedConfessionForm onSuccess={handleConfessionSuccess} />
@@ -63,7 +77,7 @@ export default function HomePage() {
             <p className="text-muted-foreground mb-4">
               A safe space to share your thoughts anonymously.
             </p>
-            <Button onClick={login}>Enter Anonymously</Button>
+            <Button onClick={handleLoginClick}>Sign In or Register</Button>
           </Card>
         )}
         
