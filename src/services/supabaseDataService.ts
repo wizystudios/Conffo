@@ -75,6 +75,9 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
               (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
       };
       
+      // Fix the type issue by ensuring mediaType is correctly typed
+      const mediaType = row.media_type as 'image' | 'video' | undefined;
+      
       return {
         id: row.id,
         content: row.content,
@@ -85,7 +88,7 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
         mediaUrl: row.media_url || null,
-        mediaType: row.media_type as 'image' | 'video' | undefined,
+        mediaType,
         tags: row.tags || []
       };
     }));
@@ -159,6 +162,9 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
             (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
     };
     
+    // Fix: Cast media_type to the correct union type
+    const mediaType = data.media_type as 'image' | 'video' | undefined;
+    
     return {
       id: data.id,
       content: data.content,
@@ -169,7 +175,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       commentCount: typeof commentCount === 'number' ? commentCount : 0,
       userReactions,
       mediaUrl: data.media_url || null,
-      mediaType: data.media_type || undefined,
+      mediaType,
       tags: data.tags || []
     };
   } catch (error) {
@@ -656,6 +662,9 @@ export const getUserConfessions = async (userId: string): Promise<Confession[]> 
               (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
       };
       
+      // Fix: Cast media_type to the correct union type
+      const mediaType = row.media_type as 'image' | 'video' | undefined;
+      
       return {
         id: row.id,
         content: row.content,
@@ -666,7 +675,7 @@ export const getUserConfessions = async (userId: string): Promise<Confession[]> 
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
         mediaUrl: row.media_url || null,
-        mediaType: row.media_type || undefined,
+        mediaType,
         tags: row.tags || []
       };
     }));
