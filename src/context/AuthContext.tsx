@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isModerator, setIsModerator] = useState(false);
   const navigate = useNavigate();
 
+  // Compute isAuthenticated from session/user
+  const isAuthenticated = !!session && !!user;
+
   useEffect(() => {
     const loadSession = async () => {
       setIsLoading(true);
@@ -68,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadSession();
     
     // Listen for auth state changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       
       if (session) {
@@ -82,6 +86,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsModerator(false);
       }
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async () => {
@@ -90,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/profile`,
+          redirectTo: `${window.location.origin}/profile`
         }
       });
       
@@ -110,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: email,
         password: password,
         options: {
-          redirectTo: `${window.location.origin}/profile`,
+          emailRedirectTo: `${window.location.origin}/profile`
         }
       });
       
@@ -222,15 +230,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
       
+      if (!data) {
+        return null;
+      }
+      
       return {
         id: userId,
-        username: data?.username,
-        isAdmin: data?.is_admin || false,
-        isModerator: data?.is_moderator || false,
-        bio: data?.bio || null,
-        avatarUrl: data?.avatar_url || null,
-        contactEmail: data?.contact_email || null,
-        contactPhone: data?.contact_phone || null
+        username: data.username,
+        isAdmin: data.is_admin || false,
+        isModerator: data.is_moderator || false,
+        bio: data.bio || null,
+        avatarUrl: data.avatar_url || null,
+        contactEmail: data.contact_email || null,
+        contactPhone: data.contact_phone || null
       };
     } catch (error) {
       console.error('Error in fetchUserData:', error);
@@ -263,6 +275,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('Error fetching saved confessions:', error);
+        return [];
+      }
+      
+      if (!data || !Array.isArray(data)) {
         return [];
       }
       

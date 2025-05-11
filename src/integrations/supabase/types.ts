@@ -46,7 +46,10 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          media_type: string | null
+          media_url: string | null
           room_id: string
+          tags: string[] | null
           updated_at: string
           user_id: string | null
         }
@@ -54,7 +57,10 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           room_id: string
+          tags?: string[] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -62,7 +68,10 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           room_id?: string
+          tags?: string[] | null
           updated_at?: string
           user_id?: string | null
         }
@@ -108,6 +117,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
+          bio: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           is_admin: boolean
@@ -116,6 +129,10 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id: string
           is_admin?: boolean
@@ -124,6 +141,10 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           is_admin?: boolean

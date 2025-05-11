@@ -85,7 +85,7 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
         mediaUrl: row.media_url || null,
-        mediaType: row.media_type || undefined,
+        mediaType: row.media_type as 'image' | 'video' | undefined,
         tags: row.tags || []
       };
     }));
@@ -321,7 +321,7 @@ export const saveConfession = async (
   userId: string
 ): Promise<boolean> => {
   try {
-    // Check if already saved using direct query instead of RPC
+    // Check if already saved
     const { data: existingData, error: checkError } = await supabase
       .from('saved_confessions')
       .select('id')
