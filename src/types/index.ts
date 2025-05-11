@@ -17,6 +17,10 @@ export interface User {
   isAdmin: boolean;
   isModerator: boolean;
   savedConfessions?: string[];
+  bio?: string | null;
+  avatarUrl?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
 }
 
 export interface Confession {

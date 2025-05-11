@@ -9,12 +9,12 @@
 @media (min-width: 768px) {
   #root {
     max-width: 1280px;
-    padding: 2rem;
+    padding: 1rem;
   }
 }
 
 .logo {
-  height: 3em;
+  height: 2.5em;
   padding: 0.5em;
   will-change: filter;
   transition: filter 300ms;
@@ -25,7 +25,7 @@
 
 @media (min-width: 768px) {
   .logo {
-    height: 6em;
+    height: 5em;
     padding: 1.5em;
   }
 }
@@ -54,7 +54,7 @@
 }
 
 .card {
-  padding: 1em;
+  padding: 0.75em;
 }
 
 @media (min-width: 768px) {

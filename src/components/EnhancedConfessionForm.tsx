@@ -15,8 +15,10 @@ import { useAuth } from '@/context/AuthContext';
 import { addConfessionWithMedia, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { X, Image, Video, Tag, Plus } from 'lucide-react';
+import { X, Image, Video, Tag } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EnhancedConfessionFormProps {
   onSuccess?: () => void;
@@ -33,6 +35,7 @@ export function EnhancedConfessionForm({ onSuccess, initialRoom }: EnhancedConfe
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -100,6 +103,43 @@ export function EnhancedConfessionForm({ onSuccess, initialRoom }: EnhancedConfe
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
   
+  const uploadMedia = async (file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const mediaType = file.type.split('/')[0]; // 'image' or 'video'
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `confessions/${fileName}`;
+      
+      setUploadProgress(10);
+      
+      // Upload the file
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      setUploadProgress(70);
+      
+      // Get public URL
+      const { data } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+      
+      setUploadProgress(100);
+      
+      return {
+        mediaUrl: data.publicUrl,
+        mediaType: mediaType as 'image' | 'video'
+      };
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      throw error;
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -108,13 +148,34 @@ export function EnhancedConfessionForm({ onSuccess, initialRoom }: EnhancedConfe
     }
     
     setIsSubmitting(true);
+    setUploadProgress(0);
     
     try {
-      await addConfessionWithMedia(content, room, user.id, selectedFile, tags);
+      let mediaUrl = null;
+      let mediaType = undefined;
+      
+      // Upload media if selected
+      if (selectedFile) {
+        const media = await uploadMedia(selectedFile);
+        mediaUrl = media.mediaUrl;
+        mediaType = media.mediaType;
+      }
+      
+      await addConfessionWithMedia(
+        content, 
+        room, 
+        user.id, 
+        selectedFile, 
+        tags,
+        mediaUrl,
+        mediaType
+      );
+      
       setContent('');
       setSelectedFile(null);
       setPreviewUrl(null);
       setTags([]);
+      setUploadProgress(0);
       
       toast({
         title: "Confession posted",
@@ -165,6 +226,15 @@ export function EnhancedConfessionForm({ onSuccess, initialRoom }: EnhancedConfe
           >
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+      
+      {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
+        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div 
+            className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+            style={{ width: `${uploadProgress}%` }}
+          ></div>
         </div>
       )}
       

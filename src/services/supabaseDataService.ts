@@ -11,7 +11,10 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         content, 
         room_id, 
         user_id, 
-        created_at
+        created_at,
+        media_url,
+        media_type,
+        tags
       `)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -81,9 +84,9 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         reactions,
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
-        mediaUrl: null,
-        mediaType: undefined,
-        tags: []
+        mediaUrl: row.media_url || null,
+        mediaType: row.media_type || undefined,
+        tags: row.tags || []
       };
     }));
     
@@ -103,7 +106,10 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
         content, 
         room_id, 
         user_id, 
-        created_at
+        created_at,
+        media_url,
+        media_type,
+        tags
       `)
       .eq('id', id)
       .single();
@@ -162,9 +168,9 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       reactions,
       commentCount: typeof commentCount === 'number' ? commentCount : 0,
       userReactions,
-      mediaUrl: null,
-      mediaType: undefined,
-      tags: []
+      mediaUrl: data.media_url || null,
+      mediaType: data.media_type || undefined,
+      tags: data.tags || []
     };
   } catch (error) {
     console.error('Error in getConfessionById:', error);
@@ -234,11 +240,25 @@ export const addConfessionWithMedia = async (
   room: Room,
   userId: string,
   mediaFile?: File | null,
-  tags?: string[]
+  tags?: string[],
+  mediaUrl?: string | null,
+  mediaType?: 'image' | 'video'
 ): Promise<void> => {
   try {
-    // For now, we're not supporting media uploads yet
-    await addConfession(content, room, userId);
+    const { error } = await supabase
+      .from('confessions')
+      .insert([
+        { 
+          content,
+          room_id: room,
+          user_id: userId,
+          media_url: mediaUrl,
+          media_type: mediaType,
+          tags
+        }
+      ]);
+    
+    if (error) throw error;
   } catch (error) {
     console.error('Error adding confession with media:', error);
     throw error;
@@ -570,5 +590,119 @@ export const getRooms = async (): Promise<RoomInfo[]> => {
   } catch (error) {
     console.error('Error fetching rooms:', error);
     return [];
+  }
+};
+
+// Add new function to get user confessions
+export const getUserConfessions = async (userId: string): Promise<Confession[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('confessions')
+      .select(`
+        id, 
+        content, 
+        room_id, 
+        user_id, 
+        created_at,
+        media_url,
+        media_type,
+        tags
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching user confessions:', error);
+      return [];
+    }
+    
+    if (!data) {
+      return [];
+    }
+    
+    const confessions = await Promise.all(data.map(async (row) => {
+      // Get reaction counts
+      const { data: reactionData, error: reactionError } = await supabase.rpc(
+        'get_reaction_counts',
+        { confession_uuid: row.id }
+      );
+      
+      // Get comment count
+      const { count, error: commentError } = await supabase
+        .from('comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('confession_id', row.id);
+      
+      // Get user's reactions
+      const { data: userReactionData } = await supabase
+        .from('reactions')
+        .select('type')
+        .eq('confession_id', row.id)
+        .eq('user_id', userId);
+        
+      const userReactions = userReactionData ? userReactionData.map(r => r.type) : [];
+      
+      const commentCount = commentError ? 0 : count || 0;
+      
+      // Handle the reaction data with proper type checking
+      const reactions = {
+        like: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'like' in reactionData ? Number(reactionData.like) || 0 : 0) : 0,
+        laugh: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'laugh' in reactionData ? Number(reactionData.laugh) || 0 : 0) : 0,
+        shock: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'shock' in reactionData ? Number(reactionData.shock) || 0 : 0) : 0,
+        heart: typeof reactionData === 'object' && reactionData !== null ? 
+              (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
+      };
+      
+      return {
+        id: row.id,
+        content: row.content,
+        room: row.room_id as Room,
+        userId: row.user_id || '',
+        timestamp: new Date(row.created_at).getTime(),
+        reactions,
+        commentCount: typeof commentCount === 'number' ? commentCount : 0,
+        userReactions,
+        mediaUrl: row.media_url || null,
+        mediaType: row.media_type || undefined,
+        tags: row.tags || []
+      };
+    }));
+    
+    return confessions;
+  } catch (error) {
+    console.error('Error in getUserConfessions:', error);
+    return [];
+  }
+};
+
+// Add function to update confession
+export const updateConfession = async (
+  confessionId: string,
+  content: string,
+  userId: string
+): Promise<Confession | null> => {
+  try {
+    // Update the confession
+    const { error: updateError } = await supabase
+      .from('confessions')
+      .update({
+        content,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', confessionId)
+      .eq('user_id', userId);
+    
+    if (updateError) {
+      throw updateError;
+    }
+    
+    // Get the updated confession
+    return await getConfessionById(confessionId, userId);
+  } catch (error) {
+    console.error('Error updating confession:', error);
+    return null;
   }
 };

@@ -6,23 +6,37 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfessionCard } from '@/components/ConfessionCard';
+import { UserConfessions } from '@/components/UserConfessions';
 import { getConfessionById } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
-import { AlertCircle, User, Save, Download, LogOut } from 'lucide-react';
+import { AlertCircle, User, Save, Download, LogOut, Upload, Camera } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Navigate } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, isLoading, updateUsername, logout, getSavedConfessions } = useAuth();
+  const { user, isAuthenticated, isLoading, updateUsername, updateUserProfile, logout, getSavedConfessions } = useAuth();
   const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [savedConfessions, setSavedConfessions] = useState<Confession[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('settings');
 
   useEffect(() => {
-    if (user?.username) {
-      setUsername(user.username);
+    if (user) {
+      setUsername(user.username || '');
+      setBio(user.bio || '');
+      setEmail(user.contactEmail || '');
+      setPhone(user.contactPhone || '');
+      setAvatarUrl(user.avatarUrl || null);
     }
   }, [user]);
 
@@ -57,14 +71,82 @@ export default function ProfilePage() {
     fetchSavedConfessions();
   }, [isAuthenticated, user?.id, getSavedConfessions]);
 
-  const handleSaveUsername = async () => {
-    if (username.trim()) {
-      await updateUsername(username.trim());
-    } else {
+  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!user?.id || !e.target.files || e.target.files.length === 0) {
+        return;
+      }
+      
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+      
+      setUploadingImage(true);
+      
+      // Upload the file
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // Get public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      const publicUrl = data.publicUrl;
+      
+      // Update user profile with new avatar URL
+      await updateUserProfile({
+        avatarUrl: publicUrl
+      });
+      
+      setAvatarUrl(publicUrl);
+      
       toast({
-        title: "Username cannot be empty",
-        description: "Please enter a valid username",
-        variant: "destructive"
+        description: "Profile picture updated successfully"
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update profile picture"
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      if (!username.trim()) {
+        toast({
+          title: "Username cannot be empty",
+          description: "Please enter a valid username",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      await updateUserProfile({
+        username: username.trim(),
+        bio,
+        contactEmail: email,
+        contactPhone: phone
+      });
+      
+      toast({
+        description: "Profile updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update profile"
       });
     }
   };
@@ -82,7 +164,7 @@ export default function ProfilePage() {
       
       Comments: ${confession.commentCount}
       
-      Downloaded from Confession Room
+      Downloaded from ConfessZone
     `.trim();
     
     // Create blob and download link
@@ -118,41 +200,97 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="space-y-6 container py-6">
+      <div className="space-y-6 container py-4 sm:py-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <User className="h-6 w-6" />
+            <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
+              <User className="h-5 w-5 md:h-6 md:w-6" />
               Profile Settings
             </CardTitle>
             <CardDescription>
-              Manage your profile settings and saved content
+              Manage your profile and content
             </CardDescription>
           </CardHeader>
           
-          <Tabs defaultValue="settings" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="saved">Saved Confessions</TabsTrigger>
+              <TabsTrigger value="saved">Saved</TabsTrigger>
+              <TabsTrigger value="posts">My Posts</TabsTrigger>
             </TabsList>
             
             <TabsContent value="settings">
               <CardContent className="space-y-4">
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative mb-4">
+                    <Avatar className="h-24 w-24 border-2 border-border">
+                      <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
+                      <AvatarFallback className="text-2xl">
+                        {username ? username.charAt(0).toUpperCase() : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label 
+                      htmlFor="avatar-upload" 
+                      className="absolute bottom-1 right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/90 transition-colors"
+                    >
+                      <Camera className="h-4 w-4" />
+                      <input 
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleUploadAvatar}
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  </div>
+                  {uploadingImage && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      id="username" 
-                      value={username} 
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Set your username"
-                      className="flex-1"
-                    />
-                    <Button onClick={handleSaveUsername}>Save</Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Your username is only visible to moderators and is used for account management.
-                  </p>
+                  <Input 
+                    id="username" 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Set your username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea 
+                    id="bio" 
+                    value={bio} 
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell us about yourself"
+                    className="min-h-[80px]"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Contact Email (optional)</Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your contact email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number (optional)</Label>
+                  <Input 
+                    id="phone" 
+                    value={phone} 
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Your phone number"
+                  />
+                </div>
+                
+                <div className="pt-4 flex justify-end">
+                  <Button onClick={handleSaveProfile}>Save Profile</Button>
                 </div>
                 
                 <div className="pt-4">
@@ -161,7 +299,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-medium">Anonymous Usage</p>
                       <p className="text-xs mt-1">
-                        Your confessions are posted anonymously. Your username is not attached to your confessions.
+                        Your confessions are posted anonymously. Your profile information is only visible to moderators.
                       </p>
                     </div>
                   </div>
@@ -188,21 +326,11 @@ export default function ProfilePage() {
                   ) : savedConfessions.length > 0 ? (
                     <div className="space-y-4">
                       {savedConfessions.map(confession => (
-                        <div key={confession.id} className="relative">
-                          <ConfessionCard 
-                            confession={confession}
-                            onUpdate={() => {/* Refresh saved confessions */}}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="absolute top-2 right-2"
-                            onClick={() => downloadConfession(confession)}
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
-                        </div>
+                        <ConfessionCard 
+                          key={confession.id} 
+                          confession={confession}
+                          onUpdate={() => setActiveTab('saved')}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -213,6 +341,19 @@ export default function ProfilePage() {
                       </p>
                     </div>
                   )}
+                </div>
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="posts">
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    <h3 className="font-medium">Your Confessions</h3>
+                  </div>
+                  
+                  <UserConfessions onUpdate={() => setActiveTab('posts')} />
                 </div>
               </CardContent>
             </TabsContent>
