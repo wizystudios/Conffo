@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,14 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // If user is already authenticated, redirect to home page
-  if (isAuthenticated && !isLoading) {
-    return <Navigate to="/" />;
-  }
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate('/');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Clean up auth state to prevent issues
   const cleanupAuthState = () => {
@@ -43,6 +46,8 @@ export default function AuthPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
+    
     try {
       setLoading(true);
       
@@ -70,7 +75,8 @@ export default function AuthPage() {
       
       // Force a full page reload to ensure clean state
       window.location.href = '/';
-    } catch (error) {
+    } catch (error: any) {
+      setAuthError(error?.message || "Failed to sign in");
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -83,6 +89,8 @@ export default function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
+    
     try {
       setLoading(true);
       
@@ -101,14 +109,15 @@ export default function AuthPage() {
         description: "Please check your email for confirmation instructions.",
       });
       
-      // If auto-confirm is enabled (recommended for development), redirect to home
-      if (data?.user && !data?.user?.email_confirmed_at) {
+      // If auto-confirm is enabled (recommended for development)
+      if (data?.user) {
         // Wait a moment to ensure the registration is processed
         setTimeout(() => {
           window.location.href = '/';
         }, 1000);
       }
-    } catch (error) {
+    } catch (error: any) {
+      setAuthError(error?.message || "Failed to sign up");
       toast({
         title: "Registration failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -128,6 +137,9 @@ export default function AuthPage() {
             <CardDescription>
               Sign in or create an account to start sharing your confessions
             </CardDescription>
+            {authError && (
+              <p className="text-sm font-medium text-destructive">{authError}</p>
+            )}
           </CardHeader>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
