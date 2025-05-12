@@ -23,3 +23,33 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Auth state changed:', event, session?.user?.id);
 });
+
+// Helper functions to work with user follows until types are updated
+export const addFollow = async (followerId: string, followingId: string) => {
+  return supabase.rpc('add_follow', { 
+    p_follower_id: followerId, 
+    p_following_id: followingId 
+  });
+};
+
+export const removeFollow = async (followerId: string, followingId: string) => {
+  return supabase.rpc('remove_follow', { 
+    p_follower_id: followerId, 
+    p_following_id: followingId 
+  });
+};
+
+export const checkIfFollowing = async (followerId: string, followingId: string) => {
+  return supabase.rpc('check_if_following', { 
+    follower_uuid: followerId, 
+    following_uuid: followingId 
+  });
+};
+
+export const getFollowersCount = async (userId: string) => {
+  return supabase.rpc('get_followers_count', { user_uuid: userId });
+};
+
+export const getFollowingCount = async (userId: string) => {
+  return supabase.rpc('get_following_count', { user_uuid: userId });
+};
