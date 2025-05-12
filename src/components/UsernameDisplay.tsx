@@ -64,7 +64,7 @@ export function UsernameDisplay({
   }, [userId]);
 
   const getInitials = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : 'A';
+    return name ? name.charAt(0).toUpperCase() : 'C';
   };
 
   const avatarSizeClass = {
@@ -97,7 +97,7 @@ export function UsernameDisplay({
       {showAvatar && (
         <Avatar className={avatarSizeClass[size]}>
           <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-          <AvatarFallback className="bg-primary/20">{getInitials(username || 'A')}</AvatarFallback>
+          <AvatarFallback className="bg-primary/20">{getInitials(username || 'C')}</AvatarFallback>
         </Avatar>
       )}
       <span className={`${textSizeClass[size]} font-medium`}>

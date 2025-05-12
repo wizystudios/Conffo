@@ -9,10 +9,12 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
 import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 
 export default function HomePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('recent');
+  const [showConfessionForm, setShowConfessionForm] = useState(false);
 
   // Debug authentication status
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function HomePage() {
     if (activeTab === 'trending') {
       refetchTrending();
     }
+    setShowConfessionForm(false); // Hide the form after successful submission
   };
 
   const handleTabChange = (value: string) => {
@@ -68,17 +71,35 @@ export default function HomePage() {
     <Layout>
       <div className="space-y-6">
         {isAuthenticated ? (
-          <Card className="p-4">
-            <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
-            <EnhancedConfessionForm onSuccess={handleConfessionSuccess} />
-          </Card>
+          <>
+            {!showConfessionForm ? (
+              <div className="flex justify-center">
+                <Button 
+                  onClick={() => setShowConfessionForm(true)} 
+                  size="lg" 
+                  className="gap-2 shadow-md hover:shadow-lg transition-all"
+                >
+                  <Plus className="h-5 w-5" />
+                  Create New Confession
+                </Button>
+              </div>
+            ) : (
+              <Card className="p-4 shadow-md border-2 animate-in fade-in">
+                <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
+                <EnhancedConfessionForm 
+                  onSuccess={handleConfessionSuccess} 
+                  onCancel={() => setShowConfessionForm(false)}
+                />
+              </Card>
+            )}
+          </>
         ) : (
-          <Card className="p-6 text-center border-dashed animate-pulse-soft">
-            <h2 className="text-xl font-bold mb-2">Welcome to Confession Room</h2>
+          <Card className="p-6 text-center border-dashed animate-pulse-soft shadow-md">
+            <h2 className="text-xl font-bold mb-2">Welcome to Coffo</h2>
             <p className="text-muted-foreground mb-4">
               A safe space to share your thoughts anonymously.
             </p>
-            <Button onClick={handleLoginClick}>Sign In or Register</Button>
+            <Button onClick={handleLoginClick} size="lg" className="font-medium">Sign In or Register</Button>
           </Card>
         )}
         

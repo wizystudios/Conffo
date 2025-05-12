@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -11,12 +12,13 @@ import { ConfessionCard } from '@/components/ConfessionCard';
 import { UserConfessions } from '@/components/UserConfessions';
 import { getConfessionById } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
-import { AlertCircle, User, Save, Download, LogOut, Upload, Camera, UserPlus, Users, UserMinus } from 'lucide-react';
+import { AlertCircle, User, Save, Download, LogOut, Upload, Camera, UserPlus, Users, UserMinus, Eye, EyeOff, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Navigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase, checkIfFollowing, getFollowersCount, getFollowingCount, addFollow, removeFollow } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
+import { Switch } from '@/components/ui/switch';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -37,6 +39,8 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [loadingFollow, setLoadingFollow] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProfilePublic, setIsProfilePublic] = useState(true);
+  const [profilePrivacyLoading, setProfilePrivacyLoading] = useState(false);
 
   // Determine if viewing own profile or someone else's
   useEffect(() => {
@@ -77,9 +81,15 @@ export default function ProfilePage() {
           setBio(data.bio || '');
           setEmail(data.contact_email || '');
           setPhone(data.contact_phone || '');
+          setIsProfilePublic(data.is_public !== false); // Default to true if not set
         } else {
           setUsername(data.username || 'Anonymous User');
           setBio(data.bio || 'No bio available');
+          // Check if profile is public
+          if (data.is_public === false && !isAuthenticated) {
+            // If profile is private and viewer is not authenticated, show limited info
+            setBio('This profile is private');
+          }
         }
         
         setAvatarUrl(data.avatar_url || null);
@@ -87,8 +97,8 @@ export default function ProfilePage() {
         // Check if the current user is following this profile
         if (user && !isOwnProfile) {
           try {
-            const isFollowingUser = await checkIfFollowing(user.id, targetUserId);
-            setIsFollowing(isFollowingUser);
+            const isFollowingResult = await checkIfFollowing(user.id, targetUserId);
+            setIsFollowing(isFollowingResult);
           } catch (error) {
             console.error('Error checking follow status:', error);
             setIsFollowing(false);
@@ -97,8 +107,8 @@ export default function ProfilePage() {
         
         // Get followers count
         try {
-          const count = await getFollowersCount(targetUserId);
-          setFollowersCount(count);
+          const followersCountResult = await getFollowersCount(targetUserId);
+          setFollowersCount(followersCountResult);
         } catch (error) {
           console.error('Error getting followers count:', error);
           setFollowersCount(0);
@@ -106,8 +116,8 @@ export default function ProfilePage() {
         
         // Get following count
         try {
-          const count = await getFollowingCount(targetUserId);
-          setFollowingCount(count);
+          const followingCountResult = await getFollowingCount(targetUserId);
+          setFollowingCount(followingCountResult);
         } catch (error) {
           console.error('Error getting following count:', error);
           setFollowingCount(0);
@@ -119,7 +129,7 @@ export default function ProfilePage() {
     };
 
     fetchProfileData();
-  }, [userId, user, isOwnProfile]);
+  }, [userId, user, isOwnProfile, isAuthenticated]);
 
   useEffect(() => {
     const fetchSavedConfessions = async () => {
@@ -182,6 +192,35 @@ export default function ProfilePage() {
       });
     } finally {
       setLoadingFollow(false);
+    }
+  };
+
+  const handleToggleProfilePrivacy = async () => {
+    if (!isOwnProfile || !user) return;
+    
+    setProfilePrivacyLoading(true);
+    try {
+      const newPrivacyValue = !isProfilePublic;
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_public: newPrivacyValue })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      setIsProfilePublic(newPrivacyValue);
+      toast({
+        description: newPrivacyValue ? "Your profile is now public" : "Your profile is now private"
+      });
+    } catch (error) {
+      console.error('Error updating profile privacy:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update profile privacy settings"
+      });
+    } finally {
+      setProfilePrivacyLoading(false);
     }
   };
 
@@ -297,12 +336,12 @@ export default function ProfilePage() {
   return (
     <Layout>
       <div className="space-y-6 container py-4 sm:py-6">
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-0">
+        <Card className="overflow-hidden shadow-md">
+          <CardHeader className="pb-4 px-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-              <div className="flex flex-col md:flex-row items-center gap-4">
+              <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
-                  <Avatar className="h-24 w-24 border-2 border-border">
+                  <Avatar className="h-24 w-24 border-2 border-border shadow-sm">
                     <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
                     <AvatarFallback className="text-2xl">
                       {username ? username.charAt(0).toUpperCase() : 'U'}
@@ -312,7 +351,7 @@ export default function ProfilePage() {
                   {isOwnProfile && (
                     <label 
                       htmlFor="avatar-upload" 
-                      className="absolute bottom-1 right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/90 transition-colors"
+                      className="absolute bottom-1 right-1 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors shadow-sm"
                     >
                       <Camera className="h-4 w-4" />
                       <input 
@@ -328,17 +367,17 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="text-center md:text-left">
-                  <h2 className="text-xl font-bold">{username || 'Anonymous User'}</h2>
-                  {!isOwnProfile && <p className="text-sm text-muted-foreground mt-1">{bio}</p>}
+                  <h2 className="text-xl font-bold mb-1">{username || 'Anonymous User'}</h2>
+                  {!isOwnProfile && <p className="text-sm text-muted-foreground mt-1 mb-3 max-w-md">{bio}</p>}
                   
-                  <div className="flex items-center justify-center md:justify-start gap-4 mt-3">
-                    <div className="text-center">
-                      <p className="font-medium">{followersCount}</p>
+                  <div className="flex items-center justify-center md:justify-start gap-6 mt-3">
+                    <div className="text-center bg-muted/30 px-4 py-2 rounded-lg">
+                      <p className="font-medium text-lg">{followersCount}</p>
                       <p className="text-xs text-muted-foreground">Followers</p>
                     </div>
                     
-                    <div className="text-center">
-                      <p className="font-medium">{followingCount}</p>
+                    <div className="text-center bg-muted/30 px-4 py-2 rounded-lg">
+                      <p className="font-medium text-lg">{followingCount}</p>
                       <p className="text-xs text-muted-foreground">Following</p>
                     </div>
                   </div>
@@ -348,7 +387,7 @@ export default function ProfilePage() {
               {!isOwnProfile && isAuthenticated && (
                 <Button 
                   variant={isFollowing ? "outline" : "default"}
-                  className="gap-2" 
+                  className="gap-2 shadow-sm" 
                   onClick={handleToggleFollow}
                   disabled={loadingFollow}
                 >
@@ -369,7 +408,7 @@ export default function ProfilePage() {
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 my-4 px-6">
+            <TabsList className="grid w-full grid-cols-3 mb-4 px-6 bg-muted/20">
               {isOwnProfile ? (
                 <>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -388,67 +427,109 @@ export default function ProfilePage() {
             {isOwnProfile ? (
               <>
                 <TabsContent value="settings">
-                  <CardContent className="space-y-4">
-                    {uploadingImage && <p className="text-xs text-muted-foreground">Uploading profile picture...</p>}
+                  <CardContent className="space-y-6 px-6 py-4">
+                    {uploadingImage && (
+                      <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded-md">
+                        Uploading profile picture...
+                      </div>
+                    )}
                     
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
-                        <Input 
-                          id="username" 
-                          value={username} 
-                          onChange={(e) => setUsername(e.target.value)}
-                          placeholder="Set your username"
-                        />
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20">
+                      <div>
+                        <h3 className="text-sm font-medium flex items-center gap-2">
+                          {isProfilePublic ? (
+                            <>
+                              <Eye className="h-4 w-4 text-green-500" />
+                              Public Profile
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="h-4 w-4 text-amber-500" />
+                              Private Profile
+                            </>
+                          )}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isProfilePublic 
+                            ? "Anyone can view your profile and posts" 
+                            : "Only followers can see your profile details"
+                          }
+                        </p>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Contact Email (optional)</Label>
-                        <Input 
-                          id="email" 
-                          type="email"
-                          value={email} 
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="Your contact email"
-                        />
-                      </div>
+                      <Switch 
+                        checked={isProfilePublic} 
+                        onCheckedChange={handleToggleProfilePrivacy}
+                        disabled={profilePrivacyLoading}
+                      />
                     </div>
+                    
+                    <div className="bg-card p-4 rounded-lg border shadow-sm">
+                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-primary" />
+                        Profile Settings
+                      </h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="username">Username</Label>
+                          <Input 
+                            id="username" 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Set your username"
+                            className="shadow-sm"
+                          />
+                        </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number (optional)</Label>
-                        <Input 
-                          id="phone" 
-                          value={phone} 
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="Your phone number"
-                        />
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Contact Email (optional)</Label>
+                          <Input 
+                            id="email" 
+                            type="email"
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Your contact email"
+                            className="shadow-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6 mt-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Phone Number (optional)</Label>
+                          <Input 
+                            id="phone" 
+                            value={phone} 
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="Your phone number"
+                            className="shadow-sm"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="bio">Bio</Label>
+                          <Textarea 
+                            id="bio" 
+                            value={bio} 
+                            onChange={(e) => setBio(e.target.value)}
+                            placeholder="Tell us about yourself"
+                            className="min-h-[80px] shadow-sm"
+                          />
+                        </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea 
-                          id="bio" 
-                          value={bio} 
-                          onChange={(e) => setBio(e.target.value)}
-                          placeholder="Tell us about yourself"
-                          className="min-h-[80px]"
-                        />
+                      <div className="flex justify-end mt-6">
+                        <Button 
+                          onClick={handleSaveProfile} 
+                          disabled={isSaving}
+                          className="w-full md:w-auto shadow-sm"
+                        >
+                          {isSaving ? "Saving..." : "Save Profile"}
+                        </Button>
                       </div>
-                    </div>
-                    
-                    <div className="flex justify-end mt-6">
-                      <Button 
-                        onClick={handleSaveProfile} 
-                        disabled={isSaving}
-                        className="w-full md:w-auto"
-                      >
-                        {isSaving ? "Saving..." : "Save Profile"}
-                      </Button>
                     </div>
                     
                     <div className="pt-4">
-                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-md flex gap-2 text-amber-800 dark:text-amber-300">
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 rounded-md flex gap-3 text-amber-800 dark:text-amber-300">
                         <AlertCircle className="h-5 w-5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium">Anonymous Usage</p>
@@ -459,8 +540,8 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="border-t pt-6">
-                    <Button variant="destructive" onClick={logout} className="gap-2">
+                  <CardFooter className="border-t pt-6 px-6">
+                    <Button variant="destructive" onClick={logout} className="gap-2 shadow-sm">
                       <LogOut className="h-4 w-4" />
                       Logout
                     </Button>
@@ -468,7 +549,7 @@ export default function ProfilePage() {
                 </TabsContent>
                 
                 <TabsContent value="saved">
-                  <CardContent>
+                  <CardContent className="px-6 py-4">
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Save className="h-5 w-5 text-primary" />
@@ -488,7 +569,7 @@ export default function ProfilePage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-8 border border-dashed rounded-md">
+                        <div className="text-center py-8 border border-dashed rounded-md bg-muted/10">
                           <p className="text-muted-foreground">You haven't saved any confessions yet.</p>
                           <p className="text-sm mt-2">
                             When you find interesting confessions, click the save button to add them here.
@@ -500,7 +581,7 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  <CardContent>
+                  <CardContent className="px-6 py-4">
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <User className="h-5 w-5 text-primary" />
@@ -515,44 +596,72 @@ export default function ProfilePage() {
             ) : (
               <>
                 <TabsContent value="posts">
-                  <CardContent>
+                  <CardContent className="px-6 py-4">
                     <div className="space-y-4">
-                      <UserConfessions userId={userId} />
+                      {profileUser?.is_public === false && !isAuthenticated ? (
+                        <div className="text-center py-8 border border-dashed rounded-md">
+                          <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground">This is a private profile.</p>
+                          <p className="text-sm mt-2">
+                            Sign in to follow this user and see their content.
+                          </p>
+                        </div>
+                      ) : (
+                        <UserConfessions userId={userId} />
+                      )}
                     </div>
                   </CardContent>
                 </TabsContent>
                 
                 <TabsContent value="followers">
-                  <CardContent>
+                  <CardContent className="px-6 py-4">
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-4">
                         <Users className="h-5 w-5 text-primary" />
                         <h3 className="font-medium">Followers</h3>
                       </div>
                       
                       <div className="space-y-4">
-                        {/* We'll keep this as a placeholder for now */}
-                        <p className="text-center py-12 text-muted-foreground">
-                          User followers will appear here
-                        </p>
+                        {profileUser?.is_public === false && !isAuthenticated ? (
+                          <div className="text-center py-8 border border-dashed rounded-md">
+                            <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-muted-foreground">This information is private.</p>
+                            <p className="text-sm mt-2">
+                              Sign in to follow this user and see their followers.
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-center py-12 text-muted-foreground">
+                            User followers will appear here
+                          </p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
                 </TabsContent>
                 
                 <TabsContent value="following">
-                  <CardContent>
+                  <CardContent className="px-6 py-4">
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-4">
                         <UserPlus className="h-5 w-5 text-primary" />
                         <h3 className="font-medium">Following</h3>
                       </div>
                       
                       <div className="space-y-4">
-                        {/* We'll keep this as a placeholder for now */}
-                        <p className="text-center py-12 text-muted-foreground">
-                          Users this person follows will appear here
-                        </p>
+                        {profileUser?.is_public === false && !isAuthenticated ? (
+                          <div className="text-center py-8 border border-dashed rounded-md">
+                            <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-muted-foreground">This information is private.</p>
+                            <p className="text-sm mt-2">
+                              Sign in to follow this user and see who they follow.
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-center py-12 text-muted-foreground">
+                            Users this person follows will appear here
+                          </p>
+                        )}
                       </div>
                     </div>
                   </CardContent>

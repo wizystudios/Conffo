@@ -23,7 +23,7 @@ export function Footer() {
                 <MessageSquare className="h-3 w-3 sm:h-5 sm:w-5 text-primary" />
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm sm:text-base font-medium">ConfessZone</span>
+            <span className="text-sm sm:text-base font-medium">Coffo</span>
             <span className="text-xs text-muted-foreground">powered by</span>
             <div className="flex items-center">
               <Avatar className="h-6 w-6 sm:h-8 sm:w-8 rounded-full overflow-hidden">
@@ -39,7 +39,7 @@ export function Footer() {
           </div>
           
           <span className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ConfessZone
+            © {new Date().getFullYear()} Coffo
           </span>
         </div>
       </div>

@@ -40,7 +40,7 @@ export function NavBar() {
   };
 
   const getInitials = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : 'A';
+    return name ? name.charAt(0).toUpperCase() : 'C';
   };
 
   return (
@@ -48,10 +48,10 @@ export function NavBar() {
       <div className="container flex h-14 sm:h-16 max-w-screen-lg items-center px-2 sm:px-4">
         <Link to="/" className="flex items-center mr-2 sm:mr-4">
           <Avatar className="h-7 w-7 sm:h-8 sm:w-8 mr-1 sm:mr-2 bg-primary/10">
-            <AvatarImage src="" alt="ConfessZone" />
+            <AvatarImage src="" alt="Coffo" />
             <AvatarFallback><MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></AvatarFallback>
           </Avatar>
-          <span className="font-bold text-lg sm:text-xl hidden xs:block">ConfessZone</span>
+          <span className="font-bold text-lg sm:text-xl hidden xs:block">Coffo</span>
         </Link>
         
         <nav className="hidden md:flex items-center space-x-4 ml-4">
@@ -120,7 +120,7 @@ export function NavBar() {
                   <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 sm:h-9 sm:w-9 p-0">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${user?.id}`} />
-                      <AvatarFallback>{getInitials(username || 'A')}</AvatarFallback>
+                      <AvatarFallback>{getInitials(username || 'C')}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -128,7 +128,7 @@ export function NavBar() {
                   <div className="flex items-center px-2 py-2">
                     <Avatar className="h-8 w-8 mr-2">
                       <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${user?.id}`} />
-                      <AvatarFallback>{getInitials(username || 'A')}</AvatarFallback>
+                      <AvatarFallback>{getInitials(username || 'C')}</AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="text-sm font-medium">{username || 'Anonymous User'}</p>
