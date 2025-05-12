@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -16,7 +15,7 @@ import { AlertCircle, User, Save, Download, LogOut, Upload, Camera, UserPlus, Us
 import { toast } from '@/hooks/use-toast';
 import { Navigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, checkIfFollowing, getFollowersCount, getFollowingCount, addFollow, removeFollow } from '@/integrations/supabase/client';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -80,59 +79,31 @@ export default function ProfilePage() {
         
         // Check if the current user is following this profile
         if (user && !isOwnProfile) {
-          // Use raw SQL query with parameters since direct table access isn't typed yet
-          const { data: followData, error: followError } = await supabase
-            .rpc('check_if_following', { 
-              follower_uuid: user.id,
-              following_uuid: targetUserId 
-            })
-            .single();
-            
-          if (followError) {
-            // Fallback to direct query with workaround
-            const { data: fallbackData } = await supabase
-              .from('user_follows')
-              .select('id')
-              .eq('follower_id', user.id)
-              .eq('following_id', targetUserId)
-              .maybeSingle();
-              
-            setIsFollowing(!!fallbackData);
-          } else {
-            setIsFollowing(!!followData);
+          try {
+            const isFollowingUser = await checkIfFollowing(user.id, targetUserId);
+            setIsFollowing(isFollowingUser);
+          } catch (error) {
+            console.error('Error checking follow status:', error);
+            setIsFollowing(false);
           }
         }
         
-        // Get followers count - use RPC function
-        const { data: followersData, error: followersError } = await supabase
-          .rpc('get_followers_count', { user_uuid: targetUserId });
-          
-        if (!followersError && followersData !== null) {
-          setFollowersCount(followersData);
-        } else {
-          // Fallback
-          const { count } = await supabase
-            .from('user_follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('following_id', targetUserId);
-            
-          setFollowersCount(count || 0);
+        // Get followers count
+        try {
+          const count = await getFollowersCount(targetUserId);
+          setFollowersCount(count);
+        } catch (error) {
+          console.error('Error getting followers count:', error);
+          setFollowersCount(0);
         }
         
-        // Get following count - use RPC function
-        const { data: followingData, error: followingError } = await supabase
-          .rpc('get_following_count', { user_uuid: targetUserId });
-          
-        if (!followingError && followingData !== null) {
-          setFollowingCount(followingData);
-        } else {
-          // Fallback
-          const { count } = await supabase
-            .from('user_follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('follower_id', targetUserId);
-            
-          setFollowingCount(count || 0);
+        // Get following count
+        try {
+          const count = await getFollowingCount(targetUserId);
+          setFollowingCount(count);
+        } catch (error) {
+          console.error('Error getting following count:', error);
+          setFollowingCount(0);
         }
         
       } catch (error) {
@@ -180,42 +151,16 @@ export default function ProfilePage() {
     setLoadingFollow(true);
     try {
       if (isFollowing) {
-        // Unfollow - use RPC function
-        const { error } = await supabase
-          .rpc('unfollow_user', { 
-            follower_uuid: user.id, 
-            following_uuid: userId
-          });
-          
-        if (error) {
-          // Fallback to raw query
-          await supabase.rpc('remove_follow', {
-            p_follower_id: user.id, 
-            p_following_id: userId
-          });
-        }
-          
+        // Unfollow
+        await removeFollow(user.id, userId);
         setIsFollowing(false);
         setFollowersCount(prev => Math.max(0, prev - 1));
         toast({
           description: "You have unfollowed this user"
         });
       } else {
-        // Follow - use RPC function
-        const { error } = await supabase
-          .rpc('follow_user', {
-            follower_uuid: user.id, 
-            following_uuid: userId
-          });
-          
-        if (error) {
-          // Fallback to raw query
-          await supabase.rpc('add_follow', {
-            p_follower_id: user.id, 
-            p_following_id: userId
-          });
-        }
-          
+        // Follow
+        await addFollow(user.id, userId);
         setIsFollowing(true);
         setFollowersCount(prev => prev + 1);
         toast({

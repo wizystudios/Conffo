@@ -26,30 +26,57 @@ supabase.auth.onAuthStateChange((event, session) => {
 
 // Helper functions to work with user follows until types are updated
 export const addFollow = async (followerId: string, followingId: string) => {
-  return supabase.rpc('add_follow', { 
-    p_follower_id: followerId, 
-    p_following_id: followingId 
-  });
+  // Use direct table operations instead of RPC until types are updated
+  return supabase
+    .from('user_follows')
+    .insert({ 
+      follower_id: followerId, 
+      following_id: followingId 
+    })
+    .throwOnError();
 };
 
 export const removeFollow = async (followerId: string, followingId: string) => {
-  return supabase.rpc('remove_follow', { 
-    p_follower_id: followerId, 
-    p_following_id: followingId 
-  });
+  // Use direct table operations instead of RPC until types are updated
+  return supabase
+    .from('user_follows')
+    .delete()
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+    .throwOnError();
 };
 
 export const checkIfFollowing = async (followerId: string, followingId: string) => {
-  return supabase.rpc('check_if_following', { 
-    follower_uuid: followerId, 
-    following_uuid: followingId 
-  });
+  // Use direct query instead of RPC until types are updated
+  const { data, error } = await supabase
+    .from('user_follows')
+    .select('id')
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+    .maybeSingle();
+    
+  if (error) throw error;
+  return !!data;
 };
 
 export const getFollowersCount = async (userId: string) => {
-  return supabase.rpc('get_followers_count', { user_uuid: userId });
+  // Use direct count instead of RPC until types are updated
+  const { count, error } = await supabase
+    .from('user_follows')
+    .select('*', { count: 'exact', head: true })
+    .eq('following_id', userId);
+    
+  if (error) throw error;
+  return count || 0;
 };
 
 export const getFollowingCount = async (userId: string) => {
-  return supabase.rpc('get_following_count', { user_uuid: userId });
+  // Use direct count instead of RPC until types are updated
+  const { count, error } = await supabase
+    .from('user_follows')
+    .select('*', { count: 'exact', head: true })
+    .eq('follower_id', userId);
+    
+  if (error) throw error;
+  return count || 0;
 };

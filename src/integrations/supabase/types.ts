@@ -363,8 +363,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_follow: {
+        Args: { p_follower_id: string; p_following_id: string }
+        Returns: undefined
+      }
+      check_if_following: {
+        Args: { follower_uuid: string; following_uuid: string }
+        Returns: boolean
+      }
+      follow_user: {
+        Args: { follower_uuid: string; following_uuid: string }
+        Returns: undefined
+      }
       get_comment_count: {
         Args: { confession_uuid: string }
+        Returns: number
+      }
+      get_followers_count: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
+      get_following_count: {
+        Args: { user_uuid: string }
         Returns: number
       }
       get_reaction_counts: {
@@ -381,6 +401,14 @@ export type Database = {
       get_user_reactions: {
         Args: { confession_uuid: string; user_uuid: string }
         Returns: string[]
+      }
+      remove_follow: {
+        Args: { p_follower_id: string; p_following_id: string }
+        Returns: undefined
+      }
+      unfollow_user: {
+        Args: { follower_uuid: string; following_uuid: string }
+        Returns: undefined
       }
     }
     Enums: {
