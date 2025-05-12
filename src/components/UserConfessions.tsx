@@ -12,10 +12,11 @@ import { Card } from '@/components/ui/card';
 import { ConfessionEditDialog } from './ConfessionEditDialog';
 
 interface UserConfessionsProps {
+  userId?: string; // Optional, if not provided, use current user
   onUpdate?: () => void;
 }
 
-export function UserConfessions({ onUpdate }: UserConfessionsProps) {
+export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
   const { user, isAdmin } = useAuth();
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,13 +24,16 @@ export function UserConfessions({ onUpdate }: UserConfessionsProps) {
   const [selectedConfession, setSelectedConfession] = useState<Confession | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  const viewingUserId = userId || user?.id;
+  const isOwnProfile = userId ? userId === user?.id : true;
+
   useEffect(() => {
     const fetchConfessions = async () => {
-      if (!user?.id) return;
+      if (!viewingUserId) return;
       
       setIsLoading(true);
       try {
-        const userConfessions = await getUserConfessions(user.id);
+        const userConfessions = await getUserConfessions(viewingUserId);
         setConfessions(userConfessions);
       } catch (error) {
         console.error('Error fetching user confessions:', error);
@@ -39,7 +43,7 @@ export function UserConfessions({ onUpdate }: UserConfessionsProps) {
     };
     
     fetchConfessions();
-  }, [user?.id]);
+  }, [viewingUserId]);
 
   const handleDelete = async (confessionId: string) => {
     if (!user?.id || isDeleting) return;
@@ -89,15 +93,17 @@ export function UserConfessions({ onUpdate }: UserConfessionsProps) {
   };
 
   if (isLoading) {
-    return <p className="text-center py-8 text-muted-foreground">Loading your confessions...</p>;
+    return <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>;
   }
 
   if (confessions.length === 0) {
     return (
       <div className="text-center py-8 border border-dashed rounded-md">
-        <p className="text-muted-foreground">You haven't created any confessions yet.</p>
+        <p className="text-muted-foreground">No confessions found.</p>
         <p className="text-sm mt-2">
-          Share your thoughts anonymously to see them listed here.
+          {isOwnProfile 
+            ? "Share your thoughts anonymously to see them listed here." 
+            : "This user hasn't shared any confessions yet."}
         </p>
       </div>
     );
@@ -111,49 +117,51 @@ export function UserConfessions({ onUpdate }: UserConfessionsProps) {
             confession={confession} 
             onUpdate={onUpdate}
           />
-          <div className="absolute top-3 right-3 flex gap-1">
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => handleEdit(confession)}
-            >
-              <Edit className="h-3.5 w-3.5" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  size="icon"
-                  className="h-7 w-7"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Confession</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this confession?
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => handleDelete(confession.id)}
-                    disabled={isDeleting}
+          {isOwnProfile && (
+            <div className="absolute top-3 right-3 flex gap-1">
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => handleEdit(confession)}
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    size="icon"
+                    className="h-7 w-7"
                   >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Confession</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this confession?
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDelete(confession.id)}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </div>
       ))}
       
-      {selectedConfession && (
+      {selectedConfession && isOwnProfile && (
         <ConfessionEditDialog 
           confession={selectedConfession}
           isOpen={isEditDialogOpen}

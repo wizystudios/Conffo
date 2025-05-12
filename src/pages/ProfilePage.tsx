@@ -12,13 +12,14 @@ import { ConfessionCard } from '@/components/ConfessionCard';
 import { UserConfessions } from '@/components/UserConfessions';
 import { getConfessionById } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
-import { AlertCircle, User, Save, Download, LogOut, Upload, Camera } from 'lucide-react';
+import { AlertCircle, User, Save, Download, LogOut, Upload, Camera, UserPlus, Users, UserMinus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProfilePage() {
+  const { userId } = useParams<{ userId: string }>();
   const { user, isAuthenticated, isLoading, updateUsername, updateUserProfile, logout, getSavedConfessions } = useAuth();
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -29,20 +30,93 @@ export default function ProfilePage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('settings');
+  const [profileUser, setProfileUser] = useState<any>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [loadingFollow, setLoadingFollow] = useState(false);
 
+  // Determine if viewing own profile or someone else's
   useEffect(() => {
-    if (user) {
-      setUsername(user.username || '');
-      setBio(user.bio || '');
-      setEmail(user.contactEmail || '');
-      setPhone(user.contactPhone || '');
-      setAvatarUrl(user.avatarUrl || null);
+    if (userId && user) {
+      setIsOwnProfile(userId === user.id);
+    } else {
+      setIsOwnProfile(true);
     }
-  }, [user]);
+  }, [userId, user]);
+
+  // Load profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      const targetUserId = userId || user?.id;
+      if (!targetUserId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', targetUserId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+
+        setProfileUser(data);
+        
+        if (isOwnProfile) {
+          setUsername(data.username || '');
+          setBio(data.bio || '');
+          setEmail(data.contact_email || '');
+          setPhone(data.contact_phone || '');
+        } else {
+          setUsername(data.username || 'Anonymous User');
+          setBio(data.bio || 'No bio available');
+        }
+        
+        setAvatarUrl(data.avatar_url || null);
+        
+        // Check if the current user is following this profile
+        if (user && !isOwnProfile) {
+          const { data: followData } = await supabase
+            .from('user_follows')
+            .select('*')
+            .eq('follower_id', user.id)
+            .eq('following_id', targetUserId)
+            .maybeSingle();
+            
+          setIsFollowing(!!followData);
+        }
+        
+        // Get followers count
+        const { count: followers } = await supabase
+          .from('user_follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', targetUserId);
+          
+        setFollowersCount(followers || 0);
+        
+        // Get following count
+        const { count: following } = await supabase
+          .from('user_follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('follower_id', targetUserId);
+          
+        setFollowingCount(following || 0);
+        
+      } catch (error) {
+        console.error('Error in fetchProfileData:', error);
+      }
+    };
+
+    fetchProfileData();
+  }, [userId, user, isOwnProfile]);
 
   useEffect(() => {
     const fetchSavedConfessions = async () => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated || !isOwnProfile) return;
       
       setLoadingSaved(true);
       try {
@@ -69,7 +143,45 @@ export default function ProfilePage() {
     };
     
     fetchSavedConfessions();
-  }, [isAuthenticated, user?.id, getSavedConfessions]);
+  }, [isAuthenticated, user?.id, getSavedConfessions, isOwnProfile]);
+
+  const handleToggleFollow = async () => {
+    if (!user || !userId || isOwnProfile || loadingFollow) return;
+    
+    setLoadingFollow(true);
+    try {
+      if (isFollowing) {
+        // Unfollow
+        await supabase
+          .from('user_follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', userId);
+          
+        setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+      } else {
+        // Follow
+        await supabase
+          .from('user_follows')
+          .insert({
+            follower_id: user.id,
+            following_id: userId
+          });
+          
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      toast({
+        variant: "destructive",
+        description: isFollowing ? "Failed to unfollow user" : "Failed to follow user"
+      });
+    } finally {
+      setLoadingFollow(false);
+    }
+  };
 
   const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -83,6 +195,17 @@ export default function ProfilePage() {
       const filePath = `avatars/${fileName}`;
       
       setUploadingImage(true);
+      
+      // Create avatars bucket if it doesn't exist
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
+      
+      if (!avatarBucketExists) {
+        await supabase.storage.createBucket('avatars', {
+          public: true,
+          fileSizeLimit: 1024 * 1024 * 2 // 2MB
+        });
+      }
       
       // Upload the file
       const { error: uploadError } = await supabase.storage
@@ -150,39 +273,6 @@ export default function ProfilePage() {
       });
     }
   };
-  
-  const downloadConfession = (confession: Confession) => {
-    // Create text content
-    const text = `
-      Confession from ${new Date(confession.timestamp).toLocaleString()}
-      Room: ${confession.room}
-      
-      ${confession.content}
-      
-      Reactions:
-      👍 ${confession.reactions.like} | 😂 ${confession.reactions.laugh} | 😲 ${confession.reactions.shock} | ❤️ ${confession.reactions.heart}
-      
-      Comments: ${confession.commentCount}
-      
-      Downloaded from ConfessZone
-    `.trim();
-    
-    // Create blob and download link
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `confession-${confession.id.substring(0, 8)}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Confession Downloaded",
-      description: "The confession has been saved to your device",
-    });
-  };
 
   if (isLoading) {
     return (
@@ -194,7 +284,7 @@ export default function ProfilePage() {
     );
   }
   
-  if (!isAuthenticated) {
+  if (!isAuthenticated && isOwnProfile) {
     return <Navigate to="/auth" />;
   }
 
@@ -203,32 +293,17 @@ export default function ProfilePage() {
       <div className="space-y-6 container py-4 sm:py-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
-              <User className="h-5 w-5 md:h-6 md:w-6" />
-              Profile Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your profile and content
-            </CardDescription>
-          </CardHeader>
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-              <TabsTrigger value="saved">Saved</TabsTrigger>
-              <TabsTrigger value="posts">My Posts</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="settings">
-              <CardContent className="space-y-4">
-                <div className="flex flex-col items-center mb-6">
-                  <div className="relative mb-4">
-                    <Avatar className="h-24 w-24 border-2 border-border">
-                      <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-                      <AvatarFallback className="text-2xl">
-                        {username ? username.charAt(0).toUpperCase() : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+              <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="relative">
+                  <Avatar className="h-24 w-24 border-2 border-border">
+                    <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
+                    <AvatarFallback className="text-2xl">
+                      {username ? username.charAt(0).toUpperCase() : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {isOwnProfile && (
                     <label 
                       htmlFor="avatar-upload" 
                       className="absolute bottom-1 right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/90 transition-colors"
@@ -243,120 +318,225 @@ export default function ProfilePage() {
                         disabled={uploadingImage}
                       />
                     </label>
-                  </div>
-                  {uploadingImage && <p className="text-xs text-muted-foreground">Uploading...</p>}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input 
-                    id="username" 
-                    value={username} 
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Set your username"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea 
-                    id="bio" 
-                    value={bio} 
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell us about yourself"
-                    className="min-h-[80px]"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Contact Email (optional)</Label>
-                  <Input 
-                    id="email" 
-                    type="email"
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your contact email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number (optional)</Label>
-                  <Input 
-                    id="phone" 
-                    value={phone} 
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Your phone number"
-                  />
-                </div>
-                
-                <div className="pt-4 flex justify-end">
-                  <Button onClick={handleSaveProfile}>Save Profile</Button>
-                </div>
-                
-                <div className="pt-4">
-                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-md flex gap-2 text-amber-800 dark:text-amber-300">
-                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium">Anonymous Usage</p>
-                      <p className="text-xs mt-1">
-                        Your confessions are posted anonymously. Your profile information is only visible to moderators.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t pt-6">
-                <Button variant="destructive" onClick={logout} className="gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
-              </CardFooter>
-            </TabsContent>
-            
-            <TabsContent value="saved">
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Save className="h-5 w-5 text-primary" />
-                    <h3 className="font-medium">Your Saved Confessions</h3>
-                  </div>
-                  
-                  {loadingSaved ? (
-                    <p className="text-center py-8 text-muted-foreground">Loading saved confessions...</p>
-                  ) : savedConfessions.length > 0 ? (
-                    <div className="space-y-4">
-                      {savedConfessions.map(confession => (
-                        <ConfessionCard 
-                          key={confession.id} 
-                          confession={confession}
-                          onUpdate={() => setActiveTab('saved')}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 border border-dashed rounded-md">
-                      <p className="text-muted-foreground">You haven't saved any confessions yet.</p>
-                      <p className="text-sm mt-2">
-                        When you find interesting confessions, click the save button to add them here.
-                      </p>
-                    </div>
                   )}
                 </div>
-              </CardContent>
-            </TabsContent>
-
-            <TabsContent value="posts">
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
-                    <h3 className="font-medium">Your Confessions</h3>
-                  </div>
+                
+                <div className="text-center md:text-left">
+                  <h2 className="text-xl font-bold">{username || 'Anonymous User'}</h2>
+                  {!isOwnProfile && <p className="text-sm text-muted-foreground mt-1">{bio}</p>}
                   
-                  <UserConfessions onUpdate={() => setActiveTab('posts')} />
+                  <div className="flex items-center justify-center md:justify-start gap-4 mt-3">
+                    <div className="text-center">
+                      <p className="font-medium">{followersCount}</p>
+                      <p className="text-xs text-muted-foreground">Followers</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="font-medium">{followingCount}</p>
+                      <p className="text-xs text-muted-foreground">Following</p>
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </TabsContent>
+              </div>
+              
+              {!isOwnProfile && isAuthenticated && (
+                <Button 
+                  variant={isFollowing ? "outline" : "default"}
+                  className="gap-2" 
+                  onClick={handleToggleFollow}
+                  disabled={loadingFollow}
+                >
+                  {isFollowing ? (
+                    <>
+                      <UserMinus className="h-4 w-4" />
+                      Unfollow
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4" />
+                      Follow
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              {isOwnProfile ? (
+                <>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                  <TabsTrigger value="saved">Saved</TabsTrigger>
+                  <TabsTrigger value="posts">My Posts</TabsTrigger>
+                </>
+              ) : (
+                <>
+                  <TabsTrigger value="posts">Posts</TabsTrigger>
+                  <TabsTrigger value="followers">Followers</TabsTrigger>
+                  <TabsTrigger value="following">Following</TabsTrigger>
+                </>
+              )}
+            </TabsList>
+            
+            {isOwnProfile ? (
+              <>
+                <TabsContent value="settings">
+                  <CardContent className="space-y-4">
+                    {uploadingImage && <p className="text-xs text-muted-foreground">Uploading profile picture...</p>}
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <Input 
+                        id="username" 
+                        value={username} 
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Set your username"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Bio</Label>
+                      <Textarea 
+                        id="bio" 
+                        value={bio} 
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Tell us about yourself"
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Contact Email (optional)</Label>
+                      <Input 
+                        id="email" 
+                        type="email"
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Your contact email"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number (optional)</Label>
+                      <Input 
+                        id="phone" 
+                        value={phone} 
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Your phone number"
+                      />
+                    </div>
+                    
+                    <div className="pt-4 flex justify-end">
+                      <Button onClick={handleSaveProfile}>Save Profile</Button>
+                    </div>
+                    
+                    <div className="pt-4">
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 rounded-md flex gap-2 text-amber-800 dark:text-amber-300">
+                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium">Anonymous Usage</p>
+                          <p className="text-xs mt-1">
+                            Your confessions are posted anonymously. Your profile information is only visible to moderators.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t pt-6">
+                    <Button variant="destructive" onClick={logout} className="gap-2">
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </Button>
+                  </CardFooter>
+                </TabsContent>
+                
+                <TabsContent value="saved">
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Save className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Your Saved Confessions</h3>
+                      </div>
+                      
+                      {loadingSaved ? (
+                        <p className="text-center py-8 text-muted-foreground">Loading saved confessions...</p>
+                      ) : savedConfessions.length > 0 ? (
+                        <div className="space-y-4">
+                          {savedConfessions.map(confession => (
+                            <ConfessionCard 
+                              key={confession.id} 
+                              confession={confession}
+                              onUpdate={() => setActiveTab('saved')}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 border border-dashed rounded-md">
+                          <p className="text-muted-foreground">You haven't saved any confessions yet.</p>
+                          <p className="text-sm mt-2">
+                            When you find interesting confessions, click the save button to add them here.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </TabsContent>
+
+                <TabsContent value="posts">
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Your Confessions</h3>
+                      </div>
+                      
+                      <UserConfessions onUpdate={() => setActiveTab('posts')} />
+                    </div>
+                  </CardContent>
+                </TabsContent>
+              </>
+            ) : (
+              <>
+                <TabsContent value="posts">
+                  <CardContent>
+                    <div className="space-y-4">
+                      <UserConfessions userId={userId} />
+                    </div>
+                  </CardContent>
+                </TabsContent>
+                
+                <TabsContent value="followers">
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Followers</h3>
+                      </div>
+                      
+                      <p className="text-center py-12 text-muted-foreground">
+                        User followers will appear here
+                      </p>
+                    </div>
+                  </CardContent>
+                </TabsContent>
+                
+                <TabsContent value="following">
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <UserPlus className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Following</h3>
+                      </div>
+                      
+                      <p className="text-center py-12 text-muted-foreground">
+                        Users this person follows will appear here
+                      </p>
+                    </div>
+                  </CardContent>
+                </TabsContent>
+              </>
+            )}
           </Tabs>
         </Card>
       </div>

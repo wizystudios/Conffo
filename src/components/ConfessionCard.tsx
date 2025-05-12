@@ -57,6 +57,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   const tapTimer = useRef<NodeJS.Timeout | null>(null);
   const tapCount = useRef(0);
   const lastTap = useRef(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   
   // Check if this confession is saved by the current user
   useEffect(() => {
@@ -82,6 +83,42 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     checkIfSaved();
   }, [confession.id, user]);
   
+  // Implement Intersection Observer for video autoplay
+  useEffect(() => {
+    if (confession.mediaType === 'video' && !detailed) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              // Get the video element inside the observed container
+              const video = entry.target.querySelector('video') as HTMLVideoElement;
+              if (video) {
+                videoRef.current = video;
+                video.play().catch(err => console.error('Autoplay failed:', err));
+              }
+            } else {
+              const video = entry.target.querySelector('video') as HTMLVideoElement;
+              if (video) {
+                video.pause();
+              }
+            }
+          });
+        },
+        { threshold: 0.6 } // Video plays when 60% visible
+      );
+      
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
+      
+      return () => {
+        if (cardRef.current) {
+          observer.unobserve(cardRef.current);
+        }
+      };
+    }
+  }, [confession.mediaType, detailed]);
+  
   const handleReaction = async (reaction: Reaction) => {
     if (!user || isUpdating) return;
     
@@ -102,9 +139,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
         onUpdate();
       }
       
-      toast({
-        description: "Your reaction has been recorded",
-      });
+      // No toast notification for better UX
     } catch (error) {
       console.error('Error toggling reaction:', error);
       toast({
@@ -134,9 +169,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
       
       if (result) {
         setIsSaved(!isSaved);
-        toast({
-          description: isSaved ? "Confession removed from saved" : "Confession saved successfully",
-        });
+        // No toast notification for better UX
       }
     } catch (error) {
       console.error('Error saving confession:', error);
@@ -195,11 +228,6 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Confession Downloaded",
-      description: "The confession has been saved to your device",
-    });
   };
   
   // Handle double tap to like
@@ -248,7 +276,9 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     >
       <CardContent className={detailed ? "pt-6" : "pt-4"}>
         <div className="flex justify-between items-center mb-4">
-          <UsernameDisplay userId={confession.userId} size="md" />
+          <Link to={`/user/${confession.userId}`} className="hover:opacity-80">
+            <UsernameDisplay userId={confession.userId} size="md" />
+          </Link>
           <span className="text-sm text-muted-foreground">
             {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
           </span>
@@ -265,11 +295,14 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
                 src={confession.mediaUrl} 
                 alt="Confession media" 
                 className="w-full h-auto max-h-[400px] object-contain"
+                loading="lazy"
               />
             ) : confession.mediaType === 'video' ? (
               <video 
                 src={confession.mediaUrl} 
                 controls 
+                preload="metadata"
+                playsInline
                 className="w-full h-auto max-h-[400px]"
               />
             ) : null}
@@ -327,6 +360,15 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
               >
                 <Share className="h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1"
+                onClick={downloadConfession}
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Save</span>
               </Button>
             </>
           )}

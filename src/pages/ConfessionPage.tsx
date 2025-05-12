@@ -27,14 +27,13 @@ import { Layout } from '@/components/Layout';
 import { ReportDialog } from '@/components/ReportDialog';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessionById, getCommentsByConfessionId, deleteConfession } from '@/services/supabaseDataService';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Confession, Comment } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 
 export default function ConfessionPage() {
   const { confessionId } = useParams<{ confessionId: string }>();
   const { user, isAdmin } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
@@ -63,14 +62,17 @@ export default function ConfessionPage() {
   const handleDeleteConfession = async () => {
     if (!confessionId || !user) return;
     
-    const success = await deleteConfession(confessionId, user.id, isAdmin);
-    if (success) {
+    try {
+      const success = await deleteConfession(confessionId, user.id, isAdmin);
+      if (success) {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Error deleting confession:', error);
       toast({
-        title: "Confession deleted",
-        description: "The confession has been removed.",
+        variant: "destructive",
+        description: "Failed to delete confession"
       });
-      
-      navigate('/');
     }
   };
   
@@ -174,7 +176,7 @@ export default function ConfessionPage() {
             <CommentForm confessionId={confession.id} onSuccess={handleUpdateData} />
           ) : (
             <p className="text-center py-4 text-sm text-muted-foreground">
-              <Link to="/" className="text-primary underline">Log in</Link> to leave a comment
+              <Link to="/auth" className="text-primary underline">Log in</Link> to leave a comment
             </p>
           )}
           

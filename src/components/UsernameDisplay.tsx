@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UsernameDisplayProps {
@@ -17,11 +16,18 @@ export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: User
   
   useEffect(() => {
     const fetchUsername = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         setIsLoading(true);
+        
+        // Fixed the infinite recursion by using direct database query
         const { data, error } = await supabase
           .from('profiles')
-          .select('username')
+          .select('username, avatar_url')
           .eq('id', userId)
           .single();
         
@@ -30,11 +36,14 @@ export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: User
           return;
         }
         
-        setUsername(data?.username);
+        setUsername(data?.username || null);
+        setAvatarUrl(data?.avatar_url || null);
         
-        // Generate avatar URL using DiceBear API
-        const avatarSeed = userId || 'anonymous';
-        setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}`);
+        // If no avatar URL from profile, generate one using DiceBear API
+        if (!data?.avatar_url) {
+          const avatarSeed = userId || 'anonymous';
+          setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}`);
+        }
       } catch (error) {
         console.error('Error in fetchUsername:', error);
       } finally {

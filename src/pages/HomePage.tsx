@@ -11,7 +11,7 @@ import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataS
 import { useQuery } from '@tanstack/react-query';
 
 export default function HomePage() {
-  const { user, isAuthenticated, isLoading, login } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('recent');
 
   // Debug authentication status
@@ -46,6 +46,7 @@ export default function HomePage() {
   });
 
   const handleConfessionSuccess = () => {
+    // Refetch confessions without showing toast notifications
     refetchRecent();
     if (activeTab === 'trending') {
       refetchTrending();

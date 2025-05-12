@@ -14,6 +14,12 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    debug: true // Enable debug mode to see detailed auth logs
+    detectSessionInUrl: true,
+    flowType: 'pkce'
   }
+});
+
+// Add some debugging for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event, session?.user?.id);
 });
