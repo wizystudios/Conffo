@@ -16,6 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { Navigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase, checkIfFollowing, getFollowersCount, getFollowingCount, addFollow, removeFollow } from '@/integrations/supabase/client';
+import { UsernameDisplay } from '@/components/UsernameDisplay';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -28,20 +29,26 @@ export default function ProfilePage() {
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('settings');
+  const [activeTab, setActiveTab] = useState('posts');
   const [profileUser, setProfileUser] = useState<any>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [loadingFollow, setLoadingFollow] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Determine if viewing own profile or someone else's
   useEffect(() => {
     if (userId && user) {
       setIsOwnProfile(userId === user.id);
-    } else {
+      setActiveTab(isOwnProfile ? 'settings' : 'posts');
+    } else if (!userId && user) {
       setIsOwnProfile(true);
+      setActiveTab('settings');
+    } else {
+      setIsOwnProfile(false);
+      setActiveTab('posts');
     }
   }, [userId, user]);
 
@@ -250,6 +257,8 @@ export default function ProfilePage() {
         return;
       }
       
+      setIsSaving(true);
+      
       await updateUserProfile({
         username: username.trim(),
         bio,
@@ -266,6 +275,8 @@ export default function ProfilePage() {
         variant: "destructive",
         description: "Failed to update profile"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -279,15 +290,15 @@ export default function ProfilePage() {
     );
   }
   
-  if (!isAuthenticated && isOwnProfile) {
+  if (!isAuthenticated && isOwnProfile && !userId) {
     return <Navigate to="/auth" />;
   }
 
   return (
     <Layout>
       <div className="space-y-6 container py-4 sm:py-6">
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-0">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
               <div className="flex flex-col md:flex-row items-center gap-4">
                 <div className="relative">
@@ -358,7 +369,7 @@ export default function ProfilePage() {
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsList className="grid w-full grid-cols-3 my-4 px-6">
               {isOwnProfile ? (
                 <>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -380,50 +391,60 @@ export default function ProfilePage() {
                   <CardContent className="space-y-4">
                     {uploadingImage && <p className="text-xs text-muted-foreground">Uploading profile picture...</p>}
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input 
-                        id="username" 
-                        value={username} 
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Set your username"
-                      />
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input 
+                          id="username" 
+                          value={username} 
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Set your username"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Contact Email (optional)</Label>
+                        <Input 
+                          id="email" 
+                          type="email"
+                          value={email} 
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Your contact email"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea 
-                        id="bio" 
-                        value={bio} 
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Tell us about yourself"
-                        className="min-h-[80px]"
-                      />
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number (optional)</Label>
+                        <Input 
+                          id="phone" 
+                          value={phone} 
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Your phone number"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">Bio</Label>
+                        <Textarea 
+                          id="bio" 
+                          value={bio} 
+                          onChange={(e) => setBio(e.target.value)}
+                          placeholder="Tell us about yourself"
+                          className="min-h-[80px]"
+                        />
+                      </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Contact Email (optional)</Label>
-                      <Input 
-                        id="email" 
-                        type="email"
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Your contact email"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number (optional)</Label>
-                      <Input 
-                        id="phone" 
-                        value={phone} 
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Your phone number"
-                      />
-                    </div>
-                    
-                    <div className="pt-4 flex justify-end">
-                      <Button onClick={handleSaveProfile}>Save Profile</Button>
+                    <div className="flex justify-end mt-6">
+                      <Button 
+                        onClick={handleSaveProfile} 
+                        disabled={isSaving}
+                        className="w-full md:w-auto"
+                      >
+                        {isSaving ? "Saving..." : "Save Profile"}
+                      </Button>
                     </div>
                     
                     <div className="pt-4">
@@ -509,9 +530,12 @@ export default function ProfilePage() {
                         <h3 className="font-medium">Followers</h3>
                       </div>
                       
-                      <p className="text-center py-12 text-muted-foreground">
-                        User followers will appear here
-                      </p>
+                      <div className="space-y-4">
+                        {/* We'll keep this as a placeholder for now */}
+                        <p className="text-center py-12 text-muted-foreground">
+                          User followers will appear here
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </TabsContent>
@@ -524,9 +548,12 @@ export default function ProfilePage() {
                         <h3 className="font-medium">Following</h3>
                       </div>
                       
-                      <p className="text-center py-12 text-muted-foreground">
-                        Users this person follows will appear here
-                      </p>
+                      <div className="space-y-4">
+                        {/* We'll keep this as a placeholder for now */}
+                        <p className="text-center py-12 text-muted-foreground">
+                          Users this person follows will appear here
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </TabsContent>

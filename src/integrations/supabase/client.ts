@@ -26,57 +26,86 @@ supabase.auth.onAuthStateChange((event, session) => {
 
 // Helper functions to work with user follows until types are updated
 export const addFollow = async (followerId: string, followingId: string) => {
-  // Use direct table operations instead of RPC until types are updated
-  return supabase
-    .from('user_follows')
-    .insert({ 
-      follower_id: followerId, 
-      following_id: followingId 
-    })
-    .throwOnError();
+  try {
+    // Use direct query instead of RPC function for now
+    const { data, error } = await supabase
+      .from('user_follows')
+      .insert({ 
+        follower_id: followerId, 
+        following_id: followingId 
+      });
+      
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error adding follow:', error);
+    throw error;
+  }
 };
 
 export const removeFollow = async (followerId: string, followingId: string) => {
-  // Use direct table operations instead of RPC until types are updated
-  return supabase
-    .from('user_follows')
-    .delete()
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
-    .throwOnError();
+  try {
+    // Use direct query instead of RPC function for now
+    const { data, error } = await supabase
+      .from('user_follows')
+      .delete()
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId);
+      
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error removing follow:', error);
+    throw error;
+  }
 };
 
 export const checkIfFollowing = async (followerId: string, followingId: string) => {
-  // Use direct query instead of RPC until types are updated
-  const { data, error } = await supabase
-    .from('user_follows')
-    .select('id')
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
-    .maybeSingle();
-    
-  if (error) throw error;
-  return !!data;
+  try {
+    // Use direct query instead of RPC function for now
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select('id')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .maybeSingle();
+      
+    if (error) throw error;
+    return !!data;
+  } catch (error) {
+    console.error('Error checking follow status:', error);
+    throw error;
+  }
 };
 
 export const getFollowersCount = async (userId: string) => {
-  // Use direct count instead of RPC until types are updated
-  const { count, error } = await supabase
-    .from('user_follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('following_id', userId);
-    
-  if (error) throw error;
-  return count || 0;
+  try {
+    // Use direct count instead of RPC function for now
+    const { count, error } = await supabase
+      .from('user_follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', userId);
+      
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting followers count:', error);
+    return 0;
+  }
 };
 
 export const getFollowingCount = async (userId: string) => {
-  // Use direct count instead of RPC until types are updated
-  const { count, error } = await supabase
-    .from('user_follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('follower_id', userId);
-    
-  if (error) throw error;
-  return count || 0;
+  try {
+    // Use direct count instead of RPC function for now
+    const { count, error } = await supabase
+      .from('user_follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', userId);
+      
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting following count:', error);
+    return 0;
+  }
 };

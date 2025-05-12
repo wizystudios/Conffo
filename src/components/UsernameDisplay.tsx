@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,9 +8,15 @@ interface UsernameDisplayProps {
   userId: string;
   showAvatar?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  linkToProfile?: boolean;
 }
 
-export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: UsernameDisplayProps) {
+export function UsernameDisplay({ 
+  userId, 
+  showAvatar = true, 
+  size = 'sm',
+  linkToProfile = true
+}: UsernameDisplayProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,8 +91,8 @@ export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: User
       </div>
     );
   }
-  
-  return (
+
+  const content = (
     <div className="flex items-center gap-2">
       {showAvatar && (
         <Avatar className={avatarSizeClass[size]}>
@@ -98,4 +105,14 @@ export function UsernameDisplay({ userId, showAvatar = true, size = 'sm' }: User
       </span>
     </div>
   );
+  
+  if (linkToProfile && userId) {
+    return (
+      <Link to={`/user/${userId}`} className="hover:opacity-80">
+        {content}
+      </Link>
+    );
+  }
+  
+  return content;
 }
