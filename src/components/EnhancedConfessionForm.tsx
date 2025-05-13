@@ -22,10 +22,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface EnhancedConfessionFormProps {
   onSuccess?: () => void;
+  onCancel?: () => void; // Added onCancel prop to interface
   initialRoom?: Room;
 }
 
-export function EnhancedConfessionForm({ onSuccess, initialRoom }: EnhancedConfessionFormProps) {
+export function EnhancedConfessionForm({ onSuccess, onCancel, initialRoom }: EnhancedConfessionFormProps) {
   const { user } = useAuth();
   const [content, setContent] = useState('');
   const [room, setRoom] = useState<Room>(initialRoom || 'random');
@@ -322,7 +323,17 @@ export function EnhancedConfessionForm({ onSuccess, initialRoom }: EnhancedConfe
         </div>
       </div>
       
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {onCancel && (
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-full sm:w-auto"
+          >
+            Cancel
+          </Button>
+        )}
         <Button 
           type="submit" 
           disabled={content.trim() === '' || isSubmitting}

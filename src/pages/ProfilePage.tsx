@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -302,7 +301,8 @@ export default function ProfilePage() {
         username: username.trim(),
         bio,
         contactEmail: email,
-        contactPhone: phone
+        contactPhone: phone,
+        isPublic: isProfilePublic
       });
       
       toast({

@@ -21,6 +21,7 @@ export interface User {
   avatarUrl?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
+  isPublic?: boolean; // Add isPublic field
 }
 
 export interface Confession {
