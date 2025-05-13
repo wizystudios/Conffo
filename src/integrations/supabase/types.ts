@@ -125,6 +125,7 @@ export type Database = {
           id: string
           is_admin: boolean
           is_moderator: boolean
+          is_public: boolean | null
           updated_at: string
           username: string | null
         }
@@ -137,6 +138,7 @@ export type Database = {
           id: string
           is_admin?: boolean
           is_moderator?: boolean
+          is_public?: boolean | null
           updated_at?: string
           username?: string | null
         }
@@ -149,6 +151,7 @@ export type Database = {
           id?: string
           is_admin?: boolean
           is_moderator?: boolean
+          is_public?: boolean | null
           updated_at?: string
           username?: string | null
         }
