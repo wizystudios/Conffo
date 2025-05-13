@@ -26,6 +26,7 @@ interface UserProfile {
   contactEmail?: string;
   contactPhone?: string;
   avatarUrl?: string;
+  isPublic?: boolean; // Added isPublic property
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -248,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           contact_email: profileData.contactEmail,
           contact_phone: profileData.contactPhone,
           avatar_url: profileData.avatarUrl,
+          is_public: profileData.isPublic, // Added is_public field
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -264,7 +266,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           bio: profileData.bio || prev.bio,
           contactEmail: profileData.contactEmail || prev.contactEmail,
           contactPhone: profileData.contactPhone || prev.contactPhone,
-          avatarUrl: profileData.avatarUrl || prev.avatarUrl
+          avatarUrl: profileData.avatarUrl || prev.avatarUrl,
+          isPublic: profileData.isPublic // Add isPublic to the user state update
         };
       });
       
@@ -282,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // First try to get profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('username, is_admin, is_moderator, bio, avatar_url, contact_email, contact_phone')
+        .select('username, is_admin, is_moderator, bio, avatar_url, contact_email, contact_phone, is_public')
         .eq('id', userId)
         .maybeSingle(); // Use maybeSingle instead of single to handle missing profiles gracefully
       
@@ -319,7 +322,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             bio: null,
             avatarUrl: null,
             contactEmail: email || null,
-            contactPhone: null
+            contactPhone: null,
+            isPublic: true // Default to public profile
           };
         } catch (createError) {
           console.error("Failed to create profile:", createError);
@@ -343,7 +347,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         bio: profileData.bio || null,
         avatarUrl: profileData.avatar_url || null,
         contactEmail: profileData.contact_email || null,
-        contactPhone: profileData.contact_phone || null
+        contactPhone: profileData.contact_phone || null,
+        isPublic: profileData.is_public !== false // Default to true if not set
       };
     } catch (error) {
       console.error('Error in fetchUserData:', error);
@@ -367,6 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .insert([{ 
           id: userId, 
           username, 
+          is_public: true, // Default to public profile
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }]);

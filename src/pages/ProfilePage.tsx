@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -80,7 +81,8 @@ export default function ProfilePage() {
           setBio(data.bio || '');
           setEmail(data.contact_email || '');
           setPhone(data.contact_phone || '');
-          setIsProfilePublic(data.is_public !== false); // Default to true if not set
+          // Check if is_public is explicitly false, otherwise default to true
+          setIsProfilePublic(data.is_public !== false);
         } else {
           setUsername(data.username || 'Anonymous User');
           setBio(data.bio || 'No bio available');
