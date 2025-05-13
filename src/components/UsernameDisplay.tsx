@@ -3,23 +3,27 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
+import { hasActiveStory } from '@/services/storyService';
 
 interface UsernameDisplayProps {
   userId: string;
   showAvatar?: boolean;
   size?: 'sm' | 'md' | 'lg';
   linkToProfile?: boolean;
+  showStoryIndicator?: boolean;  // Added new prop to control story indicator
 }
 
 export function UsernameDisplay({ 
   userId, 
   showAvatar = true, 
   size = 'sm',
-  linkToProfile = true
+  linkToProfile = true,
+  showStoryIndicator = true  // Default to showing story indicator
 }: UsernameDisplayProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasStory, setHasStory] = useState(false);  // New state for story indicator
   
   useEffect(() => {
     const fetchUsername = async () => {
@@ -51,6 +55,12 @@ export function UsernameDisplay({
           const avatarSeed = userId || 'anonymous';
           setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}`);
         }
+        
+        // Check if user has active stories
+        if (showStoryIndicator) {
+          const userHasStory = await hasActiveStory(userId);
+          setHasStory(userHasStory);
+        }
       } catch (error) {
         console.error('Error in fetchUsername:', error);
       } finally {
@@ -61,7 +71,7 @@ export function UsernameDisplay({
     if (userId) {
       fetchUsername();
     }
-  }, [userId]);
+  }, [userId, showStoryIndicator]);
 
   const getInitials = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : 'C';
@@ -92,14 +102,24 @@ export function UsernameDisplay({
     );
   }
 
+  const avatarWithStoryIndicator = (
+    <div className="relative">
+      <Avatar className={avatarSizeClass[size]}>
+        <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
+        <AvatarFallback className="bg-primary/20">{getInitials(username || 'C')}</AvatarFallback>
+      </Avatar>
+      {hasStory && showStoryIndicator && (
+        <div 
+          className="absolute inset-0 rounded-full border-2 border-red-500 transform scale-110 animate-pulse-slow"
+          aria-label="User has a story"
+        />
+      )}
+    </div>
+  );
+
   const content = (
     <div className="flex items-center gap-2">
-      {showAvatar && (
-        <Avatar className={avatarSizeClass[size]}>
-          <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-          <AvatarFallback className="bg-primary/20">{getInitials(username || 'C')}</AvatarFallback>
-        </Avatar>
-      )}
+      {showAvatar && avatarWithStoryIndicator}
       <span className={`${textSizeClass[size]} font-medium`}>
         {username || 'Anonymous User'}
       </span>

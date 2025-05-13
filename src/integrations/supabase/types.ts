@@ -313,6 +313,42 @@ export type Database = {
           },
         ]
       }
+      stories: {
+        Row: {
+          caption: string | null
+          created_at: string
+          effects: Json | null
+          expires_at: string
+          id: string
+          media_type: string
+          media_url: string
+          user_id: string
+          viewed_by: string[] | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          effects?: Json | null
+          expires_at?: string
+          id?: string
+          media_type: string
+          media_url: string
+          user_id: string
+          viewed_by?: string[] | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          effects?: Json | null
+          expires_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          user_id?: string
+          viewed_by?: string[] | null
+        }
+        Relationships: []
+      }
       user_activity_log: {
         Row: {
           activity_type: string
@@ -378,6 +414,20 @@ export type Database = {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: undefined
       }
+      get_active_stories: {
+        Args: { user_uuid: string }
+        Returns: {
+          id: string
+          user_id: string
+          media_url: string
+          media_type: string
+          caption: string
+          effects: Json
+          created_at: string
+          expires_at: string
+          is_viewed: boolean
+        }[]
+      }
       get_comment_count: {
         Args: { confession_uuid: string }
         Returns: number
@@ -404,6 +454,10 @@ export type Database = {
       get_user_reactions: {
         Args: { confession_uuid: string; user_uuid: string }
         Returns: string[]
+      }
+      mark_story_viewed: {
+        Args: { story_uuid: string; viewer_uuid: string }
+        Returns: undefined
       }
       remove_follow: {
         Args: { p_follower_id: string; p_following_id: string }

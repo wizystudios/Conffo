@@ -1,4 +1,3 @@
-
 export type Room = 
   | 'relationships'
   | 'school'
@@ -21,7 +20,8 @@ export interface User {
   avatarUrl?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
-  isPublic?: boolean; // Add isPublic field
+  isPublic?: boolean;
+  hasActiveStory?: boolean; // Added to indicate if user has an active story
 }
 
 export interface Confession {
@@ -41,6 +41,53 @@ export interface Confession {
   mediaUrl?: string | null;
   mediaType?: 'image' | 'video';
   tags?: string[];
+}
+
+// Added Story interface
+export interface Story {
+  id: string;
+  userId: string;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  caption?: string;
+  effects?: StoryEffects;
+  createdAt: number;
+  expiresAt: number;
+  isViewed?: boolean;
+}
+
+// Added StoryEffects interface
+export interface StoryEffects {
+  filters?: {
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    blur?: number;
+  };
+  text?: StoryText[];
+  stickers?: StorySticker[];
+  beautyMode?: boolean;
+}
+
+export interface StoryText {
+  id: string;
+  content: string;
+  position: { x: number; y: number };
+  style?: {
+    fontSize?: number;
+    color?: string;
+    fontFamily?: string;
+    isBold?: boolean;
+    isItalic?: boolean;
+  };
+}
+
+export interface StorySticker {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  scale?: number;
+  rotation?: number;
 }
 
 export interface Comment {

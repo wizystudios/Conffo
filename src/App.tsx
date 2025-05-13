@@ -19,6 +19,7 @@ const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const StoriesPage = lazy(() => import("./pages/StoriesPage")); // Add Stories page
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const LoadingFallback = () => (
@@ -61,6 +62,7 @@ const App = () => {
                   <Route path="/user/:userId" element={<ProfilePage />} />
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
                   <Route path="/trending" element={<TrendingPage />} />
+                  <Route path="/stories" element={<StoriesPage />} /> {/* Add Stories route */}
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />

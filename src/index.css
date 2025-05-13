@@ -140,4 +140,39 @@
   .reaction-button-inactive {
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
+  
+  /* Story ring styles */
+  .active-story-ring {
+    @apply cursor-pointer;
+  }
+  
+  .active-story-ring::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500;
+    animation: rotate 3s linear infinite;
+  }
+}
+
+/* Animation for story rings */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Add a slow pulse animation */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
 }
