@@ -62,6 +62,99 @@ export async function markAllNotificationsAsRead(userId: string) {
 }
 
 /**
+ * Deletes a notification by ID
+ * @param notificationId The ID of the notification to delete
+ */
+export async function deleteNotification(notificationId: string) {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteNotification:', error);
+    return false;
+  }
+}
+
+/**
+ * Gets sender information from notification content
+ * @param notification The notification object
+ * @returns Object with username and userId if available
+ */
+export async function getNotificationSender(notification: any) {
+  try {
+    // For reactions and comments, extract sender from the notification itself
+    if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
+      const { data, error } = await supabase
+        .from('user_activity_log')
+        .select('user_id')
+        .eq('activity_type', notification.type)
+        .eq('related_id', notification.related_id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error || !data || data.length === 0) {
+        return null;
+      }
+      
+      const senderId = data[0].user_id;
+      
+      // Get username from profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', senderId)
+        .single();
+        
+      if (profileData) {
+        return {
+          userId: senderId,
+          username: profileData.username
+        };
+      }
+    }
+    
+    // For follows, get the follower ID directly
+    if (notification.type === 'follow') {
+      const parts = notification.content.split(' ');
+      if (parts.length > 0) {
+        // Extract follower username if available in notification content
+        const username = parts[0] !== 'Someone' ? parts[0] : null;
+        
+        if (username) {
+          // Try to get user ID by username
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', username)
+            .single();
+            
+          if (userData) {
+            return {
+              userId: userData.id,
+              username
+            };
+          }
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting notification sender:', error);
+    return null;
+  }
+}
+
+/**
  * Gets all notifications for a user
  * @param userId The ID of the user
  * @param unreadOnly Whether to only fetch unread notifications

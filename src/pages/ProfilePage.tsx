@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -336,7 +337,7 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="space-y-6 container max-w-full py-4 sm:py-6">
+      <div className="space-y-6 container max-w-5xl w-full px-4 sm:px-6 py-4 sm:py-6">
         <Card className="overflow-hidden shadow-md w-full">
           <CardHeader className="pb-4 px-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">

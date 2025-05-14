@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { useTheme } from "@/context/ThemeContext";
@@ -12,6 +12,10 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+import { markAllNotificationsAsRead, getUserNotifications, deleteNotification, getNotificationSender } from "@/utils/notificationUtils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { format, formatDistanceToNow } from "date-fns";
 
 export function NavBar() {
   const [open, setOpen] = useState(false);
@@ -19,6 +23,9 @@ export function NavBar() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [showNotificationBadge, setShowNotificationBadge] = useState(false);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const notificationPopoverRef = useRef(null);
+  const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
   
   // Fetch notifications
   const { data: notifications = [], refetch: refetchNotifications } = useQuery({
@@ -26,27 +33,28 @@ export function NavBar() {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-        .order('created_at', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching notifications:', error);
-        return [];
-      }
+      const notifs = await getUserNotifications(user.id, false);
       
-      return data || [];
+      // Enhance with sender info if available
+      const enhancedNotifs = await Promise.all(notifs.map(async (notification) => {
+        const senderInfo = await getNotificationSender(notification);
+        return {
+          ...notification,
+          senderInfo
+        };
+      }));
+      
+      return enhancedNotifs;
     },
     enabled: !!user?.id,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
   
+  const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
+  
   useEffect(() => {
-    setShowNotificationBadge(notifications.length > 0);
-  }, [notifications]);
+    setShowNotificationBadge(unreadNotificationsCount > 0);
+  }, [unreadNotificationsCount]);
   
   // Set up realtime subscription for new notifications
   useEffect(() => {
@@ -86,15 +94,50 @@ export function NavBar() {
   };
   
   const handleMarkNotificationsAsRead = async () => {
+    if (!user?.id || unreadNotificationsCount === 0) return;
+    
+    await markAllNotificationsAsRead(user.id);
+    toast({
+      description: "All notifications marked as read"
+    });
+    
+    refetchNotifications();
+  };
+
+  const handleDeleteSelectedNotifications = async () => {
+    if (selectedNotifications.length === 0) return;
+    
+    for (const notificationId of selectedNotifications) {
+      await deleteNotification(notificationId);
+    }
+    
+    toast({
+      description: `Deleted ${selectedNotifications.length} notification${selectedNotifications.length > 1 ? 's' : ''}`
+    });
+    
+    setSelectedNotifications([]);
+    refetchNotifications();
+  };
+
+  const toggleNotificationSelection = (id: string) => {
+    setSelectedNotifications(prev => 
+      prev.includes(id) 
+        ? prev.filter(notifId => notifId !== id)
+        : [...prev, id]
+    );
+  };
+  
+  const handleDeleteAllNotifications = async () => {
     if (!user?.id || notifications.length === 0) return;
     
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
-      
-    setShowNotificationBadge(false);
+    for (const notification of notifications) {
+      await deleteNotification(notification.id);
+    }
+    
+    toast({
+      description: "All notifications cleared"
+    });
+    
     refetchNotifications();
   };
   
@@ -143,50 +186,120 @@ export function NavBar() {
         <div className="hidden md:flex items-center gap-2">
           {isAuthenticated && (
             <>
-              <Popover>
+              <Popover open={notificationPopoverOpen} onOpenChange={setNotificationPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="ghost" 
                     size="icon"
                     className="relative"
                   >
-                    <Bell className="h-5 w-5" />
-                    {showNotificationBadge && (
-                      <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center">
-                        {notifications.length > 9 ? '9+' : notifications.length}
-                      </Badge>
+                    {showNotificationBadge ? (
+                      <>
+                        <BellDot className="h-5 w-5" />
+                        <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary">
+                          {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                        </Badge>
+                      </>
+                    ) : (
+                      <Bell className="h-5 w-5" />
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0 max-h-[70vh] overflow-y-auto">
+                <PopoverContent ref={notificationPopoverRef} className="w-80 p-0 max-h-[70vh] overflow-y-auto">
                   <div className="p-4 border-b">
                     <div className="flex justify-between items-center">
                       <h3 className="font-medium">Notifications</h3>
-                      {notifications.length > 0 && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={handleMarkNotificationsAsRead}
-                        >
-                          Mark all as read
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {notifications.length > 0 && (
+                          <>
+                            {unreadNotificationsCount > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={handleMarkNotificationsAsRead}
+                                className="h-8 px-2 text-xs"
+                              >
+                                <Check className="h-3.5 w-3.5 mr-1" />
+                                Mark all read
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={handleDeleteAllNotifications}
+                              className="h-8 px-2 text-xs"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Clear all
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    
+                    {selectedNotifications.length > 0 && (
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">
+                          {selectedNotifications.length} selected
+                        </span>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={handleDeleteSelectedNotifications}
+                          className="h-7 text-xs"
+                        >
+                          Delete selected
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="divide-y">
                     {notifications.length > 0 ? (
                       notifications.map((notification) => (
-                        <div key={notification.id} className="p-4 hover:bg-muted/50">
-                          <p className="text-sm">{notification.content}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(notification.created_at).toLocaleString()}
-                          </p>
+                        <div 
+                          key={notification.id} 
+                          className={`p-4 hover:bg-muted/50 relative ${!notification.is_read ? 'bg-primary/5' : ''}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 pt-1">
+                              <Checkbox 
+                                checked={selectedNotifications.includes(notification.id)}
+                                onCheckedChange={() => toggleNotificationSelection(notification.id)}
+                              />
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-grow min-w-0">
+                                  {notification.senderInfo?.username && (
+                                    <div className="mb-2">
+                                      <UsernameDisplay
+                                        userId={notification.senderInfo.userId}
+                                        showAvatar={true}
+                                        size="sm"
+                                      />
+                                    </div>
+                                  )}
+                                  <p className="text-sm break-words line-clamp-3">
+                                    {notification.content.replace('Someone', notification.senderInfo?.username || 'Someone')}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-xs text-muted-foreground">
+                                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                    </p>
+                                    {!notification.is_read && (
+                                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ))
                     ) : (
                       <div className="p-4 text-center">
-                        <p className="text-sm text-muted-foreground">No new notifications</p>
+                        <p className="text-sm text-muted-foreground">No notifications</p>
                       </div>
                     )}
                   </div>
@@ -197,10 +310,11 @@ export function NavBar() {
                 onClick={handleCreateNew} 
                 variant="outline"
                 className="bg-primary/10 hover:bg-primary/20 text-primary"
-                size="icon"
+                size="sm"
                 aria-label="Create new post"
               >
-                <PlusSquare className="h-5 w-5" />
+                <PlusSquare className="h-4 w-4 mr-1.5" />
+                <span>New</span>
               </Button>
             </>
           )}
@@ -254,16 +368,6 @@ export function NavBar() {
         <div className="md:hidden flex items-center gap-2">
           {isAuthenticated && (
             <>
-              <Button 
-                onClick={handleCreateNew} 
-                variant="outline"
-                className="bg-primary/10 hover:bg-primary/20 text-primary"
-                size="icon"
-                aria-label="Create new post"
-              >
-                <PlusSquare className="h-5 w-5" />
-              </Button>
-              
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -271,11 +375,15 @@ export function NavBar() {
                     size="icon"
                     className="relative"
                   >
-                    <Bell className="h-5 w-5" />
-                    {showNotificationBadge && (
-                      <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center">
-                        {notifications.length > 9 ? '9+' : notifications.length}
-                      </Badge>
+                    {showNotificationBadge ? (
+                      <>
+                        <BellDot className="h-5 w-5" />
+                        <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary">
+                          {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                        </Badge>
+                      </>
+                    ) : (
+                      <Bell className="h-5 w-5" />
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -283,31 +391,75 @@ export function NavBar() {
                   <div className="p-4 border-b">
                     <div className="flex justify-between items-center">
                       <h3 className="font-medium">Notifications</h3>
-                      {notifications.length > 0 && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={handleMarkNotificationsAsRead}
-                        >
-                          Mark all as read
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {notifications.length > 0 && (
+                          <>
+                            {unreadNotificationsCount > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={handleMarkNotificationsAsRead}
+                                className="h-8 px-2 text-xs"
+                              >
+                                <Check className="h-3.5 w-3.5 mr-1" />
+                                Mark all read
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={handleDeleteAllNotifications}
+                              className="h-8 px-2 text-xs"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Clear all
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
                   <div className="divide-y">
                     {notifications.length > 0 ? (
                       notifications.map((notification) => (
-                        <div key={notification.id} className="p-4 hover:bg-muted/50">
-                          <p className="text-sm">{notification.content}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(notification.created_at).toLocaleString()}
-                          </p>
+                        <div 
+                          key={notification.id} 
+                          className={`p-4 hover:bg-muted/50 ${!notification.is_read ? 'bg-primary/5' : ''}`}
+                        >
+                          <div className="flex gap-3">
+                            <Checkbox
+                              checked={selectedNotifications.includes(notification.id)}
+                              onCheckedChange={() => toggleNotificationSelection(notification.id)}
+                            />
+                            <div>
+                              {notification.senderInfo?.username && (
+                                <div className="mb-2">
+                                  <UsernameDisplay
+                                    userId={notification.senderInfo.userId}
+                                    showAvatar={true}
+                                    size="sm"
+                                  />
+                                </div>
+                              )}
+                              <p className="text-sm break-words">
+                                {notification.content.replace('Someone', notification.senderInfo?.username || 'Someone')}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                </p>
+                                {!notification.is_read && (
+                                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ))
                     ) : (
                       <div className="p-4 text-center">
-                        <p className="text-sm text-muted-foreground">No new notifications</p>
+                        <p className="text-sm text-muted-foreground">No notifications</p>
                       </div>
                     )}
                   </div>
@@ -389,6 +541,20 @@ export function NavBar() {
                       <span>Stories</span>
                     </Button>
                   </Link>
+                </div>
+                
+                <div className="mt-6 pt-6 border-t">
+                  <Button 
+                    onClick={() => {
+                      handleCreateNew();
+                      setOpen(false);
+                    }} 
+                    variant="outline"
+                    className="w-full justify-center bg-primary/10 hover:bg-primary/20 text-primary"
+                  >
+                    <PlusSquare className="h-5 w-5 mr-2" />
+                    <span>Create New Post</span>
+                  </Button>
                 </div>
                 
                 <div className="mt-auto space-y-4">
