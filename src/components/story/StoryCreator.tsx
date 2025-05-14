@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -271,6 +270,7 @@ export function StoryCreator({ onSuccess, onCancel }: StoryCreatorProps) {
     setIsCreating(true);
     
     try {
+      // Updated to match the createStory function signature
       const result = await createStory(
         user.id,
         mediaFile,

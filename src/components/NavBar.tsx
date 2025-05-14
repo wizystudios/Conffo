@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,7 @@ export function NavBar() {
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
-        .eq('read', false)
+        .eq('is_read', false)
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -90,9 +89,9 @@ export function NavBar() {
     
     await supabase
       .from('notifications')
-      .update({ read: true })
+      .update({ is_read: true })
       .eq('user_id', user.id)
-      .eq('read', false);
+      .eq('is_read', false);
       
     setShowNotificationBadge(false);
     refetchNotifications();

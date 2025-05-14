@@ -13,12 +13,20 @@ const prepareEffectsForDB = (effects?: StoryEffects) => {
  */
 export async function createStory(
   userId: string,
-  mediaUrl: string,
-  mediaType: 'image' | 'video',
+  file: File,
   caption?: string,
   effects?: StoryEffects,
 ) {
   try {
+    // Upload the media file first
+    const uploadResult = await uploadStoryMedia(file, userId);
+    
+    if (!uploadResult) {
+      throw new Error('Failed to upload story media');
+    }
+    
+    const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
+    
     // Stories expire after 24 hours
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
@@ -27,7 +35,7 @@ export async function createStory(
       .from('stories')
       .insert({
         user_id: userId,
-        media_url: mediaUrl,
+        media_url: uploadResult.url,
         media_type: mediaType,
         caption,
         effects: prepareEffectsForDB(effects),
