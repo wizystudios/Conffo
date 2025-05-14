@@ -1,11 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StoryViewer } from '@/components/story/StoryViewer';
 import { useQuery } from '@tanstack/react-query';
 import { getUserStories } from '@/services/storyService';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface StoryRingProps {
   userId: string;
@@ -18,12 +19,14 @@ export function StoryRing({ userId, username, avatarUrl, size = 'md' }: StoryRin
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   
-  const { data: stories = [], isLoading } = useQuery({
+  const { data: stories = [], isLoading, refetch } = useQuery({
     queryKey: ['stories', userId, user?.id],
     queryFn: () => getUserStories(userId, user?.id),
     enabled: !!userId,
   });
   
+  // Check if there are any unwatched stories
+  const hasUnwatchedStories = stories.some(story => !story.isViewed);
   const hasStories = stories.length > 0;
   
   const getInitials = (name?: string | null) => {
@@ -50,18 +53,28 @@ export function StoryRing({ userId, username, avatarUrl, size = 'md' }: StoryRin
     }
   };
 
+  // Refetch after closing to update viewed status
+  const handleClose = () => {
+    setOpen(false);
+    refetch();
+  };
+
   return (
     <>
       <div 
-        className={`cursor-pointer ${hasStories ? 'active-story-ring' : ''}`}
+        className={`cursor-pointer relative`}
         onClick={handleClick}
       >
         <div 
-          className={`
-            rounded-full 
-            ${hasStories ? 'bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500' : ''}
-            ${ringSize[size]}
-          `}
+          className={cn(
+            `rounded-full transition-all`, 
+            hasStories && (
+              hasUnwatchedStories 
+                ? 'bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500' 
+                : 'bg-gray-400/30'
+            ),
+            ringSize[size]
+          )}
         >
           <Avatar className={sizeClass[size]}>
             <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
@@ -70,12 +83,13 @@ export function StoryRing({ userId, username, avatarUrl, size = 'md' }: StoryRin
         </div>
       </div>
       
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-none w-full h-full max-h-none">
           {stories.length > 0 && (
             <StoryViewer
               stories={stories}
-              onClose={() => setOpen(false)}
+              onClose={handleClose}
+              refetch={refetch}
             />
           )}
         </DialogContent>

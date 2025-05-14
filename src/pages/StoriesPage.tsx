@@ -1,14 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
 import { StoryCreator } from '@/components/story/StoryCreator';
 import { StoryRing } from '@/components/story/StoryRing';
 import { StoryViewer } from '@/components/story/StoryViewer';
-import { getActiveStories, hasActiveStory } from '@/services/storyService';
+import { getActiveStories } from '@/services/storyService';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Story } from '@/types';
@@ -79,15 +76,6 @@ export default function StoriesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Stories</CardTitle>
-            {isAuthenticated && (
-              <Button 
-                onClick={() => setIsCreating(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 z-10"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Story
-              </Button>
-            )}
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
@@ -156,6 +144,7 @@ export default function StoriesPage() {
           onClose={() => setViewerOpen(false)}
           onNextUser={handleNextUser}
           onPrevUser={handlePrevUser}
+          refetch={refetchStories}
         />
       )}
     </Layout>

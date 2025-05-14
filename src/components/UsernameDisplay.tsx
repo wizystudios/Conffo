@@ -4,13 +4,14 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { hasActiveStory } from '@/services/storyService';
+import { StoryRing } from '@/components/story/StoryRing';
 
 interface UsernameDisplayProps {
   userId: string;
   showAvatar?: boolean;
   size?: 'sm' | 'md' | 'lg';
   linkToProfile?: boolean;
-  showStoryIndicator?: boolean;  // Added new prop to control story indicator
+  showStoryIndicator?: boolean;
 }
 
 export function UsernameDisplay({ 
@@ -18,12 +19,12 @@ export function UsernameDisplay({
   showAvatar = true, 
   size = 'sm',
   linkToProfile = true,
-  showStoryIndicator = true  // Default to showing story indicator
+  showStoryIndicator = true
 }: UsernameDisplayProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasStory, setHasStory] = useState(false);  // New state for story indicator
+  const [hasStory, setHasStory] = useState(false);
   
   useEffect(() => {
     const fetchUsername = async () => {
@@ -35,7 +36,6 @@ export function UsernameDisplay({
       try {
         setIsLoading(true);
         
-        // Fixed the infinite recursion by using direct database query
         const { data, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -74,7 +74,7 @@ export function UsernameDisplay({
   }, [userId, showStoryIndicator]);
 
   const getInitials = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : 'C';
+    return name ? name.charAt(0).toUpperCase() : 'U';
   };
 
   const avatarSizeClass = {
@@ -102,24 +102,23 @@ export function UsernameDisplay({
     );
   }
 
-  const avatarWithStoryIndicator = (
-    <div className="relative">
-      <Avatar className={avatarSizeClass[size]}>
-        <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-        <AvatarFallback className="bg-primary/20">{getInitials(username || 'C')}</AvatarFallback>
-      </Avatar>
-      {hasStory && showStoryIndicator && (
-        <div 
-          className="absolute inset-0 rounded-full border-2 border-red-500 transform scale-110 animate-pulse-slow"
-          aria-label="User has a story"
-        />
-      )}
-    </div>
-  );
-
   const content = (
     <div className="flex items-center gap-2">
-      {showAvatar && avatarWithStoryIndicator}
+      {showAvatar && (
+        hasStory && showStoryIndicator ? (
+          <StoryRing 
+            userId={userId}
+            username={username || undefined}
+            avatarUrl={avatarUrl}
+            size={size === 'sm' ? 'sm' : size === 'md' ? 'md' : 'lg'}
+          />
+        ) : (
+          <Avatar className={avatarSizeClass[size]}>
+            <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
+            <AvatarFallback>{getInitials(username || 'U')}</AvatarFallback>
+          </Avatar>
+        )
+      )}
       <span className={`${textSizeClass[size]} font-medium`}>
         {username || 'Anonymous User'}
       </span>

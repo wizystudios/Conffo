@@ -3,10 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Eye } from 'lucide-react';
 import { Story } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { markStoryAsViewed } from '@/services/storyService';
+import { markStoryAsViewed, addStoryReaction, getStoryViewers } from '@/services/storyService';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface StoryViewerProps {
   stories: Story[];
@@ -14,6 +16,7 @@ interface StoryViewerProps {
   onClose: () => void;
   onPrevUser?: () => void;
   onNextUser?: () => void;
+  refetch?: () => void;
 }
 
 export function StoryViewer({
@@ -21,12 +24,16 @@ export function StoryViewer({
   initialStoryIndex = 0,
   onClose,
   onPrevUser,
-  onNextUser
+  onNextUser,
+  refetch
 }: StoryViewerProps) {
   const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(initialStoryIndex);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [viewerCount, setViewerCount] = useState(0);
+  const [viewers, setViewers] = useState<any[]>([]);
+  const [reactionCount, setReactionCount] = useState(0);
   const progressIntervalRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -36,7 +43,15 @@ export function StoryViewer({
     if (!currentStory || !user) return;
     
     // Mark the story as viewed
-    markStoryAsViewed(currentStory.id, user.id);
+    if (user.id) {
+      markStoryAsViewed(currentStory.id, user.id);
+    }
+    
+    // Get viewers count
+    getStoryViewers(currentStory.id).then(result => {
+      setViewerCount(result.count || 0);
+      setViewers(result.viewers || []);
+    });
     
     // Reset progress
     setProgress(0);
@@ -144,6 +159,17 @@ export function StoryViewer({
           }
         }, 100);
       }
+    }
+  };
+  
+  const handleReaction = async (reaction: string) => {
+    if (!currentStory || !user) return;
+    
+    try {
+      await addStoryReaction(currentStory.id, user.id, reaction);
+      setReactionCount(prev => prev + 1);
+    } catch (error) {
+      console.error('Error adding reaction:', error);
     }
   };
   
@@ -310,6 +336,49 @@ export function StoryViewer({
             onTouchStart={handlePause}
             onTouchEnd={handleResume}
           />
+        </div>
+        
+        {/* Reaction bar */}
+        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 z-10">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="bg-black/30 text-white rounded-full h-10 w-10 hover:bg-black/50"
+            onClick={() => handleReaction('heart')}
+          >
+            <Heart className="h-5 w-5" />
+          </Button>
+          
+          {/* View count */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className="bg-black/30 text-white rounded-full h-10 px-3 hover:bg-black/50 flex items-center gap-1"
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                <span>{viewerCount}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2 max-h-60 overflow-y-auto">
+              <h4 className="font-medium mb-2">Viewers</h4>
+              <div className="space-y-2">
+                {viewers.length > 0 ? (
+                  viewers.map(viewer => (
+                    <div key={viewer.id} className="flex items-center gap-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={viewer.avatar_url || ''} />
+                        <AvatarFallback>{viewer.username?.charAt(0) || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{viewer.username || 'Anonymous'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No viewers yet</p>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </Card>
       
