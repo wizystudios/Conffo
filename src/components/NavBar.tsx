@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Sun, Moon, Home, Hash, Trending, Settings, LogIn, Sparkles } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { useTheme } from "@/context/ThemeContext";
@@ -48,7 +47,7 @@ export function NavBar() {
           
           <Link to="/trending">
             <Button variant={isActive('/trending') ? "default" : "ghost"}>
-              <Trending className="h-5 w-5 mr-1" />
+              <TrendingUp className="h-5 w-5 mr-1" />
               <span>Trending</span>
             </Button>
           </Link>
@@ -165,7 +164,7 @@ export function NavBar() {
                       variant={isActive('/trending') ? "default" : "ghost"} 
                       className="w-full justify-start"
                     >
-                      <Trending className="h-5 w-5 mr-2" />
+                      <TrendingUp className="h-5 w-5 mr-2" />
                       <span>Trending</span>
                     </Button>
                   </Link>

@@ -134,7 +134,7 @@ export const createStory = async (
         media_url: publicUrl,
         media_type: mediaType,
         caption,
-        effects: effects || {},
+        effects: effects ? JSON.parse(JSON.stringify(effects)) : {}, // Convert to plain JSON object
         // expires_at is set by default to now() + 1 day in the table definition
       })
       .select()
