@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -337,8 +336,8 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="space-y-6 container py-4 sm:py-6">
-        <Card className="overflow-hidden shadow-md">
+      <div className="space-y-6 container max-w-full py-4 sm:py-6">
+        <Card className="overflow-hidden shadow-md w-full">
           <CardHeader className="pb-4 px-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
               <div className="flex flex-col md:flex-row items-center gap-6">
@@ -428,7 +427,7 @@ export default function ProfilePage() {
             
             {isOwnProfile ? (
               <>
-                <TabsContent value="settings">
+                <TabsContent value="settings" className="w-full">
                   <CardContent className="space-y-6 px-6 py-4">
                     {uploadingImage && (
                       <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded-md">
@@ -465,7 +464,7 @@ export default function ProfilePage() {
                       />
                     </div>
                     
-                    <div className="bg-card p-4 rounded-lg border shadow-sm">
+                    <div className="bg-card p-4 rounded-lg border shadow-sm w-full">
                       <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                         <Settings className="h-5 w-5 text-primary" />
                         Profile Settings

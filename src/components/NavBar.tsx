@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -204,18 +205,14 @@ export function NavBar() {
             </>
           )}
           
-          {isAuthenticated ? (
+          {isAuthenticated && user ? (
             <>
               <Link to="/profile">
                 <Button variant="ghost" className="gap-2">
-                  {user?.avatarUrl ? (
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={user.avatarUrl} alt={user?.username || "User"} />
-                      <AvatarFallback>{user?.username?.charAt(0) || "U"}</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Settings className="h-5 w-5" />
-                  )}
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={user.avatarUrl || ""} alt={user?.username || "User"} />
+                    <AvatarFallback>{user?.username?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+                  </Avatar>
                   <span className="hidden sm:inline">{user?.username || "Profile"}</span>
                 </Button>
               </Link>
@@ -225,6 +222,13 @@ export function NavBar() {
                 <span>Logout</span>
               </Button>
             </>
+          ) : isAuthenticated ? (
+            <Link to="/profile">
+              <Button variant="ghost" className="gap-2">
+                <Settings className="h-5 w-5" />
+                <span className="hidden sm:inline">Profile</span>
+              </Button>
+            </Link>
           ) : (
             <Link to="/auth">
               <Button variant="default">
@@ -260,21 +264,55 @@ export function NavBar() {
                 <PlusSquare className="h-5 w-5" />
               </Button>
               
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => {
-                  // Handle mobile notifications
-                }}
-              >
-                <Bell className="h-5 w-5" />
-                {showNotificationBadge && (
-                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center">
-                    {notifications.length > 9 ? '9+' : notifications.length}
-                  </Badge>
-                )}
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {showNotificationBadge && (
+                      <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center">
+                        {notifications.length > 9 ? '9+' : notifications.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[80vw] p-0 max-h-[70vh] overflow-y-auto">
+                  <div className="p-4 border-b">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium">Notifications</h3>
+                      {notifications.length > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={handleMarkNotificationsAsRead}
+                        >
+                          Mark all as read
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="divide-y">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div key={notification.id} className="p-4 hover:bg-muted/50">
+                          <p className="text-sm">{notification.content}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(notification.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center">
+                        <p className="text-sm text-muted-foreground">No new notifications</p>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </>
           )}
           

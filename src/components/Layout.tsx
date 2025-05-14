@@ -50,7 +50,7 @@ export function Layout({ children }: LayoutProps) {
     <ErrorBoundary>
       <div className="min-h-screen bg-background flex flex-col">
         <NavBar />
-        <main className="container max-w-3xl px-2 sm:px-3 md:px-4 flex-grow pt-16 sm:pt-20 pb-4">
+        <main className="container max-w-full px-2 sm:px-3 md:px-4 flex-grow pt-16 sm:pt-20 pb-4">
           {children}
         </main>
         <Footer />

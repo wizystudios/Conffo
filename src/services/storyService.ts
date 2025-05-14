@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Story, StoryEffects } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -194,27 +193,136 @@ export async function markStoryAsViewed(storyId: string, viewerId: string) {
 }
 
 /**
- * Add a reaction to a story
+ * Adds a reaction to a story
+ * @param userId The ID of the user reacting
+ * @param storyId The ID of the story being reacted to
+ * @param reactionType The type of reaction (e.g., 'like', 'heart', 'laugh', etc.)
  */
-export async function addStoryReaction(storyId: string, userId: string, reaction: string) {
+export async function addStoryReaction(
+  userId: string,
+  storyId: string,
+  reactionType: string
+) {
   try {
+    // Check if user already reacted with this type
+    const { data: existingReaction } = await supabase
+      .from('story_reactions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('story_id', storyId)
+      .eq('reaction_type', reactionType)
+      .single();
+
+    if (existingReaction) {
+      // User already reacted with this type, so remove it (toggle behavior)
+      const { error: deleteError } = await supabase
+        .from('story_reactions')
+        .delete()
+        .eq('id', existingReaction.id);
+
+      if (deleteError) throw deleteError;
+      return { added: false, removed: true };
+    }
+
+    // Add the new reaction
     const { error } = await supabase
       .from('story_reactions')
       .insert({
-        story_id: storyId,
         user_id: userId,
-        reaction_type: reaction
+        story_id: storyId,
+        reaction_type: reactionType
       });
 
-    if (error) {
-      console.error('Error adding story reaction:', error);
-      throw error;
+    if (error) throw error;
+
+    // Notify the story owner if it's not their own story
+    const { data: story } = await supabase
+      .from('stories')
+      .select('user_id')
+      .eq('id', storyId)
+      .single();
+
+    if (story && story.user_id !== userId) {
+      try {
+        // Get username if available
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', userId)
+          .single();
+
+        const username = profile?.username || 'Someone';
+
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: story.user_id,
+            type: 'story_reaction',
+            content: `${username} reacted to your story with ${reactionType}`,
+            related_id: storyId,
+            is_read: false
+          });
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+      }
     }
 
-    return true;
+    return { added: true, removed: false };
   } catch (error) {
-    console.error('Error in addStoryReaction:', error);
+    console.error('Error adding story reaction:', error);
     throw error;
+  }
+}
+
+/**
+ * Gets all reactions for a story
+ * @param storyId The ID of the story
+ */
+export async function getStoryReactions(storyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('story_reactions')
+      .select(`
+        id,
+        reaction_type,
+        user_id,
+        created_at,
+        profiles:user_id (username, avatar_url)
+      `)
+      .eq('story_id', storyId);
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error getting story reactions:', error);
+    return [];
+  }
+}
+
+/**
+ * Gets reaction counts grouped by type for a story
+ * @param storyId The ID of the story
+ */
+export async function getStoryReactionCounts(storyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('story_reactions')
+      .select('reaction_type')
+      .eq('story_id', storyId);
+
+    if (error) throw error;
+
+    // Group and count reactions by type
+    const counts = (data || []).reduce((acc: Record<string, number>, reaction) => {
+      const type = reaction.reaction_type;
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+
+    return counts;
+  } catch (error) {
+    console.error('Error getting story reaction counts:', error);
+    return {};
   }
 }
 
