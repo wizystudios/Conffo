@@ -16,6 +16,13 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<string>('recent');
   const [showConfessionForm, setShowConfessionForm] = useState(false);
 
+  // Listen for create-confession event from navbar
+  useEffect(() => {
+    const handleCreateConfession = () => setShowConfessionForm(true);
+    window.addEventListener('create-confession', handleCreateConfession);
+    return () => window.removeEventListener('create-confession', handleCreateConfession);
+  }, []);
+
   // Debug authentication status
   useEffect(() => {
     console.log("HomePage - Auth status:", {
@@ -26,7 +33,7 @@ export default function HomePage() {
     });
   }, [isAuthenticated, user, isLoading]);
 
-  // Using React Query for data fetching
+  // Using React Query for data fetching with performance optimizations
   const { 
     data: recentConfessions = [],
     isLoading: isLoadingRecent,
@@ -35,6 +42,7 @@ export default function HomePage() {
     queryKey: ['confessions', 'recent', user?.id],
     queryFn: () => getConfessions(undefined, user?.id),
     enabled: true,
+    staleTime: 60000, // 1 minute cache
   });
 
   const {
@@ -45,6 +53,7 @@ export default function HomePage() {
     queryKey: ['confessions', 'trending', user?.id],
     queryFn: () => getTrendingConfessions(5, user?.id),
     enabled: activeTab === 'trending',
+    staleTime: 300000, // 5 minutes cache for trending
   });
 
   const handleConfessionSuccess = () => {
@@ -95,7 +104,7 @@ export default function HomePage() {
           </>
         ) : (
           <Card className="p-6 text-center border-dashed animate-pulse-soft shadow-md">
-            <h2 className="text-xl font-bold mb-2">Welcome to Coffo</h2>
+            <h2 className="text-xl font-bold mb-2">Welcome to Conffo</h2>
             <p className="text-muted-foreground mb-4">
               A safe space to share your thoughts anonymously.
             </p>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,11 +19,12 @@ export default function StoriesPage() {
   const [selectedUserIndex, setSelectedUserIndex] = useState<number | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   
-  // Get all active stories
+  // Get all active stories with optimized query
   const { data: stories = [], refetch: refetchStories } = useQuery({
     queryKey: ['active-stories', user?.id],
     queryFn: () => getActiveStories(user?.id),
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
   
   // Group stories by user
@@ -39,6 +41,13 @@ export default function StoriesPage() {
     userId,
     stories: storiesByUser[userId]
   }));
+  
+  // Listen for create-story event from navbar
+  useEffect(() => {
+    const handleCreateStory = () => setIsCreating(true);
+    window.addEventListener('create-story', handleCreateStory);
+    return () => window.removeEventListener('create-story', handleCreateStory);
+  }, []);
   
   const handleCreateSuccess = () => {
     setIsCreating(false);
@@ -66,19 +75,22 @@ export default function StoriesPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 pt-14">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Stories</CardTitle>
             {isAuthenticated && (
-              <Button onClick={() => setIsCreating(true)}>
+              <Button 
+                onClick={() => setIsCreating(true)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 z-10"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Story
               </Button>
             )}
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 overflow-x-auto pb-4">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
               {/* My Story first (if authenticated) */}
               {isAuthenticated && user && (
                 <div className="flex flex-col items-center gap-2 min-w-20">
@@ -102,7 +114,7 @@ export default function StoriesPage() {
                 return (
                   <div 
                     key={userStory.userId} 
-                    className="flex flex-col items-center gap-2 min-w-20"
+                    className="flex flex-col items-center gap-2 min-w-20 cursor-pointer"
                     onClick={() => handleUserStoryClick(index)}
                   >
                     <StoryRing

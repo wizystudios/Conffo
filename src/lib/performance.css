@@ -1,0 +1,43 @@
+
+/* Custom scrollbar for better performance */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 9999px;
+}
+
+/* Memory optimizations */
+img, video {
+  content-visibility: auto;
+}
+
+/* Optimize animations */
+@keyframes optimized-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.optimized-fade-in {
+  will-change: opacity;
+  animation: optimized-fadeIn 0.3s ease-out;
+}
+
+/* Use passive listeners for scroll events */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Enable hardware acceleration for animations */
+.hw-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

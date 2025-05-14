@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { useTheme } from "@/context/ThemeContext";
@@ -18,8 +19,20 @@ export function NavBar() {
     return location.pathname === path;
   };
   
+  const handleCreateNew = () => {
+    if (location.pathname === '/stories') {
+      // Trigger story creation dialog using a custom event
+      const event = new CustomEvent('create-story');
+      window.dispatchEvent(event);
+    } else {
+      // Default to confession
+      const event = new CustomEvent('create-confession');
+      window.dispatchEvent(event);
+    }
+  };
+  
   return (
-    <div className="bg-card fixed top-0 left-0 right-0 border-b z-40">
+    <div className="bg-background/95 backdrop-blur fixed top-0 left-0 right-0 border-b z-40 shadow-sm">
       <div className="container mx-auto flex justify-between items-center px-4 py-3">
         <Link 
           to="/" 
@@ -61,6 +74,18 @@ export function NavBar() {
         </div>
         
         <div className="hidden md:flex items-center gap-2">
+          {isAuthenticated && (
+            <Button 
+              onClick={handleCreateNew} 
+              variant="outline"
+              className="bg-primary/10 hover:bg-primary/20 text-primary"
+              size="icon"
+              aria-label="Create new post"
+            >
+              <PlusSquare className="h-5 w-5" />
+            </Button>
+          )}
+          
           {isAuthenticated ? (
             <>
               <Link to="/profile">
@@ -104,7 +129,19 @@ export function NavBar() {
           </Button>
         </div>
         
-        <div className="md:hidden flex">
+        <div className="md:hidden flex items-center gap-2">
+          {isAuthenticated && (
+            <Button 
+              onClick={handleCreateNew} 
+              variant="outline"
+              className="bg-primary/10 hover:bg-primary/20 text-primary"
+              size="icon"
+              aria-label="Create new post"
+            >
+              <PlusSquare className="h-5 w-5" />
+            </Button>
+          )}
+          
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Menu">
