@@ -24,17 +24,17 @@ export function Footer() {
               </AvatarFallback>
             </Avatar>
             <span className="text-sm sm:text-base font-medium">Conffo</span>
-            <span className="text-xs text-muted-foreground">powered by</span>
+            <span className="text-xs text-muted-foreground">from</span>
             <div className="flex items-center">
               <Avatar className="h-6 w-6 sm:h-8 sm:w-8 rounded-full overflow-hidden">
                 <AvatarImage 
-                  src="/lovable-uploads/631c953f-60e9-4a18-bc15-d5f86cfce136.png" 
-                  alt="Wizy Studio" 
+                  src="/lovable-uploads/5affd7c4-65bb-4b3a-af86-0cf0b47b138f.png" 
+                  alt="KN Technology" 
                   className="rounded-full h-full w-full object-cover"
                 />
-                <AvatarFallback>WS</AvatarFallback>
+                <AvatarFallback>KN</AvatarFallback>
               </Avatar>
-              <span className="ml-1 text-sm sm:text-base font-medium">Wizy Studio</span>
+              <span className="ml-1 text-sm sm:text-base font-medium">KN Technology</span>
             </div>
           </div>
           

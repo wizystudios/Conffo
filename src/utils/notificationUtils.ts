@@ -1,5 +1,4 @@
 
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -90,7 +89,7 @@ export async function deleteNotification(notificationId: string) {
  * @param notification The notification object
  * @returns Object with username and userId if available
  */
-export async function getNotificationSender(notification: any) {
+export async function getNotificationSender(notification: { type: string; related_id?: string; content: string }) {
   try {
     // For reactions and comments, extract sender from the notification itself
     if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
@@ -185,4 +184,3 @@ export async function getUserNotifications(userId: string, unreadOnly = false) {
     return [];
   }
 }
-

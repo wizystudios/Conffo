@@ -72,14 +72,10 @@ export default function HomePage() {
     }
   };
   
-  const handleLoginClick = () => {
-    window.location.href = '/auth';
-  };
-  
   return (
     <Layout>
       <div className="space-y-6">
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <>
             {!showConfessionForm ? (
               <div className="flex justify-center">
@@ -102,14 +98,6 @@ export default function HomePage() {
               </Card>
             )}
           </>
-        ) : (
-          <Card className="p-6 text-center border-dashed animate-pulse-soft shadow-md">
-            <h2 className="text-xl font-bold mb-2">Welcome to Conffo</h2>
-            <p className="text-muted-foreground mb-4">
-              A safe space to share your thoughts anonymously.
-            </p>
-            <Button onClick={handleLoginClick} size="lg" className="font-medium">Sign In or Register</Button>
-          </Card>
         )}
         
         <Tabs defaultValue="recent" className="w-full" onValueChange={handleTabChange}>
