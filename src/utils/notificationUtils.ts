@@ -1,6 +1,22 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Define interfaces for better type safety
+interface NotificationData {
+  id: string;
+  type: string;
+  content: string;
+  related_id?: string;
+  user_id: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+interface SenderInfo {
+  userId: string;
+  username: string;
+}
+
 /**
  * Creates a new notification for a user
  * @param userId The ID of the user to notify
@@ -13,7 +29,7 @@ export async function createNotification(
   type: string,
   content: string,
   relatedId?: string
-) {
+): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('notifications')
@@ -41,7 +57,7 @@ export async function createNotification(
  * Marks all notifications for a user as read
  * @param userId The ID of the user
  */
-export async function markAllNotificationsAsRead(userId: string) {
+export async function markAllNotificationsAsRead(userId: string): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('notifications')
@@ -65,7 +81,7 @@ export async function markAllNotificationsAsRead(userId: string) {
  * Deletes a notification by ID
  * @param notificationId The ID of the notification to delete
  */
-export async function deleteNotification(notificationId: string) {
+export async function deleteNotification(notificationId: string): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('notifications')
@@ -89,15 +105,7 @@ export async function deleteNotification(notificationId: string) {
  * @param notification The notification object
  * @returns Object with username and userId if available
  */
-export async function getNotificationSender(notification: {
-  id: string;
-  type: string;
-  content: string;
-  related_id?: string;
-  user_id: string;
-  is_read: boolean;
-  created_at: string;
-}) {
+export async function getNotificationSender(notification: NotificationData): Promise<SenderInfo | null> {
   try {
     // For reactions and comments, extract sender from the notification itself
     if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
@@ -167,7 +175,7 @@ export async function getNotificationSender(notification: {
  * @param userId The ID of the user
  * @param unreadOnly Whether to only fetch unread notifications
  */
-export async function getUserNotifications(userId: string, unreadOnly = false) {
+export async function getUserNotifications(userId: string, unreadOnly = false): Promise<NotificationData[]> {
   try {
     let query = supabase
       .from('notifications')
