@@ -84,7 +84,12 @@ export async function deleteNotification(notificationId: string) {
   }
 }
 
-interface NotificationData {
+/**
+ * Gets sender information from notification content
+ * @param notification The notification object
+ * @returns Object with username and userId if available
+ */
+export async function getNotificationSender(notification: {
   id: string;
   type: string;
   content: string;
@@ -92,19 +97,7 @@ interface NotificationData {
   user_id: string;
   is_read: boolean;
   created_at: string;
-}
-
-interface SenderInfo {
-  userId: string;
-  username: string;
-}
-
-/**
- * Gets sender information from notification content
- * @param notification The notification object
- * @returns Object with username and userId if available
- */
-export async function getNotificationSender(notification: NotificationData): Promise<SenderInfo | null> {
+}) {
   try {
     // For reactions and comments, extract sender from the notification itself
     if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
@@ -174,7 +167,7 @@ export async function getNotificationSender(notification: NotificationData): Pro
  * @param userId The ID of the user
  * @param unreadOnly Whether to only fetch unread notifications
  */
-export async function getUserNotifications(userId: string, unreadOnly = false): Promise<NotificationData[]> {
+export async function getUserNotifications(userId: string, unreadOnly = false) {
   try {
     let query = supabase
       .from('notifications')
