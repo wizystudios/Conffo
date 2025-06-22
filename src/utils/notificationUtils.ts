@@ -108,43 +108,18 @@ export async function getNotificationSender(notification: { type: string; relate
       
       const senderId = activityData[0].user_id;
       
-      // Get username from profile
+      // Get username from profile - simplified to avoid recursion
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username')
         .eq('id', senderId)
         .single();
         
-      if (!profileError && profileData && profileData.username) {
+      if (!profileError && profileData?.username) {
         return {
           userId: senderId,
           username: profileData.username
         };
-      }
-    }
-    
-    // For follows, get the follower ID directly
-    if (notification.type === 'follow') {
-      const parts = notification.content.split(' ');
-      if (parts.length > 0) {
-        // Extract follower username if available in notification content
-        const username = parts[0] !== 'Someone' ? parts[0] : null;
-        
-        if (username) {
-          // Try to get user ID by username
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('username', username)
-            .single();
-            
-          if (!userError && userData) {
-            return {
-              userId: userData.id,
-              username
-            };
-          }
-        }
       }
     }
     

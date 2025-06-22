@@ -17,7 +17,6 @@ import {
   Info,
   Flag
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -195,7 +194,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const isLiked = userReactions.includes('heart');
   
   return (
-    <Card className="w-full max-w-lg mx-auto border-0 shadow-none">
+    <div className="w-full bg-white mb-6">
       {/* Header with user info and follow button */}
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center space-x-3">
@@ -305,7 +304,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       </div>
       
       {/* Content */}
-      <CardContent className="p-3 pt-2">
+      <div className="p-3 pt-2">
         {/* Action buttons */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-4">
@@ -372,7 +371,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <span className="text-sm">{lastComment.content}</span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

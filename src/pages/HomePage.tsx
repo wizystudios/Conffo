@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -74,7 +73,7 @@ export default function HomePage() {
   
   return (
     <Layout>
-      <div className="max-w-lg mx-auto space-y-0">
+      <div className="max-w-lg mx-auto">
         {isAuthenticated && (
           <>
             {!showConfessionForm ? (
@@ -89,13 +88,13 @@ export default function HomePage() {
                 </Button>
               </div>
             ) : (
-              <Card className="m-4 p-4 shadow-md border-2 animate-in fade-in">
+              <div className="m-4 p-4 bg-white shadow-md animate-in fade-in">
                 <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
                 <EnhancedConfessionForm 
                   onSuccess={handleConfessionSuccess} 
                   onCancel={() => setShowConfessionForm(false)}
                 />
-              </Card>
+              </div>
             )}
           </>
         )}
@@ -105,32 +104,36 @@ export default function HomePage() {
             <TabsTrigger value="recent">Recent</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
           </TabsList>
-          <TabsContent value="recent" className="mt-0 space-y-0">
+          <TabsContent value="recent" className="mt-0">
             {isLoadingRecent ? (
               <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
             ) : recentConfessions.length > 0 ? (
-              recentConfessions.map((confession) => (
-                <InstagramConfessionCard 
-                  key={confession.id} 
-                  confession={confession}
-                  onUpdate={handleConfessionSuccess} 
-                />
-              ))
+              <div className="space-y-0">
+                {recentConfessions.map((confession) => (
+                  <InstagramConfessionCard 
+                    key={confession.id} 
+                    confession={confession}
+                    onUpdate={handleConfessionSuccess} 
+                  />
+                ))}
+              </div>
             ) : (
               <p className="text-center py-8 text-muted-foreground">No confessions yet. Be the first!</p>
             )}
           </TabsContent>
-          <TabsContent value="trending" className="mt-0 space-y-0">
+          <TabsContent value="trending" className="mt-0">
             {isLoadingTrending ? (
               <p className="text-center py-8 text-muted-foreground">Loading trending confessions...</p>
             ) : trendingConfessions.length > 0 ? (
-              trendingConfessions.map((confession) => (
-                <InstagramConfessionCard 
-                  key={confession.id} 
-                  confession={confession}
-                  onUpdate={handleConfessionSuccess} 
-                />
-              ))
+              <div className="space-y-0">
+                {trendingConfessions.map((confession) => (
+                  <InstagramConfessionCard 
+                    key={confession.id} 
+                    confession={confession}
+                    onUpdate={handleConfessionSuccess} 
+                  />
+                ))}
+              </div>
             ) : (
               <p className="text-center py-8 text-muted-foreground">No trending confessions yet.</p>
             )}

@@ -19,7 +19,7 @@ export default function TrendingPage() {
   
   return (
     <Layout>
-      <div className="max-w-lg mx-auto space-y-0">
+      <div className="max-w-lg mx-auto">
         <div className="p-4">
           <h1 className="text-2xl font-bold mb-2">Trending Confessions</h1>
           <p className="text-muted-foreground">
@@ -27,25 +27,25 @@ export default function TrendingPage() {
           </p>
         </div>
         
-        <div className="space-y-0">
-          {isLoading ? (
-            <p className="text-center py-8 text-muted-foreground">
-              Loading trending confessions...
-            </p>
-          ) : confessions.length > 0 ? (
-            confessions.map((confession) => (
+        {isLoading ? (
+          <p className="text-center py-8 text-muted-foreground">
+            Loading trending confessions...
+          </p>
+        ) : confessions.length > 0 ? (
+          <div className="space-y-0">
+            {confessions.map((confession) => (
               <InstagramConfessionCard 
                 key={confession.id}
                 confession={confession}
                 onUpdate={handleConfessionUpdate}
               />
-            ))
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">
-              No trending confessions yet.
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-muted-foreground">
+            No trending confessions yet.
+          </p>
+        )}
       </div>
     </Layout>
   );

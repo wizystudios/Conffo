@@ -51,7 +51,7 @@ export default function RoomPage() {
   
   return (
     <Layout>
-      <div className="max-w-lg mx-auto space-y-0">
+      <div className="max-w-lg mx-auto">
         <div className="flex items-center p-4">
           <Link to="/rooms" className="mr-4">
             <Button variant="ghost" size="icon">
@@ -65,29 +65,29 @@ export default function RoomPage() {
         </div>
         
         {user && (
-          <Card className="m-4 p-4">
+          <div className="m-4 p-4 bg-white shadow-md">
             <h2 className="font-medium mb-4">Share Your Confession in {roomInfo.name}</h2>
             <ConfessionForm onSuccess={handleConfessionSuccess} initialRoom={roomId as Room} />
-          </Card>
+          </div>
         )}
         
-        <div className="space-y-0">
-          {isLoading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
-          ) : confessions.length > 0 ? (
-            confessions.map((confession) => (
+        {isLoading ? (
+          <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
+        ) : confessions.length > 0 ? (
+          <div className="space-y-0">
+            {confessions.map((confession) => (
               <InstagramConfessionCard 
                 key={confession.id} 
                 confession={confession}
                 onUpdate={handleConfessionSuccess} 
               />
-            ))
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">
-              No confessions in this room yet. Be the first!
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-muted-foreground">
+            No confessions in this room yet. Be the first!
+          </p>
+        )}
       </div>
     </Layout>
   );
