@@ -93,8 +93,8 @@ export async function getNotificationSender(notification: { type: string; relate
   try {
     // For reactions and comments, extract sender from the notification itself
     if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
-      // Simplified query with explicit typing
-      const activityResult = await supabase
+      // Get activity log entry
+      const { data: activityData, error: activityError } = await supabase
         .from('user_activity_log')
         .select('user_id')
         .eq('activity_type', notification.type)
@@ -102,23 +102,23 @@ export async function getNotificationSender(notification: { type: string; relate
         .order('created_at', { ascending: false })
         .limit(1);
         
-      if (activityResult.error || !activityResult.data || activityResult.data.length === 0) {
+      if (activityError || !activityData || activityData.length === 0) {
         return null;
       }
       
-      const senderId: string = activityResult.data[0].user_id;
+      const senderId = activityData[0].user_id;
       
-      // Get username from profile with explicit typing
-      const profileResult = await supabase
+      // Get username from profile
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username')
         .eq('id', senderId)
         .single();
         
-      if (profileResult.data && profileResult.data.username) {
+      if (!profileError && profileData && profileData.username) {
         return {
           userId: senderId,
-          username: profileResult.data.username
+          username: profileData.username
         };
       }
     }
@@ -131,16 +131,16 @@ export async function getNotificationSender(notification: { type: string; relate
         const username = parts[0] !== 'Someone' ? parts[0] : null;
         
         if (username) {
-          // Try to get user ID by username with explicit typing
-          const userResult = await supabase
+          // Try to get user ID by username
+          const { data: userData, error: userError } = await supabase
             .from('profiles')
             .select('id')
             .eq('username', username)
             .single();
             
-          if (userResult.data) {
+          if (!userError && userData) {
             return {
-              userId: userResult.data.id,
+              userId: userData.id,
               username
             };
           }

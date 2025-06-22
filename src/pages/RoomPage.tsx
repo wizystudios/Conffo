@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ConfessionCard } from '@/components/ConfessionCard';
+import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { ConfessionForm } from '@/components/ConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -51,8 +51,8 @@ export default function RoomPage() {
   
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center">
+      <div className="max-w-lg mx-auto space-y-0">
+        <div className="flex items-center p-4">
           <Link to="/rooms" className="mr-4">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
@@ -65,20 +65,18 @@ export default function RoomPage() {
         </div>
         
         {user && (
-          <Card className="p-4">
+          <Card className="m-4 p-4">
             <h2 className="font-medium mb-4">Share Your Confession in {roomInfo.name}</h2>
             <ConfessionForm onSuccess={handleConfessionSuccess} initialRoom={roomId as Room} />
           </Card>
         )}
         
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Confessions</h2>
-          
+        <div className="space-y-0">
           {isLoading ? (
             <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
           ) : confessions.length > 0 ? (
             confessions.map((confession) => (
-              <ConfessionCard 
+              <InstagramConfessionCard 
                 key={confession.id} 
                 confession={confession}
                 onUpdate={handleConfessionSuccess} 

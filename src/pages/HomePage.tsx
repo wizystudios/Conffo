@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ConfessionCard } from '@/components/ConfessionCard';
+import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -74,11 +74,11 @@ export default function HomePage() {
   
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="max-w-lg mx-auto space-y-0">
         {isAuthenticated && (
           <>
             {!showConfessionForm ? (
-              <div className="flex justify-center">
+              <div className="flex justify-center p-4">
                 <Button 
                   onClick={() => setShowConfessionForm(true)} 
                   size="lg" 
@@ -89,7 +89,7 @@ export default function HomePage() {
                 </Button>
               </div>
             ) : (
-              <Card className="p-4 shadow-md border-2 animate-in fade-in">
+              <Card className="m-4 p-4 shadow-md border-2 animate-in fade-in">
                 <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
                 <EnhancedConfessionForm 
                   onSuccess={handleConfessionSuccess} 
@@ -101,16 +101,16 @@ export default function HomePage() {
         )}
         
         <Tabs defaultValue="recent" className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 mx-4">
             <TabsTrigger value="recent">Recent</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
           </TabsList>
-          <TabsContent value="recent" className="mt-4 space-y-4">
+          <TabsContent value="recent" className="mt-0 space-y-0">
             {isLoadingRecent ? (
               <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
             ) : recentConfessions.length > 0 ? (
               recentConfessions.map((confession) => (
-                <ConfessionCard 
+                <InstagramConfessionCard 
                   key={confession.id} 
                   confession={confession}
                   onUpdate={handleConfessionSuccess} 
@@ -120,12 +120,12 @@ export default function HomePage() {
               <p className="text-center py-8 text-muted-foreground">No confessions yet. Be the first!</p>
             )}
           </TabsContent>
-          <TabsContent value="trending" className="mt-4 space-y-4">
+          <TabsContent value="trending" className="mt-0 space-y-0">
             {isLoadingTrending ? (
               <p className="text-center py-8 text-muted-foreground">Loading trending confessions...</p>
             ) : trendingConfessions.length > 0 ? (
               trendingConfessions.map((confession) => (
-                <ConfessionCard 
+                <InstagramConfessionCard 
                   key={confession.id} 
                   confession={confession}
                   onUpdate={handleConfessionSuccess} 
