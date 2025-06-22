@@ -89,11 +89,12 @@ export async function deleteNotification(notificationId: string) {
  * @param notification The notification object
  * @returns Object with username and userId if available
  */
-export async function getNotificationSender(notification: { type: string; related_id?: string; content: string }) {
+export async function getNotificationSender(notification: { type: string; related_id?: string; content: string }): Promise<{ userId: string; username: string } | null> {
   try {
     // For reactions and comments, extract sender from the notification itself
     if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
-      const { data, error } = await supabase
+      // Simplified query with explicit typing
+      const activityResult = await supabase
         .from('user_activity_log')
         .select('user_id')
         .eq('activity_type', notification.type)
@@ -101,23 +102,23 @@ export async function getNotificationSender(notification: { type: string; relate
         .order('created_at', { ascending: false })
         .limit(1);
         
-      if (error || !data || data.length === 0) {
+      if (activityResult.error || !activityResult.data || activityResult.data.length === 0) {
         return null;
       }
       
-      const senderId = data[0].user_id;
+      const senderId: string = activityResult.data[0].user_id;
       
-      // Get username from profile
-      const { data: profileData } = await supabase
+      // Get username from profile with explicit typing
+      const profileResult = await supabase
         .from('profiles')
         .select('username')
         .eq('id', senderId)
         .single();
         
-      if (profileData && profileData.username) {
+      if (profileResult.data && profileResult.data.username) {
         return {
           userId: senderId,
-          username: profileData.username
+          username: profileResult.data.username
         };
       }
     }
@@ -130,16 +131,16 @@ export async function getNotificationSender(notification: { type: string; relate
         const username = parts[0] !== 'Someone' ? parts[0] : null;
         
         if (username) {
-          // Try to get user ID by username
-          const { data: userData } = await supabase
+          // Try to get user ID by username with explicit typing
+          const userResult = await supabase
             .from('profiles')
             .select('id')
             .eq('username', username)
             .single();
             
-          if (userData) {
+          if (userResult.data) {
             return {
-              userId: userData.id,
+              userId: userResult.data.id,
               username
             };
           }
