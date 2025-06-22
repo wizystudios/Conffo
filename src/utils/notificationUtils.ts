@@ -85,42 +85,18 @@ export async function deleteNotification(notificationId: string) {
 }
 
 /**
- * Gets sender information from notification content
+ * Gets sender information from notification content - simplified to avoid recursion
  * @param notification The notification object
- * @returns Object with username and userId if available
+ * @returns Basic sender info or null
  */
-export async function getNotificationSender(notification: { type: string; related_id?: string; content: string }): Promise<{ userId: string; username: string } | null> {
+export async function getNotificationSender(notification: { type: string; related_id?: string; content: string }) {
   try {
-    // For reactions and comments, extract sender from the notification itself
+    // Simplified approach to avoid recursion - just return basic info
     if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
-      // Get activity log entry
-      const { data: activityData, error: activityError } = await supabase
-        .from('user_activity_log')
-        .select('user_id')
-        .eq('activity_type', notification.type)
-        .eq('related_id', notification.related_id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-        
-      if (activityError || !activityData || activityData.length === 0) {
-        return null;
-      }
-      
-      const senderId = activityData[0].user_id;
-      
-      // Get username from profile - simplified to avoid recursion
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', senderId)
-        .single();
-        
-      if (!profileError && profileData?.username) {
-        return {
-          userId: senderId,
-          username: profileData.username
-        };
-      }
+      return {
+        userId: 'anonymous',
+        username: 'Someone'
+      };
     }
     
     return null;

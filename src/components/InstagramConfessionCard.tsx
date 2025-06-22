@@ -89,7 +89,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           .eq('confession_id', confession.id)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
         
         if (commentData) {
           setLastComment(commentData);
@@ -101,11 +101,33 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     
     checkRelationships();
   }, [confession.id, confession.userId, user]);
+
+  // Auto-play video when it comes into view
+  useEffect(() => {
+    if (videoRef.current && confession.mediaType === 'video') {
+      const video = videoRef.current;
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              video.play().catch(console.error);
+            } else {
+              video.pause();
+            }
+          });
+        },
+        { threshold: 0.5 }
+      );
+      
+      observer.observe(video);
+      
+      return () => observer.disconnect();
+    }
+  }, [confession.mediaType]);
   
   const handleReaction = async (reaction: Reaction) => {
-    if (!user || isUpdating) return;
-    
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user || isUpdating) {
       toast({
         variant: "destructive",
         description: "Please sign in to react to confessions",
@@ -130,7 +152,15 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
   
   const handleFollow = async () => {
-    if (!user || confession.userId === user.id) return;
+    if (!isAuthenticated || !user || confession.userId === user.id) {
+      if (!isAuthenticated) {
+        toast({
+          variant: "destructive",
+          description: "Please sign in to follow users",
+        });
+      }
+      return;
+    }
     
     try {
       if (isFollowing) {
@@ -139,15 +169,25 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           following_uuid: confession.userId
         });
         setIsFollowing(false);
+        toast({
+          description: "Unfollowed user",
+        });
       } else {
         await supabase.rpc('follow_user', {
           follower_uuid: user.id,
           following_uuid: confession.userId
         });
         setIsFollowing(true);
+        toast({
+          description: "Now following user",
+        });
       }
     } catch (error) {
       console.error('Error following/unfollowing user:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update follow status",
+      });
     }
   };
   
@@ -159,15 +199,28 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
   
   const handleSave = async () => {
-    if (!user) return;
+    if (!isAuthenticated || !user) {
+      toast({
+        variant: "destructive",
+        description: "Please sign in to save confessions",
+      });
+      return;
+    }
     
     try {
       const result = await saveConfession(confession.id, user.id);
       if (result) {
         setIsSaved(!isSaved);
+        toast({
+          description: isSaved ? "Confession removed from saved" : "Confession saved",
+        });
       }
     } catch (error) {
       console.error('Error saving confession:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to save confession",
+      });
     }
   };
   
@@ -189,12 +242,22 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       console.error('Error sharing confession:', error);
     }
   };
+
+  const handleCommentClick = () => {
+    if (!isAuthenticated) {
+      toast({
+        variant: "destructive",
+        description: "Please sign in to comment on confessions",
+      });
+      return;
+    }
+  };
   
   const userReactions = confession.userReactions || [];
   const isLiked = userReactions.includes('heart');
   
   return (
-    <div className="w-full bg-white mb-6">
+    <div className="w-full bg-white border-b border-gray-200">
       {/* Header with user info and follow button */}
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center space-x-3">
@@ -313,16 +376,28 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               size="sm"
               onClick={() => handleReaction('heart')}
               className="h-8 w-8 p-0 hover:bg-transparent"
+              disabled={isUpdating}
             >
               <Heart 
                 className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} 
               />
             </Button>
-            <Link to={`/confession/${confession.id}`}>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-transparent">
+            {isAuthenticated ? (
+              <Link to={`/confession/${confession.id}`}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-transparent">
+                  <MessageCircle className="h-6 w-6 text-gray-700" />
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 hover:bg-transparent"
+                onClick={handleCommentClick}
+              >
                 <MessageCircle className="h-6 w-6 text-gray-700" />
               </Button>
-            </Link>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -354,11 +429,23 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         {/* Comments */}
         {confession.commentCount > 0 && (
           <div className="mb-2">
-            <Link to={`/confession/${confession.id}`}>
-              <span className="text-gray-500 text-sm">
+            {isAuthenticated ? (
+              <Link to={`/confession/${confession.id}`}>
+                <span className="text-gray-500 text-sm">
+                  View all {confession.commentCount} comments
+                </span>
+              </Link>
+            ) : (
+              <span 
+                className="text-gray-500 text-sm cursor-pointer"
+                onClick={() => toast({
+                  variant: "destructive",
+                  description: "Please sign in to view comments",
+                })}
+              >
                 View all {confession.commentCount} comments
               </span>
-            </Link>
+            )}
           </div>
         )}
         
