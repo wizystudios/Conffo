@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -257,9 +256,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const isLiked = userReactions.includes('heart');
   
   return (
-    <div className="w-full bg-white border-b border-gray-200">
+    <div className="w-full bg-card border-b border-border mb-2">
       {/* Header with user info and follow button */}
-      <div className="flex items-center justify-between p-3">
+      <div className="flex items-center justify-between p-3 pb-2">
         <div className="flex items-center space-x-3">
           <Link to={`/user/${confession.userId}`}>
             <Avatar className="h-8 w-8">
@@ -271,8 +270,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <Link to={`/user/${confession.userId}`} className="font-semibold text-sm">
               <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
             </Link>
-            <span className="text-gray-500 text-sm">•</span>
-            <span className="text-gray-500 text-sm">
+            <span className="text-muted-foreground text-sm">•</span>
+            <span className="text-muted-foreground text-sm">
               {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
             </span>
           </div>
@@ -284,7 +283,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               variant={isFollowing ? "secondary" : "default"}
               size="sm"
               onClick={handleFollow}
-              className="h-8 px-3 text-xs font-semibold"
+              className="h-7 px-3 text-xs font-semibold"
             >
               {isFollowing ? "Following" : (
                 <>
@@ -297,7 +296,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           
           <ContextMenu>
             <ContextMenuTrigger>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </ContextMenuTrigger>
@@ -331,45 +330,43 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      {/* Media content - full width */}
-      <div className="relative">
-        {confession.mediaUrl && (
-          <div className="w-full">
-            {confession.mediaType === 'image' ? (
-              <img 
+      {/* Media content - constrained height */}
+      {confession.mediaUrl && (
+        <div className="relative mb-2">
+          {confession.mediaType === 'image' ? (
+            <img 
+              src={confession.mediaUrl} 
+              alt="Confession media" 
+              className="w-full h-64 sm:h-80 object-cover"
+              loading="lazy"
+            />
+          ) : confession.mediaType === 'video' ? (
+            <div className="relative">
+              <video 
+                ref={videoRef}
                 src={confession.mediaUrl} 
-                alt="Confession media" 
-                className="w-full h-auto object-cover"
-                loading="lazy"
+                muted={isMuted}
+                loop
+                playsInline
+                className="w-full h-64 sm:h-80 object-cover"
               />
-            ) : confession.mediaType === 'video' ? (
-              <div className="relative">
-                <video 
-                  ref={videoRef}
-                  src={confession.mediaUrl} 
-                  muted={isMuted}
-                  loop
-                  playsInline
-                  className="w-full h-auto object-cover"
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleVolumeToggle}
-                  className="absolute top-4 right-4 h-8 w-8 p-0 bg-black/50 hover:bg-black/70"
-                >
-                  {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <Volume2 className="h-4 w-4 text-white" />}
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleVolumeToggle}
+                className="absolute top-3 right-3 h-7 w-7 p-0 bg-black/60 hover:bg-black/80"
+              >
+                {isMuted ? <VolumeX className="h-3 w-3 text-white" /> : <Volume2 className="h-3 w-3 text-white" />}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
       
       {/* Content */}
-      <div className="p-3 pt-2">
+      <div className="px-3 pb-3">
         {/* Action buttons */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
@@ -379,13 +376,13 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               disabled={isUpdating}
             >
               <Heart 
-                className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} 
+                className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} 
               />
             </Button>
             {isAuthenticated ? (
               <Link to={`/confession/${confession.id}`}>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-transparent">
-                  <MessageCircle className="h-6 w-6 text-gray-700" />
+                  <MessageCircle className="h-5 w-5 text-foreground" />
                 </Button>
               </Link>
             ) : (
@@ -395,7 +392,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 className="h-8 w-8 p-0 hover:bg-transparent"
                 onClick={handleCommentClick}
               >
-                <MessageCircle className="h-6 w-6 text-gray-700" />
+                <MessageCircle className="h-5 w-5 text-foreground" />
               </Button>
             )}
             <Button
@@ -404,14 +401,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               onClick={handleShare}
               className="h-8 w-8 p-0 hover:bg-transparent"
             >
-              <Share className="h-6 w-6 text-gray-700" />
+              <Share className="h-5 w-5 text-foreground" />
             </Button>
           </div>
         </div>
         
         {/* Likes count */}
         {confession.reactions.heart > 0 && (
-          <div className="mb-2">
+          <div className="mb-1">
             <span className="font-semibold text-sm">
               {confession.reactions.heart} {confession.reactions.heart === 1 ? 'like' : 'likes'}
             </span>
@@ -419,7 +416,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         )}
         
         {/* Caption */}
-        <div className="mb-2">
+        <div className="mb-1">
           <span className="font-semibold text-sm mr-2">
             <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
           </span>
@@ -428,16 +425,16 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         
         {/* Comments */}
         {confession.commentCount > 0 && (
-          <div className="mb-2">
+          <div className="mb-1">
             {isAuthenticated ? (
               <Link to={`/confession/${confession.id}`}>
-                <span className="text-gray-500 text-sm">
+                <span className="text-muted-foreground text-sm hover:text-foreground">
                   View all {confession.commentCount} comments
                 </span>
               </Link>
             ) : (
               <span 
-                className="text-gray-500 text-sm cursor-pointer"
+                className="text-muted-foreground text-sm cursor-pointer hover:text-foreground"
                 onClick={() => toast({
                   variant: "destructive",
                   description: "Please sign in to view comments",
@@ -451,7 +448,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         
         {/* Last comment */}
         {lastComment && (
-          <div className="mb-2">
+          <div className="mb-1">
             <span className="font-semibold text-sm mr-2">
               {lastComment.profiles?.username || 'Anonymous'}
             </span>
