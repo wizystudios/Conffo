@@ -13,8 +13,13 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   signOut: () => Promise<void>;
+  logout: () => Promise<void>; // Alias for signOut
   refreshUser: () => Promise<void>;
+  updateUsername: (username: string) => Promise<void>;
+  updateUserProfile: (profile: any) => Promise<void>;
+  getSavedConfessions: () => Promise<any[]>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,18 +28,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchUserProfile = async (userId: string): Promise<AuthUser | null> => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, avatar_url, is_admin')
         .eq('id', userId)
         .single();
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
       
       if (authUser) {
+        setIsAdmin(profile?.is_admin || false);
         return {
           ...authUser,
           username: profile?.username || null,
@@ -52,6 +59,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (session?.user?.id) {
       const updatedUser = await fetchUserProfile(session.user.id);
       setUser(updatedUser);
+    }
+  };
+
+  const updateUsername = async (username: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          username,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      await refreshUser();
+    } catch (error) {
+      console.error('Error updating username:', error);
+      throw error;
+    }
+  };
+
+  const updateUserProfile = async (profileData: any) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          ...profileData,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      await refreshUser();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
+  const getSavedConfessions = async () => {
+    if (!user) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('saved_confessions')
+        .select(`
+          confession_id,
+          confessions (*)
+        `)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching saved confessions:', error);
+      return [];
     }
   };
 
@@ -82,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, 0);
       } else {
         setUser(null);
+        setIsAdmin(false);
         setIsLoading(false);
       }
     });
@@ -114,8 +182,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     isAuthenticated: !!session && !!user,
     isLoading,
+    isAdmin,
     signOut,
+    logout: signOut, // Alias for signOut
     refreshUser,
+    updateUsername,
+    updateUserProfile,
+    getSavedConfessions,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

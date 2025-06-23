@@ -30,14 +30,7 @@ export function FollowingUsersBar() {
         // Get users that current user follows
         const { data: followData, error } = await supabase
           .from('user_follows')
-          .select(`
-            following_id,
-            profiles:following_id (
-              id,
-              username,
-              avatar_url
-            )
-          `)
+          .select('following_id')
           .eq('follower_id', user.id);
 
         if (error) {
@@ -45,20 +38,30 @@ export function FollowingUsersBar() {
           return;
         }
 
-        if (followData) {
+        if (followData && followData.length > 0) {
+          // Get profile data for followed users
+          const followingIds = followData.map(f => f.following_id);
+          
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .in('id', followingIds);
+
+          if (profilesError) {
+            console.error('Error fetching profiles:', profilesError);
+            return;
+          }
+
           const users: FollowedUser[] = [];
           
-          for (const follow of followData) {
-            const profile = follow.profiles;
-            if (profile) {
-              const userHasStory = await hasActiveStory(profile.id);
-              users.push({
-                id: profile.id,
-                username: profile.username,
-                avatar_url: profile.avatar_url,
-                hasStory: userHasStory
-              });
-            }
+          for (const profile of (profiles || [])) {
+            const userHasStory = await hasActiveStory(profile.id);
+            users.push({
+              id: profile.id,
+              username: profile.username,
+              avatar_url: profile.avatar_url,
+              hasStory: userHasStory
+            });
           }
           
           setFollowedUsers(users);
