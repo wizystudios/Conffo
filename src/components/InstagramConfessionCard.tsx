@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -14,7 +15,8 @@ import {
   QrCode,
   EyeOff,
   Info,
-  Flag
+  Flag,
+  BookmarkCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +45,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [isMuted, setIsMuted] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [lastComment, setLastComment] = useState<any>(null);
+  const [showFullContent, setShowFullContent] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Check if this confession is saved and if user is following the author
@@ -255,6 +258,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const userReactions = confession.userReactions || [];
   const isLiked = userReactions.includes('heart');
   
+  // Truncate content if too long
+  const shouldTruncate = confession.content.length > 150;
+  const displayContent = shouldTruncate && !showFullContent 
+    ? confession.content.substring(0, 150) + '...'
+    : confession.content;
+  
   return (
     <div className="w-full bg-background mb-6">
       {/* Header with user info and follow button */}
@@ -266,33 +275,28 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               <AvatarFallback>U</AvatarFallback>
             </Avatar>
           </Link>
-          <div className="flex flex-col">
+          <div className="flex items-center space-x-2">
             <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
               <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
             </Link>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-            </span>
+            {/* Follow button right after username */}
+            {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
+              <span className="text-muted-foreground">•</span>
+            )}
+            {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFollow}
+                className="h-auto p-0 text-blue-500 font-semibold text-sm hover:bg-transparent"
+              >
+                Follow
+              </Button>
+            )}
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
-          {isAuthenticated && confession.userId !== user?.id && (
-            <Button
-              variant={isFollowing ? "secondary" : "default"}
-              size="sm"
-              onClick={handleFollow}
-              className="h-7 px-3 text-xs font-semibold rounded-md"
-            >
-              {isFollowing ? "Following" : (
-                <>
-                  <UserPlus className="h-3 w-3 mr-1" />
-                  Follow
-                </>
-              )}
-            </Button>
-          )}
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted/50">
@@ -301,7 +305,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleSave}>
-                <Bookmark className="h-4 w-4 mr-2" />
+                {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
                 {isSaved ? 'Unsave' : 'Save'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => toast({ description: "Remix feature coming soon!" })}>
@@ -329,7 +333,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      {/* Media content - full width and properly sized */}
+      {/* Media content */}
       {confession.mediaUrl && (
         <div className="w-full">
           {confession.mediaType === 'image' ? (
@@ -362,38 +366,49 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Content and actions */}
-      <div className="px-4 py-3">
-        {/* Action buttons */}
+      {/* Action buttons - positioned right after media */}
+      <div className="px-4 pt-3">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleReaction('heart')}
-              className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
-              disabled={isUpdating}
-            >
-              <Heart 
-                className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground hover:text-muted-foreground'}`} 
-              />
-            </Button>
-            {isAuthenticated ? (
-              <Link to={`/confession/${confession.id}`}>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleReaction('heart')}
+                className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
+                disabled={isUpdating}
+              >
+                <Heart 
+                  className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground hover:text-muted-foreground'}`} 
+                />
+              </Button>
+              {confession.reactions.heart > 0 && (
+                <span className="text-sm font-medium">{confession.reactions.heart}</span>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-1">
+              {isAuthenticated ? (
+                <Link to={`/confession/${confession.id}`}>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all">
+                    <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
+                  onClick={handleCommentClick}
+                >
                   <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
                 </Button>
-              </Link>
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
-                onClick={handleCommentClick}
-              >
-                <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
-              </Button>
-            )}
+              )}
+              {confession.commentCount > 0 && (
+                <span className="text-sm font-medium">{confession.commentCount}</span>
+              )}
+            </div>
+            
             <Button
               variant="ghost"
               size="sm"
@@ -403,23 +418,35 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               <Share className="h-6 w-6 text-foreground hover:text-muted-foreground" />
             </Button>
           </div>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
+          >
+            {isSaved ? (
+              <BookmarkCheck className="h-6 w-6 text-green-500" />
+            ) : (
+              <Bookmark className="h-6 w-6 text-foreground hover:text-muted-foreground" />
+            )}
+          </Button>
         </div>
-        
-        {/* Likes count */}
-        {confession.reactions.heart > 0 && (
-          <div className="mb-2">
-            <span className="font-semibold text-sm">
-              {confession.reactions.heart} {confession.reactions.heart === 1 ? 'like' : 'likes'}
-            </span>
-          </div>
-        )}
         
         {/* Caption */}
         <div className="mb-2">
           <span className="font-semibold text-sm mr-2">
             <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
           </span>
-          <span className="text-sm leading-relaxed">{confession.content}</span>
+          <span className="text-sm leading-relaxed">{displayContent}</span>
+          {shouldTruncate && !showFullContent && (
+            <button 
+              onClick={() => setShowFullContent(true)}
+              className="text-muted-foreground text-sm ml-1 hover:text-foreground"
+            >
+              more
+            </button>
+          )}
         </div>
         
         {/* Comments */}
@@ -454,6 +481,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <span className="text-sm text-muted-foreground">{lastComment.content}</span>
           </div>
         )}
+        
+        {/* Time */}
+        <div className="text-xs text-muted-foreground mt-1">
+          {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
+        </div>
       </div>
     </div>
   );

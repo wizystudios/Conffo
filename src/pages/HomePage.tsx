@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
+import { FollowingUsersBar } from '@/components/FollowingUsersBar';
 import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, TrendingUp, Clock } from 'lucide-react';
+import { Plus, TrendingUp, Clock, PlusCircle } from 'lucide-react';
 
 export default function HomePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -70,12 +71,17 @@ export default function HomePage() {
       refetchTrending();
     }
   };
+
+  const handleCreateStory = () => {
+    // Dispatch event for story creation
+    window.dispatchEvent(new Event('create-story'));
+  };
   
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
         {/* Story-like navigation bar */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-4">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-0">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-4">
               <Button
@@ -98,17 +104,32 @@ export default function HomePage() {
               </Button>
             </div>
             
-            {isAuthenticated && (
-              <Button 
-                onClick={() => setShowConfessionForm(!showConfessionForm)} 
-                size="sm" 
-                className="rounded-full shadow-md hover:shadow-lg transition-all"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="flex items-center space-x-2">
+              {isAuthenticated && (
+                <>
+                  <Button 
+                    onClick={handleCreateStory} 
+                    size="sm" 
+                    variant="outline"
+                    className="rounded-full shadow-md hover:shadow-lg transition-all"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    onClick={() => setShowConfessionForm(!showConfessionForm)} 
+                    size="sm" 
+                    className="rounded-full shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Following users bar */}
+        <FollowingUsersBar />
 
         {isAuthenticated && showConfessionForm && (
           <div className="mx-4 mb-6 p-4 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">
