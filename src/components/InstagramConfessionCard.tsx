@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,11 +20,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { UsernameDisplay } from './UsernameDisplay';
 import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
@@ -256,18 +257,18 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const isLiked = userReactions.includes('heart');
   
   return (
-    <div className="w-full bg-card border-b border-border mb-2">
+    <div className="w-full bg-background border-0 mb-4">
       {/* Header with user info and follow button */}
-      <div className="flex items-center justify-between p-3 pb-2">
+      <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
           <Link to={`/user/${confession.userId}`}>
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-9 w-9 ring-2 ring-primary/20">
               <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`} />
               <AvatarFallback>U</AvatarFallback>
             </Avatar>
           </Link>
           <div className="flex items-center space-x-2">
-            <Link to={`/user/${confession.userId}`} className="font-semibold text-sm">
+            <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
               <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
             </Link>
             <span className="text-muted-foreground text-sm">•</span>
@@ -283,7 +284,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               variant={isFollowing ? "secondary" : "default"}
               size="sm"
               onClick={handleFollow}
-              className="h-7 px-3 text-xs font-semibold"
+              className="h-8 px-4 text-xs font-semibold rounded-lg"
             >
               {isFollowing ? "Following" : (
                 <>
@@ -294,69 +295,69 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             </Button>
           )}
           
-          <ContextMenu>
-            <ContextMenuTrigger>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <MoreHorizontal className="h-4 w-4" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted/50">
+                <MoreHorizontal className="h-5 w-5" />
               </Button>
-            </ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem onClick={handleSave}>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleSave}>
                 <Bookmark className="h-4 w-4 mr-2" />
                 {isSaved ? 'Unsave' : 'Save'}
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => toast({ description: "Remix feature coming soon!" })}>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ description: "Remix feature coming soon!" })}>
                 <Copy className="h-4 w-4 mr-2" />
                 Remix
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => toast({ description: "QR code feature coming soon!" })}>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ description: "QR code feature coming soon!" })}>
                 <QrCode className="h-4 w-4 mr-2" />
                 QR Code
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => toast({ description: "Marked as not interesting" })}>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ description: "Marked as not interesting" })}>
                 <EyeOff className="h-4 w-4 mr-2" />
                 Not Interested
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => toast({ description: "Account info feature coming soon!" })}>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ description: "Account info feature coming soon!" })}>
                 <Info className="h-4 w-4 mr-2" />
                 About This Account
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => toast({ description: "Report feature coming soon!" })}>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ description: "Report feature coming soon!" })}>
                 <Flag className="h-4 w-4 mr-2" />
                 Report Account
-              </ContextMenuItem>
-            </ContextMenuContent>
-          </ContextMenu>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
-      {/* Media content - constrained height */}
+      {/* Media content - full width and properly sized */}
       {confession.mediaUrl && (
-        <div className="relative mb-2">
+        <div className="relative w-full">
           {confession.mediaType === 'image' ? (
             <img 
               src={confession.mediaUrl} 
               alt="Confession media" 
-              className="w-full h-64 sm:h-80 object-cover"
+              className="w-full h-96 object-cover"
               loading="lazy"
             />
           ) : confession.mediaType === 'video' ? (
-            <div className="relative">
+            <div className="relative w-full">
               <video 
                 ref={videoRef}
                 src={confession.mediaUrl} 
                 muted={isMuted}
                 loop
                 playsInline
-                className="w-full h-64 sm:h-80 object-cover"
+                className="w-full h-96 object-cover"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={handleVolumeToggle}
-                className="absolute top-3 right-3 h-7 w-7 p-0 bg-black/60 hover:bg-black/80"
+                className="absolute top-4 right-4 h-8 w-8 p-0 bg-black/60 hover:bg-black/80 rounded-full"
               >
-                {isMuted ? <VolumeX className="h-3 w-3 text-white" /> : <Volume2 className="h-3 w-3 text-white" />}
+                {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <Volume2 className="h-4 w-4 text-white" />}
               </Button>
             </div>
           ) : null}
@@ -364,51 +365,51 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       )}
       
       {/* Content */}
-      <div className="px-3 pb-3">
+      <div className="px-4 py-3">
         {/* Action buttons */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-6">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleReaction('heart')}
-              className="h-8 w-8 p-0 hover:bg-transparent"
+              className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
               disabled={isUpdating}
             >
               <Heart 
-                className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} 
+                className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground hover:text-muted-foreground'}`} 
               />
             </Button>
             {isAuthenticated ? (
               <Link to={`/confession/${confession.id}`}>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-transparent">
-                  <MessageCircle className="h-5 w-5 text-foreground" />
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all">
+                  <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
                 </Button>
               </Link>
             ) : (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 w-8 p-0 hover:bg-transparent"
+                className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
                 onClick={handleCommentClick}
               >
-                <MessageCircle className="h-5 w-5 text-foreground" />
+                <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
               </Button>
             )}
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="h-8 w-8 p-0 hover:bg-transparent"
+              className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
             >
-              <Share className="h-5 w-5 text-foreground" />
+              <Share className="h-6 w-6 text-foreground hover:text-muted-foreground" />
             </Button>
           </div>
         </div>
         
         {/* Likes count */}
         {confession.reactions.heart > 0 && (
-          <div className="mb-1">
+          <div className="mb-2">
             <span className="font-semibold text-sm">
               {confession.reactions.heart} {confession.reactions.heart === 1 ? 'like' : 'likes'}
             </span>
@@ -416,19 +417,19 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         )}
         
         {/* Caption */}
-        <div className="mb-1">
+        <div className="mb-2">
           <span className="font-semibold text-sm mr-2">
             <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
           </span>
-          <span className="text-sm">{confession.content}</span>
+          <span className="text-sm leading-relaxed">{confession.content}</span>
         </div>
         
         {/* Comments */}
         {confession.commentCount > 0 && (
-          <div className="mb-1">
+          <div className="mb-2">
             {isAuthenticated ? (
               <Link to={`/confession/${confession.id}`}>
-                <span className="text-muted-foreground text-sm hover:text-foreground">
+                <span className="text-muted-foreground text-sm hover:text-foreground cursor-pointer">
                   View all {confession.commentCount} comments
                 </span>
               </Link>
@@ -452,7 +453,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <span className="font-semibold text-sm mr-2">
               {lastComment.profiles?.username || 'Anonymous'}
             </span>
-            <span className="text-sm">{lastComment.content}</span>
+            <span className="text-sm text-muted-foreground">{lastComment.content}</span>
           </div>
         )}
       </div>

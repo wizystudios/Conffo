@@ -3,12 +3,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getUserConfessions, deleteConfession } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
-import { ConfessionCard } from './ConfessionCard';
+import { InstagramConfessionCard } from './InstagramConfessionCard';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Trash2, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Card } from '@/components/ui/card';
 import { ConfessionEditDialog } from './ConfessionEditDialog';
 
 interface UserConfessionsProps {
@@ -93,48 +92,57 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
   };
 
   if (isLoading) {
-    return <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>;
+    return (
+      <div className="flex justify-center py-12">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Loading confessions...</p>
+        </div>
+      </div>
+    );
   }
 
   if (confessions.length === 0) {
     return (
-      <div className="text-center py-8 border border-dashed rounded-md">
-        <p className="text-muted-foreground">No confessions found.</p>
-        <p className="text-sm mt-2">
-          {isOwnProfile 
-            ? "Share your thoughts anonymously to see them listed here." 
-            : "This user hasn't shared any confessions yet."}
-        </p>
+      <div className="text-center py-12 mx-4">
+        <div className="border-2 border-dashed border-muted rounded-2xl p-8">
+          <p className="text-muted-foreground mb-2">No confessions found.</p>
+          <p className="text-sm text-muted-foreground">
+            {isOwnProfile 
+              ? "Share your thoughts anonymously to see them listed here." 
+              : "This user hasn't shared any confessions yet."}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0">
       {confessions.map(confession => (
         <div key={confession.id} className="relative">
-          <ConfessionCard 
+          <InstagramConfessionCard 
             confession={confession} 
             onUpdate={onUpdate}
           />
           {isOwnProfile && (
-            <div className="absolute top-3 right-3 flex gap-1">
+            <div className="absolute top-6 right-6 flex gap-2 bg-background/90 backdrop-blur-sm rounded-full p-1">
               <Button 
-                variant="outline" 
-                size="icon"
-                className="h-7 w-7"
+                variant="ghost" 
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full hover:bg-muted"
                 onClick={() => handleEdit(confession)}
               >
-                <Edit className="h-3.5 w-3.5" />
+                <Edit className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button 
-                    variant="destructive" 
-                    size="icon"
-                    className="h-7 w-7"
+                    variant="ghost" 
+                    size="sm"
+                    className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -150,6 +158,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
                     <AlertDialogAction
                       onClick={() => handleDelete(confession.id)}
                       disabled={isDeleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                       {isDeleting ? "Deleting..." : "Delete"}
                     </AlertDialogAction>

@@ -1,15 +1,29 @@
 
 #root {
   max-width: 100%;
-  margin: 0 auto;
-  padding: 0.5rem;
-  text-align: center;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  background: hsl(var(--background));
+  min-height: 100vh;
+}
+
+/* Remove any white boundaries and ensure full width */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: hsl(var(--background));
 }
 
 @media (min-width: 768px) {
   #root {
     max-width: 1280px;
-    padding: 1rem;
+    margin: 0 auto;
+    padding: 0;
   }
 }
 
@@ -95,4 +109,13 @@
   50% {
     opacity: 0.92;
   }
+}
+
+/* Ensure Instagram-like posts have no white boundaries */
+.instagram-confession-card {
+  background: hsl(var(--background));
+  border: none;
+  box-shadow: none;
+  width: 100%;
+  margin: 0;
 }

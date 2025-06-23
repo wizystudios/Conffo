@@ -1,14 +1,14 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, TrendingUp, Clock } from 'lucide-react';
 
 export default function HomePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -74,39 +74,62 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        {isAuthenticated && (
-          <>
-            {!showConfessionForm ? (
-              <div className="flex justify-center p-4">
-                <Button 
-                  onClick={() => setShowConfessionForm(true)} 
-                  size="lg" 
-                  className="gap-2 shadow-md hover:shadow-lg transition-all"
-                >
-                  <Plus className="h-5 w-5" />
-                  Create New Confession
-                </Button>
-              </div>
-            ) : (
-              <div className="m-4 p-4 bg-white shadow-md animate-in fade-in">
-                <h2 className="text-xl font-bold mb-4">Share Your Confession</h2>
-                <EnhancedConfessionForm 
-                  onSuccess={handleConfessionSuccess} 
-                  onCancel={() => setShowConfessionForm(false)}
-                />
-              </div>
+        {/* Story-like navigation bar */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-4">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant={activeTab === 'recent' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('recent')}
+                className="flex items-center gap-2 rounded-full"
+              >
+                <Clock className="h-4 w-4" />
+                Recent
+              </Button>
+              <Button
+                variant={activeTab === 'trending' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('trending')}
+                className="flex items-center gap-2 rounded-full"
+              >
+                <TrendingUp className="h-4 w-4" />
+                Trending
+              </Button>
+            </div>
+            
+            {isAuthenticated && (
+              <Button 
+                onClick={() => setShowConfessionForm(!showConfessionForm)} 
+                size="sm" 
+                className="rounded-full shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             )}
-          </>
+          </div>
+        </div>
+
+        {isAuthenticated && showConfessionForm && (
+          <div className="mx-4 mb-6 p-4 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">
+            <h2 className="text-lg font-semibold mb-4">Share Your Confession</h2>
+            <EnhancedConfessionForm 
+              onSuccess={handleConfessionSuccess} 
+              onCancel={() => setShowConfessionForm(false)}
+            />
+          </div>
         )}
         
-        <Tabs defaultValue="recent" className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 mx-4">
-            <TabsTrigger value="recent">Recent</TabsTrigger>
-            <TabsTrigger value="trending">Trending</TabsTrigger>
-          </TabsList>
-          <TabsContent value="recent" className="mt-0">
+        {/* Content based on active tab */}
+        {activeTab === 'recent' ? (
+          <>
             {isLoadingRecent ? (
-              <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>
+              <div className="flex justify-center py-12">
+                <div className="text-center">
+                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Loading confessions...</p>
+                </div>
+              </div>
             ) : recentConfessions.length > 0 ? (
               <div className="space-y-0">
                 {recentConfessions.map((confession) => (
@@ -118,12 +141,20 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center py-8 text-muted-foreground">No confessions yet. Be the first!</p>
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No confessions yet. Be the first!</p>
+              </div>
             )}
-          </TabsContent>
-          <TabsContent value="trending" className="mt-0">
+          </>
+        ) : (
+          <>
             {isLoadingTrending ? (
-              <p className="text-center py-8 text-muted-foreground">Loading trending confessions...</p>
+              <div className="flex justify-center py-12">
+                <div className="text-center">
+                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-sm text-muted-foreground">Loading trending confessions...</p>
+                </div>
+              </div>
             ) : trendingConfessions.length > 0 ? (
               <div className="space-y-0">
                 {trendingConfessions.map((confession) => (
@@ -135,10 +166,12 @@ export default function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-center py-8 text-muted-foreground">No trending confessions yet.</p>
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No trending confessions yet.</p>
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
+          </>
+        )}
       </div>
     </Layout>
   );
