@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -15,7 +14,7 @@ interface Comment {
   user_id: string;
   profiles?: {
     username: string;
-  };
+  } | null;
 }
 
 interface CommentSectionProps {
@@ -43,7 +42,9 @@ export function CommentSection({ confessionId, onUpdate }: CommentSectionProps) 
           content,
           created_at,
           user_id,
-          profiles:user_id (username)
+          profiles!user_id (
+            username
+          )
         `)
         .eq('confession_id', confessionId)
         .order('created_at', { ascending: true });
@@ -106,7 +107,7 @@ export function CommentSection({ confessionId, onUpdate }: CommentSectionProps) 
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm">
-                      {comment.profiles?.username || user?.username || 'User'}
+                      {comment.profiles?.username || 'Anonymous User'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(comment.created_at).toLocaleDateString()}
