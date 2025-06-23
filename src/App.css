@@ -6,6 +6,7 @@
   text-align: left;
   background: hsl(var(--background));
   min-height: 100vh;
+  width: 100vw;
 }
 
 /* Remove any white boundaries and ensure full width */
@@ -17,14 +18,8 @@ body {
   margin: 0;
   padding: 0;
   background: hsl(var(--background));
-}
-
-@media (min-width: 768px) {
-  #root {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0;
-  }
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .logo {
@@ -111,11 +106,39 @@ body {
   }
 }
 
-/* Ensure Instagram-like posts have no white boundaries */
+/* Ensure Instagram-like posts have no boundaries and use full width */
 .instagram-confession-card {
   background: hsl(var(--background));
   border: none;
   box-shadow: none;
   width: 100%;
   margin: 0;
+  max-width: none;
+}
+
+/* Full width layout for main content */
+.max-w-lg {
+  max-width: 100% !important;
+  width: 100%;
+}
+
+/* Override any container restrictions */
+.container {
+  max-width: 100% !important;
+  width: 100%;
+  padding: 0;
+}
+
+/* Ensure no side margins or boundaries */
+@media (min-width: 768px) {
+  #root {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .max-w-lg {
+    max-width: 32rem;
+    margin: 0 auto;
+  }
 }

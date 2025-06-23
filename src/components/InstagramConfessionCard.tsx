@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -257,22 +256,21 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const isLiked = userReactions.includes('heart');
   
   return (
-    <div className="w-full bg-background border-0 mb-4">
+    <div className="w-full bg-background mb-6">
       {/* Header with user info and follow button */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
           <Link to={`/user/${confession.userId}`}>
-            <Avatar className="h-9 w-9 ring-2 ring-primary/20">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`} />
               <AvatarFallback>U</AvatarFallback>
             </Avatar>
           </Link>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col">
             <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
               <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
             </Link>
-            <span className="text-muted-foreground text-sm">•</span>
-            <span className="text-muted-foreground text-sm">
+            <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
             </span>
           </div>
@@ -284,7 +282,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               variant={isFollowing ? "secondary" : "default"}
               size="sm"
               onClick={handleFollow}
-              className="h-8 px-4 text-xs font-semibold rounded-lg"
+              className="h-7 px-3 text-xs font-semibold rounded-md"
             >
               {isFollowing ? "Following" : (
                 <>
@@ -298,7 +296,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted/50">
-                <MoreHorizontal className="h-5 w-5" />
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -333,12 +331,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       
       {/* Media content - full width and properly sized */}
       {confession.mediaUrl && (
-        <div className="relative w-full">
+        <div className="w-full">
           {confession.mediaType === 'image' ? (
             <img 
               src={confession.mediaUrl} 
               alt="Confession media" 
-              className="w-full h-96 object-cover"
+              className="w-full max-h-[500px] object-contain bg-black"
               loading="lazy"
             />
           ) : confession.mediaType === 'video' ? (
@@ -349,7 +347,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 muted={isMuted}
                 loop
                 playsInline
-                className="w-full h-96 object-cover"
+                className="w-full max-h-[500px] object-contain bg-black"
               />
               <Button
                 variant="secondary"
@@ -364,7 +362,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Content */}
+      {/* Content and actions */}
       <div className="px-4 py-3">
         {/* Action buttons */}
         <div className="flex items-center justify-between mb-3">

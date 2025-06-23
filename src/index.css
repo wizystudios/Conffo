@@ -91,10 +91,9 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground p-0 m-0;
   }
   
-  /* Remove any default margins and padding that might cause white boundaries */
   #root {
     @apply p-0 m-0 w-full min-h-screen bg-background;
   }
@@ -144,26 +143,6 @@
   
   .reaction-button-inactive {
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
-  }
-  
-  /* Story ring styles */
-  .active-story-ring {
-    @apply cursor-pointer;
-  }
-  
-  .active-story-ring::before {
-    content: '';
-    @apply absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500;
-    animation: rotate 3s linear infinite;
-  }
-  
-  /* Instagram-like post styles */
-  .instagram-post {
-    @apply w-full bg-background border-0 shadow-none;
-  }
-  
-  .instagram-post-media {
-    @apply w-full object-cover;
   }
 }
 

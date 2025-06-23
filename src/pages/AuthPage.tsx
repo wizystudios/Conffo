@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Layout } from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -59,7 +58,6 @@ export default function AuthPage() {
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
-        // Continue even if this fails
         console.log("Sign out before sign in failed, continuing anyway");
       }
       
@@ -143,116 +141,149 @@ export default function AuthPage() {
     }
   };
 
-  // Reset auth error when changing tabs
   const handleTabChange = () => {
     setAuthError(null);
   };
 
   return (
-    <Layout>
-      <div className="container flex items-center justify-center py-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">Welcome to Confession Room</CardTitle>
-            <CardDescription>
-              Sign in or create an account to start sharing your confessions
-            </CardDescription>
-            {authError && (
-              <p className="text-sm font-medium text-destructive">{authError}</p>
-            )}
-          </CardHeader>
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/')}
+              className="absolute left-4 top-4 p-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
+          <p className="text-muted-foreground">
+            Share your thoughts anonymously with the world
+          </p>
+        </div>
+
+        {/* Auth Form */}
+        <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-border/50">
+          {authError && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive">{authError}</p>
+            </div>
+          )}
+          
           <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Login
+              </TabsTrigger>
+              <TabsTrigger value="register" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Register
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="login">
-              <form onSubmit={handleSignIn}>
-                <CardContent className="space-y-4 pt-4">
+            <TabsContent value="login" className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-6">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input 
-                      id="signin-email" 
-                      type="email" 
-                      placeholder="example@email.com" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="signin-email" className="text-sm font-medium">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="signin-email" 
+                        type="email" 
+                        placeholder="your@email.com" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 h-12 bg-background/50"
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input 
-                      id="signin-password" 
-                      type="password" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="signin-password" 
+                        type="password" 
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 h-12 bg-background/50"
+                        required
+                      />
+                    </div>
                   </div>
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-2">
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign in"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => navigate('/')}
-                    disabled={loading}
-                  >
-                    Back to Home
-                  </Button>
-                </CardFooter>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 text-base font-semibold" 
+                  disabled={loading}
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
               </form>
             </TabsContent>
             
-            <TabsContent value="register">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4 pt-4">
+            <TabsContent value="register" className="space-y-4">
+              <form onSubmit={handleSignUp} className="space-y-6">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input 
-                      id="signup-email" 
-                      type="email" 
-                      placeholder="example@email.com" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="signup-email" className="text-sm font-medium">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="signup-email" 
+                        type="email" 
+                        placeholder="your@email.com" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 h-12 bg-background/50"
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input 
-                      id="signup-password" 
-                      type="password" 
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="signup-password" 
+                        type="password" 
+                        placeholder="Create a password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 h-12 bg-background/50"
+                        required
+                      />
+                    </div>
                   </div>
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-2">
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create account"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => navigate('/')}
-                    disabled={loading}
-                  >
-                    Back to Home
-                  </Button>
-                </CardFooter>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 text-base font-semibold" 
+                  disabled={loading}
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
               </form>
             </TabsContent>
           </Tabs>
-        </Card>
+        </div>
+        
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </div>
       </div>
-    </Layout>
+    </div>
   );
 }

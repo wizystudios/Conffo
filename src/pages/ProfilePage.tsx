@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -299,13 +298,26 @@ export default function ProfilePage() {
       
       setIsSaving(true);
       
+      // Update the profile using the updateUserProfile function from AuthContext
       await updateUserProfile({
         username: username.trim(),
-        bio,
-        contactEmail: email,
-        contactPhone: phone,
+        bio: bio.trim(),
+        contactEmail: email.trim(),
+        contactPhone: phone.trim(),
         isPublic: isProfilePublic
       });
+      
+      // Also update the username separately to ensure it's saved
+      if (user?.id) {
+        const { error: usernameError } = await supabase
+          .from('profiles')
+          .update({ username: username.trim() })
+          .eq('id', user.id);
+          
+        if (usernameError) {
+          console.error('Error updating username:', usernameError);
+        }
+      }
       
       toast({
         description: "Profile updated successfully"
@@ -337,15 +349,16 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="space-y-6 container max-w-5xl w-full px-4 sm:px-6 py-4 sm:py-6">
-        <Card className="overflow-hidden shadow-md w-full">
-          <CardHeader className="pb-4 px-6">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-              <div className="flex flex-col md:flex-row items-center gap-6">
+      <div className="w-full">
+        {/* Profile Header */}
+        <div className="w-full bg-background border-b border-border">
+          <div className="max-w-lg mx-auto px-4 py-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
                 <div className="relative">
-                  <Avatar className="h-24 w-24 border-2 border-border shadow-sm">
+                  <Avatar className="h-20 w-20 border-2 border-border">
                     <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback className="text-xl">
                       {username ? username.charAt(0).toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
@@ -353,9 +366,9 @@ export default function ProfilePage() {
                   {isOwnProfile && (
                     <label 
                       htmlFor="avatar-upload" 
-                      className="absolute bottom-1 right-1 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors shadow-sm"
+                      className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5 cursor-pointer hover:bg-primary/90 transition-colors"
                     >
-                      <Camera className="h-4 w-4" />
+                      <Camera className="h-3 w-3" />
                       <input 
                         id="avatar-upload"
                         type="file"
@@ -368,18 +381,18 @@ export default function ProfilePage() {
                   )}
                 </div>
                 
-                <div className="text-center md:text-left">
-                  <h2 className="text-xl font-bold mb-1">{username || 'Anonymous User'}</h2>
-                  {!isOwnProfile && <p className="text-sm text-muted-foreground mt-1 mb-3 max-w-md">{bio}</p>}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{username || 'Anonymous User'}</h2>
+                  {!isOwnProfile && <p className="text-sm text-muted-foreground mt-1">{bio}</p>}
                   
-                  <div className="flex items-center justify-center md:justify-start gap-6 mt-3">
-                    <div className="text-center bg-muted/30 px-4 py-2 rounded-lg">
-                      <p className="font-medium text-lg">{followersCount}</p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="text-center">
+                      <p className="font-medium">{followersCount}</p>
                       <p className="text-xs text-muted-foreground">Followers</p>
                     </div>
                     
-                    <div className="text-center bg-muted/30 px-4 py-2 rounded-lg">
-                      <p className="font-medium text-lg">{followingCount}</p>
+                    <div className="text-center">
+                      <p className="font-medium">{followingCount}</p>
                       <p className="text-xs text-muted-foreground">Following</p>
                     </div>
                   </div>
@@ -389,289 +402,200 @@ export default function ProfilePage() {
               {!isOwnProfile && isAuthenticated && (
                 <Button 
                   variant={isFollowing ? "outline" : "default"}
-                  className="gap-2 shadow-sm" 
+                  className="w-full" 
                   onClick={handleToggleFollow}
                   disabled={loadingFollow}
                 >
                   {isFollowing ? (
                     <>
-                      <UserMinus className="h-4 w-4" />
+                      <UserMinus className="h-4 w-4 mr-2" />
                       Unfollow
                     </>
                   ) : (
                     <>
-                      <UserPlus className="h-4 w-4" />
+                      <UserPlus className="h-4 w-4 mr-2" />
                       Follow
                     </>
                   )}
                 </Button>
               )}
             </div>
-          </CardHeader>
-          
+          </div>
+        </div>
+        
+        {/* Tabs */}
+        <div className="max-w-lg mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4 px-6 bg-muted/20">
+            <TabsList className="grid w-full grid-cols-3 bg-background border-b border-border rounded-none">
               {isOwnProfile ? (
                 <>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
-                  <TabsTrigger value="saved">Saved</TabsTrigger>
-                  <TabsTrigger value="posts">My Posts</TabsTrigger>
+                  <TabsTrigger value="settings" className="border-b-2 border-transparent data-[state=active]:border-primary">Settings</TabsTrigger>
+                  <TabsTrigger value="saved" className="border-b-2 border-transparent data-[state=active]:border-primary">Saved</TabsTrigger>
+                  <TabsTrigger value="posts" className="border-b-2 border-transparent data-[state=active]:border-primary">Posts</TabsTrigger>
                 </>
               ) : (
                 <>
-                  <TabsTrigger value="posts">Posts</TabsTrigger>
-                  <TabsTrigger value="followers">Followers</TabsTrigger>
-                  <TabsTrigger value="following">Following</TabsTrigger>
+                  <TabsTrigger value="posts" className="border-b-2 border-transparent data-[state=active]:border-primary">Posts</TabsTrigger>
+                  <TabsTrigger value="followers" className="border-b-2 border-transparent data-[state=active]:border-primary">Followers</TabsTrigger>
+                  <TabsTrigger value="following" className="border-b-2 border-transparent data-[state=active]:border-primary">Following</TabsTrigger>
                 </>
               )}
             </TabsList>
             
             {isOwnProfile ? (
               <>
-                <TabsContent value="settings" className="w-full">
-                  <CardContent className="space-y-6 px-6 py-4">
-                    {uploadingImage && (
-                      <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded-md">
-                        Uploading profile picture...
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20">
-                      <div>
-                        <h3 className="text-sm font-medium flex items-center gap-2">
-                          {isProfilePublic ? (
-                            <>
-                              <Eye className="h-4 w-4 text-green-500" />
-                              Public Profile
-                            </>
-                          ) : (
-                            <>
-                              <EyeOff className="h-4 w-4 text-amber-500" />
-                              Private Profile
-                            </>
-                          )}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {isProfilePublic 
-                            ? "Anyone can view your profile and posts" 
-                            : "Only followers can see your profile details"
-                          }
-                        </p>
-                      </div>
-                      <Switch 
-                        checked={isProfilePublic} 
-                        onCheckedChange={handleToggleProfilePrivacy}
-                        disabled={profilePrivacyLoading}
+                <TabsContent value="settings" className="p-4">
+                  {uploadingImage && (
+                    <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded-md mb-4">
+                      Uploading profile picture...
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20 mb-6">
+                    <div>
+                      <h3 className="text-sm font-medium flex items-center gap-2">
+                        {isProfilePublic ? (
+                          <>
+                            <Eye className="h-4 w-4 text-green-500" />
+                            Public Profile
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="h-4 w-4 text-amber-500" />
+                            Private Profile
+                          </>
+                        )}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isProfilePublic 
+                          ? "Anyone can view your profile and posts" 
+                          : "Only followers can see your profile details"
+                        }
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={isProfilePublic} 
+                      onCheckedChange={handleToggleProfilePrivacy}
+                      disabled={profilePrivacyLoading}
+                    />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <Input 
+                        id="username" 
+                        value={username} 
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Set your username"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Bio</Label>
+                      <Textarea 
+                        id="bio" 
+                        value={bio} 
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Tell us about yourself"
+                        className="min-h-[80px]"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Contact Email (optional)</Label>
+                      <Input 
+                        id="email" 
+                        type="email"
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Your contact email"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number (optional)</Label>
+                      <Input 
+                        id="phone" 
+                        value={phone} 
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Your phone number"
                       />
                     </div>
                     
-                    <div className="bg-card p-4 rounded-lg border shadow-sm w-full">
-                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                        <Settings className="h-5 w-5 text-primary" />
-                        Profile Settings
-                      </h3>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label htmlFor="username">Username</Label>
-                          <Input 
-                            id="username" 
-                            value={username} 
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Set your username"
-                            className="shadow-sm"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Contact Email (optional)</Label>
-                          <Input 
-                            id="email" 
-                            type="email"
-                            value={email} 
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Your contact email"
-                            className="shadow-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-6 mt-6">
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Phone Number (optional)</Label>
-                          <Input 
-                            id="phone" 
-                            value={phone} 
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="Your phone number"
-                            className="shadow-sm"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="bio">Bio</Label>
-                          <Textarea 
-                            id="bio" 
-                            value={bio} 
-                            onChange={(e) => setBio(e.target.value)}
-                            placeholder="Tell us about yourself"
-                            className="min-h-[80px] shadow-sm"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end mt-6">
-                        <Button 
-                          onClick={handleSaveProfile} 
-                          disabled={isSaving}
-                          className="w-full md:w-auto shadow-sm"
-                        >
-                          {isSaving ? "Saving..." : "Save Profile"}
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4">
-                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 rounded-md flex gap-3 text-amber-800 dark:text-amber-300">
-                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium">Anonymous Usage</p>
-                          <p className="text-xs mt-1">
-                            Your confessions are posted anonymously. Your profile information is only visible to moderators.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t pt-6 px-6">
-                    <Button variant="destructive" onClick={logout} className="gap-2 shadow-sm">
-                      <LogOut className="h-4 w-4" />
-                      Logout
+                    <Button 
+                      onClick={handleSaveProfile} 
+                      disabled={isSaving}
+                      className="w-full"
+                    >
+                      {isSaving ? "Saving..." : "Save Profile"}
                     </Button>
-                  </CardFooter>
+                    
+                    <div className="pt-4 border-t border-border">
+                      <Button variant="destructive" onClick={logout} className="w-full">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </Button>
+                    </div>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="saved">
-                  <CardContent className="px-6 py-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Save className="h-5 w-5 text-primary" />
-                        <h3 className="font-medium">Your Saved Confessions</h3>
+                  <div className="space-y-0">
+                    {loadingSaved ? (
+                      <div className="flex justify-center py-12">
+                        <p className="text-muted-foreground">Loading saved confessions...</p>
                       </div>
-                      
-                      {loadingSaved ? (
-                        <p className="text-center py-8 text-muted-foreground">Loading saved confessions...</p>
-                      ) : savedConfessions.length > 0 ? (
-                        <div className="space-y-4">
-                          {savedConfessions.map(confession => (
-                            <ConfessionCard 
-                              key={confession.id} 
-                              confession={confession}
-                              onUpdate={() => setActiveTab('saved')}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 border border-dashed rounded-md bg-muted/10">
-                          <p className="text-muted-foreground">You haven't saved any confessions yet.</p>
-                          <p className="text-sm mt-2">
-                            When you find interesting confessions, click the save button to add them here.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
+                    ) : savedConfessions.length > 0 ? (
+                      <div className="space-y-0">
+                        {savedConfessions.map(confession => (
+                          <ConfessionCard 
+                            key={confession.id} 
+                            confession={confession}
+                            onUpdate={() => setActiveTab('saved')}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 mx-4">
+                        <p className="text-muted-foreground">You haven't saved any confessions yet.</p>
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  <CardContent className="px-6 py-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <User className="h-5 w-5 text-primary" />
-                        <h3 className="font-medium">Your Confessions</h3>
-                      </div>
-                      
-                      <UserConfessions onUpdate={() => setActiveTab('posts')} />
-                    </div>
-                  </CardContent>
+                  <UserConfessions onUpdate={() => setActiveTab('posts')} />
                 </TabsContent>
               </>
             ) : (
               <>
                 <TabsContent value="posts">
-                  <CardContent className="px-6 py-4">
-                    <div className="space-y-4">
-                      {profileUser?.is_public === false && !isAuthenticated ? (
-                        <div className="text-center py-8 border border-dashed rounded-md">
-                          <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-muted-foreground">This is a private profile.</p>
-                          <p className="text-sm mt-2">
-                            Sign in to follow this user and see their content.
-                          </p>
-                        </div>
-                      ) : (
-                        <UserConfessions userId={userId} />
-                      )}
+                  {profileUser?.is_public === false && !isAuthenticated ? (
+                    <div className="text-center py-12 mx-4">
+                      <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">This is a private profile.</p>
                     </div>
-                  </CardContent>
+                  ) : (
+                    <UserConfessions userId={userId} />
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="followers">
-                  <CardContent className="px-6 py-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Users className="h-5 w-5 text-primary" />
-                        <h3 className="font-medium">Followers</h3>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {profileUser?.is_public === false && !isAuthenticated ? (
-                          <div className="text-center py-8 border border-dashed rounded-md">
-                            <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-muted-foreground">This information is private.</p>
-                            <p className="text-sm mt-2">
-                              Sign in to follow this user and see their followers.
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="text-center py-12 text-muted-foreground">
-                            User followers will appear here
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
+                  <div className="text-center py-12 mx-4">
+                    <p className="text-muted-foreground">User followers will appear here</p>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="following">
-                  <CardContent className="px-6 py-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <UserPlus className="h-5 w-5 text-primary" />
-                        <h3 className="font-medium">Following</h3>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {profileUser?.is_public === false && !isAuthenticated ? (
-                          <div className="text-center py-8 border border-dashed rounded-md">
-                            <EyeOff className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-muted-foreground">This information is private.</p>
-                            <p className="text-sm mt-2">
-                              Sign in to follow this user and see who they follow.
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="text-center py-12 text-muted-foreground">
-                            Users this person follows will appear here
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
+                  <div className="text-center py-12 mx-4">
+                    <p className="text-muted-foreground">Users this person follows will appear here</p>
+                  </div>
                 </TabsContent>
               </>
             )}
           </Tabs>
-        </Card>
+        </div>
       </div>
     </Layout>
   );
