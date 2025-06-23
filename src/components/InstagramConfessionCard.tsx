@@ -26,7 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UsernameDisplay } from './UsernameDisplay';
 import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
@@ -46,14 +45,37 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [isFollowing, setIsFollowing] = useState(false);
   const [lastComment, setLastComment] = useState<any>(null);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [authorProfile, setAuthorProfile] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Check if this confession is saved and if user is following the author
+  // Fetch author profile and check relationships
   useEffect(() => {
-    const checkRelationships = async () => {
-      if (!user) return;
-      
+    const fetchAuthorAndRelationships = async () => {
       try {
+        // Get author profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', confession.userId)
+          .single();
+        
+        if (profile) {
+          setAuthorProfile(profile);
+        } else {
+          // Create a profile if it doesn't exist
+          const emailUsername = confession.userId.split('@')[0] || 'user';
+          await supabase
+            .from('profiles')
+            .upsert({
+              id: confession.userId,
+              username: emailUsername,
+              updated_at: new Date().toISOString()
+            });
+          setAuthorProfile({ username: emailUsername, avatar_url: null });
+        }
+
+        if (!user) return;
+        
         // Check if saved
         const { data: savedData } = await supabase
           .from('saved_confessions')
@@ -97,11 +119,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           setLastComment(commentData);
         }
       } catch (error) {
-        console.error('Error checking relationships:', error);
+        console.error('Error fetching author and relationships:', error);
       }
     };
     
-    checkRelationships();
+    fetchAuthorAndRelationships();
   }, [confession.id, confession.userId, user]);
 
   // Auto-play video when it comes into view
@@ -132,7 +154,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     if (!isAuthenticated || !user || isUpdating) {
       toast({
         variant: "destructive",
-        description: "Please sign in to react to confessions",
+        description: "Please sign in to react",
       });
       return;
     }
@@ -146,7 +168,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       console.error('Error toggling reaction:', error);
       toast({
         variant: "destructive",
-        description: "Failed to record your reaction",
+        description: "Failed to record reaction",
       });
     } finally {
       setIsUpdating(false);
@@ -172,7 +194,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         });
         setIsFollowing(false);
         toast({
-          description: "Unfollowed user",
+          description: "Unfollowed",
         });
       } else {
         await supabase.rpc('follow_user', {
@@ -181,14 +203,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         });
         setIsFollowing(true);
         toast({
-          description: "Now following user",
+          description: "Following",
         });
       }
     } catch (error) {
       console.error('Error following/unfollowing user:', error);
       toast({
         variant: "destructive",
-        description: "Failed to update follow status",
+        description: "Action failed",
       });
     }
   };
@@ -204,7 +226,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     if (!isAuthenticated || !user) {
       toast({
         variant: "destructive",
-        description: "Please sign in to save confessions",
+        description: "Please sign in to save posts",
       });
       return;
     }
@@ -214,14 +236,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       if (result) {
         setIsSaved(!isSaved);
         toast({
-          description: isSaved ? "Confession removed from saved" : "Confession saved",
+          description: isSaved ? "Removed from saved" : "Saved",
         });
       }
     } catch (error) {
       console.error('Error saving confession:', error);
       toast({
         variant: "destructive",
-        description: "Failed to save confession",
+        description: "Save failed",
       });
     }
   };
@@ -230,18 +252,18 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'ConfessZone Confession',
+          title: 'ConfessZone Post',
           text: `${confession.content.substring(0, 50)}...`,
           url: `${window.location.origin}/confession/${confession.id}`
         });
       } else {
         navigator.clipboard.writeText(`${window.location.origin}/confession/${confession.id}`);
         toast({
-          description: "Link copied to clipboard",
+          description: "Link copied",
         });
       }
     } catch (error) {
-      console.error('Error sharing confession:', error);
+      console.error('Error sharing:', error);
     }
   };
 
@@ -249,7 +271,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     if (!isAuthenticated) {
       toast({
         variant: "destructive",
-        description: "Please sign in to comment on confessions",
+        description: "Please sign in to comment",
       });
       return;
     }
@@ -263,6 +285,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const displayContent = shouldTruncate && !showFullContent 
     ? confession.content.substring(0, 150) + '...'
     : confession.content;
+
+  const displayUsername = authorProfile?.username || user?.email?.split('@')[0] || 'User';
   
   return (
     <div className="w-full bg-background mb-6">
@@ -271,66 +295,54 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         <div className="flex items-center space-x-3">
           <Link to={`/user/${confession.userId}`}>
             <Avatar className="h-8 w-8">
-              <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`} />
-              <AvatarFallback>U</AvatarFallback>
+              <AvatarImage src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`} />
+              <AvatarFallback>{displayUsername.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
           </Link>
           <div className="flex items-center space-x-2">
             <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
-              <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
+              {displayUsername}
             </Link>
-            {/* Follow button right after username */}
             {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
-              <span className="text-muted-foreground">•</span>
+              <>
+                <span className="text-muted-foreground">•</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleFollow}
+                  className="h-auto p-0 text-blue-500 font-semibold text-sm hover:bg-transparent"
+                >
+                  Follow
+                </Button>
+              </>
             )}
-            {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleFollow}
-                className="h-auto p-0 text-blue-500 font-semibold text-sm hover:bg-transparent"
-              >
-                Follow
-              </Button>
-            )}
+            <span className="text-muted-foreground text-xs">
+              {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
+            </span>
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted/50">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleSave}>
-                {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
-                {isSaved ? 'Unsave' : 'Save'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast({ description: "Remix feature coming soon!" })}>
-                <Copy className="h-4 w-4 mr-2" />
-                Remix
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast({ description: "QR code feature coming soon!" })}>
-                <QrCode className="h-4 w-4 mr-2" />
-                QR Code
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast({ description: "Marked as not interesting" })}>
-                <EyeOff className="h-4 w-4 mr-2" />
-                Not Interested
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast({ description: "Account info feature coming soon!" })}>
-                <Info className="h-4 w-4 mr-2" />
-                About This Account
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast({ description: "Report feature coming soon!" })}>
-                <Flag className="h-4 w-4 mr-2" />
-                Report Account
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted/50">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={handleSave}>
+              {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
+              {isSaved ? 'Unsave' : 'Save'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toast({ description: "Feature coming soon" })}>
+              <Copy className="h-4 w-4 mr-2" />
+              Remix
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toast({ description: "Feature coming soon" })}>
+              <Flag className="h-4 w-4 mr-2" />
+              Report
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       
       {/* Media content */}
@@ -339,7 +351,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           {confession.mediaType === 'image' ? (
             <img 
               src={confession.mediaUrl} 
-              alt="Confession media" 
+              alt="Post media" 
               className="w-full max-h-[500px] object-contain bg-black"
               loading="lazy"
             />
@@ -366,7 +378,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Action buttons - positioned right after media */}
+      {/* Action buttons */}
       <div className="px-4 pt-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-4">
@@ -435,9 +447,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         
         {/* Caption */}
         <div className="mb-2">
-          <span className="font-semibold text-sm mr-2">
-            <UsernameDisplay userId={confession.userId} showAvatar={false} linkToProfile={false} />
-          </span>
+          <span className="font-semibold text-sm mr-2">{displayUsername}</span>
           <span className="text-sm leading-relaxed">{displayContent}</span>
           {shouldTruncate && !showFullContent && (
             <button 
@@ -476,16 +486,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         {lastComment && (
           <div className="mb-1">
             <span className="font-semibold text-sm mr-2">
-              {lastComment.profiles?.username || 'Anonymous'}
+              {lastComment.profiles?.username || 'User'}
             </span>
             <span className="text-sm text-muted-foreground">{lastComment.content}</span>
           </div>
         )}
-        
-        {/* Time */}
-        <div className="text-xs text-muted-foreground mt-1">
-          {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-        </div>
       </div>
     </div>
   );

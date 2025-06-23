@@ -15,7 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   signOut: () => Promise<void>;
-  logout: () => Promise<void>; // Alias for signOut
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUsername: (username: string) => Promise<void>;
   updateUserProfile: (profile: any) => Promise<void>;
@@ -32,23 +32,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string): Promise<AuthUser | null> => {
     try {
-      const { data: profile } = await supabase
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser) return null;
+
+      let { data: profile } = await supabase
         .from('profiles')
         .select('username, avatar_url, is_admin')
         .eq('id', userId)
         .single();
 
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
-      if (authUser) {
-        setIsAdmin(profile?.is_admin || false);
-        return {
-          ...authUser,
-          username: profile?.username || null,
-          avatarUrl: profile?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`,
-        };
+      // If no profile exists, create one with username from email
+      if (!profile) {
+        const emailUsername = authUser.email?.split('@')[0] || 'user';
+        
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            username: emailUsername,
+            updated_at: new Date().toISOString()
+          });
+
+        if (!insertError) {
+          profile = {
+            username: emailUsername,
+            avatar_url: null,
+            is_admin: false
+          };
+        }
       }
-      return null;
+      
+      setIsAdmin(profile?.is_admin || false);
+      
+      return {
+        ...authUser,
+        username: profile?.username || authUser.email?.split('@')[0] || 'User',
+        avatarUrl: profile?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`,
+      };
     } catch (error) {
       console.error('Error fetching user profile:', error);
       return null;
@@ -108,14 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('saved_confessions')
-        .select(`
-          confession_id,
-          confessions (*)
-        `)
+        .select('confession_id')
         .eq('user_id', user.id);
       
       if (error) throw error;
-      return data || [];
+      return data?.map(item => item.confession_id) || [];
     } catch (error) {
       console.error('Error fetching saved confessions:', error);
       return [];
@@ -184,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAdmin,
     signOut,
-    logout: signOut, // Alias for signOut
+    logout: signOut,
     refreshUser,
     updateUsername,
     updateUserProfile,

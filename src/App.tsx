@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, lazy, Suspense, useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { WelcomeScreen } from "./components/WelcomeScreen";
 import HomePage from "./pages/HomePage";
 
 // Use lazy loading for non-critical pages
@@ -19,7 +20,7 @@ const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
-const StoriesPage = lazy(() => import("./pages/StoriesPage")); // Add Stories page
+const StoriesPage = lazy(() => import("./pages/StoriesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const LoadingFallback = () => (
@@ -32,6 +33,10 @@ const LoadingFallback = () => (
 );
 
 const App = () => {
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !localStorage.getItem('welcomeCompleted');
+  });
+
   // Create a new QueryClient instance with error handling
   const [queryClient] = useState(() => 
     new QueryClient({
@@ -44,6 +49,15 @@ const App = () => {
       }
     })
   );
+
+  const handleWelcomeComplete = () => {
+    localStorage.setItem('welcomeCompleted', 'true');
+    setShowWelcome(false);
+  };
+  
+  if (showWelcome) {
+    return <WelcomeScreen onComplete={handleWelcomeComplete} />;
+  }
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -62,7 +76,7 @@ const App = () => {
                   <Route path="/user/:userId" element={<ProfilePage />} />
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
                   <Route path="/trending" element={<TrendingPage />} />
-                  <Route path="/stories" element={<StoriesPage />} /> {/* Add Stories route */}
+                  <Route path="/stories" element={<StoriesPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />
