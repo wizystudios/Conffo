@@ -40,29 +40,49 @@ export function UsernameDisplay({
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
         
         if (error) {
           console.error('Error fetching username:', error);
-          return;
-        }
-        
-        setUsername(data?.username || null);
-        setAvatarUrl(data?.avatar_url || null);
-        
-        // If no avatar URL from profile, generate one using DiceBear API
-        if (!data?.avatar_url) {
-          const avatarSeed = userId || 'anonymous';
-          setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}`);
+          // Set default values
+          setUsername('User');
+          setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+        } else if (data) {
+          setUsername(data.username || 'User');
+          setAvatarUrl(data.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+        } else {
+          // No profile found, create a basic one and set defaults
+          setUsername('User');
+          setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+          
+          // Try to create a basic profile if it doesn't exist
+          try {
+            await supabase
+              .from('profiles')
+              .insert({
+                id: userId,
+                username: 'User',
+                updated_at: new Date().toISOString()
+              });
+          } catch (insertError) {
+            console.error('Error creating profile:', insertError);
+          }
         }
         
         // Check if user has active stories
         if (showStoryIndicator) {
-          const userHasStory = await hasActiveStory(userId);
-          setHasStory(userHasStory);
+          try {
+            const userHasStory = await hasActiveStory(userId);
+            setHasStory(userHasStory);
+          } catch (error) {
+            console.error('Error checking stories:', error);
+            setHasStory(false);
+          }
         }
       } catch (error) {
         console.error('Error in fetchUsername:', error);
+        setUsername('User');
+        setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
       } finally {
         setIsLoading(false);
       }
@@ -120,7 +140,7 @@ export function UsernameDisplay({
         )
       )}
       <span className={`${textSizeClass[size]} font-medium`}>
-        {username || 'Anonymous User'}
+        {username || 'User'}
       </span>
     </div>
   );

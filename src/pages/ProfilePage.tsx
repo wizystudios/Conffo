@@ -66,33 +66,49 @@ export default function ProfilePage() {
           .from('profiles')
           .select('*')
           .eq('id', targetUserId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching profile:', error);
           return;
         }
 
-        setProfileUser(data);
-        
-        if (isOwnProfile) {
-          setUsername(data.username || '');
-          setBio(data.bio || '');
-          setEmail(data.contact_email || '');
-          setPhone(data.contact_phone || '');
-          // Check if is_public is explicitly false, otherwise default to true
-          setIsProfilePublic(data.is_public !== false);
+        if (data) {
+          setProfileUser(data);
+          
+          if (isOwnProfile) {
+            setUsername(data.username || '');
+            setBio(data.bio || '');
+            setEmail(data.contact_email || '');
+            setPhone(data.contact_phone || '');
+            setIsProfilePublic(data.is_public !== false);
+          } else {
+            setUsername(data.username || 'User');
+            setBio(data.bio || 'No bio available');
+            if (data.is_public === false && !isAuthenticated) {
+              setBio('This profile is private');
+            }
+          }
+          
+          setAvatarUrl(data.avatar_url || null);
         } else {
-          setUsername(data.username || 'Anonymous User');
-          setBio(data.bio || 'No bio available');
-          // Check if profile is public
-          if (data.is_public === false && !isAuthenticated) {
-            // If profile is private and viewer is not authenticated, show limited info
-            setBio('This profile is private');
+          // If no profile exists, create a basic one
+          if (isOwnProfile && user?.id) {
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: user.id,
+                username: user.email?.split('@')[0] || 'User',
+                updated_at: new Date().toISOString()
+              });
+            
+            if (insertError) {
+              console.error('Error creating profile:', insertError);
+            } else {
+              setUsername(user.email?.split('@')[0] || 'User');
+            }
           }
         }
-        
-        setAvatarUrl(data.avatar_url || null);
         
         // Check if the current user is following this profile
         if (user && !isOwnProfile) {
@@ -131,6 +147,7 @@ export default function ProfilePage() {
     fetchProfileData();
   }, [userId, user, isOwnProfile, isAuthenticated]);
 
+  // Load saved confessions
   useEffect(() => {
     const fetchSavedConfessions = async () => {
       if (!isAuthenticated || !isOwnProfile) return;
@@ -231,29 +248,56 @@ export default function ProfilePage() {
       }
       
       const file = e.target.files[0];
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          description: "File size must be less than 2MB"
+        });
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          variant: "destructive",
+          description: "Please select an image file"
+        });
+        return;
+      }
+      
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
       
       setUploadingImage(true);
       
-      // Create avatars bucket if it doesn't exist
+      // Check if avatars bucket exists, create if not
       const { data: buckets } = await supabase.storage.listBuckets();
       const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
       
       if (!avatarBucketExists) {
-        await supabase.storage.createBucket('avatars', {
+        const { error: bucketError } = await supabase.storage.createBucket('avatars', {
           public: true,
           fileSizeLimit: 1024 * 1024 * 2 // 2MB
         });
+        
+        if (bucketError) {
+          console.error('Error creating bucket:', bucketError);
+        }
       }
       
       // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
       if (uploadError) {
+        console.error('Upload error:', uploadError);
         throw uploadError;
       }
       
@@ -265,9 +309,15 @@ export default function ProfilePage() {
       const publicUrl = data.publicUrl;
       
       // Update user profile with new avatar URL
-      await updateUserProfile({
-        avatarUrl: publicUrl
-      });
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        throw updateError;
+      }
       
       setAvatarUrl(publicUrl);
       
@@ -298,25 +348,22 @@ export default function ProfilePage() {
       
       setIsSaving(true);
       
-      // Update the profile using the updateUserProfile function from AuthContext
-      await updateUserProfile({
-        username: username.trim(),
-        bio: bio.trim(),
-        contactEmail: email.trim(),
-        contactPhone: phone.trim(),
-        isPublic: isProfilePublic
-      });
-      
-      // Also update the username separately to ensure it's saved
-      if (user?.id) {
-        const { error: usernameError } = await supabase
-          .from('profiles')
-          .update({ username: username.trim() })
-          .eq('id', user.id);
-          
-        if (usernameError) {
-          console.error('Error updating username:', usernameError);
-        }
+      // Update the profile directly in Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username: username.trim(),
+          bio: bio.trim(),
+          contact_email: email.trim(),
+          contact_phone: phone.trim(),
+          is_public: isProfilePublic,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user?.id);
+        
+      if (error) {
+        console.error('Error updating profile:', error);
+        throw error;
       }
       
       toast({
@@ -382,7 +429,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold">{username || 'Anonymous User'}</h2>
+                  <h2 className="text-xl font-bold">{username || 'User'}</h2>
                   {!isOwnProfile && <p className="text-sm text-muted-foreground mt-1">{bio}</p>}
                   
                   <div className="flex items-center gap-4 mt-2">

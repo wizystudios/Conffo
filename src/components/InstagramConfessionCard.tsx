@@ -48,6 +48,19 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [authorProfile, setAuthorProfile] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
+  // Format time to short format like Instagram
+  const formatTimeShort = (date: Date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}s`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d`;
+    if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)}mo`;
+    return `${Math.floor(diffInSeconds / 31536000)}y`;
+  };
+  
   // Fetch author profile and check relationships
   useEffect(() => {
     const fetchAuthorAndRelationships = async () => {
@@ -57,21 +70,17 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', confession.userId)
-          .single();
+          .maybeSingle();
         
         if (profile) {
           setAuthorProfile(profile);
         } else {
-          // Create a profile if it doesn't exist
-          const emailUsername = confession.userId.split('@')[0] || 'user';
-          await supabase
-            .from('profiles')
-            .upsert({
-              id: confession.userId,
-              username: emailUsername,
-              updated_at: new Date().toISOString()
-            });
-          setAuthorProfile({ username: emailUsername, avatar_url: null });
+          // Create a default avatar URL
+          const avatarSeed = confession.userId || 'anonymous';
+          setAuthorProfile({ 
+            username: 'User', 
+            avatar_url: `https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}` 
+          });
         }
 
         if (!user) return;
@@ -107,8 +116,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             id,
             content,
             created_at,
-            user_id,
-            profiles:user_id (username)
+            user_id
           `)
           .eq('confession_id', confession.id)
           .order('created_at', { ascending: false })
@@ -116,7 +124,17 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           .maybeSingle();
         
         if (commentData) {
-          setLastComment(commentData);
+          // Get commenter username
+          const { data: commenterProfile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', commentData.user_id)
+            .maybeSingle();
+          
+          setLastComment({
+            ...commentData,
+            username: commenterProfile?.username || 'User'
+          });
         }
       } catch (error) {
         console.error('Error fetching author and relationships:', error);
@@ -286,11 +304,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     ? confession.content.substring(0, 150) + '...'
     : confession.content;
 
-  const displayUsername = authorProfile?.username || user?.email?.split('@')[0] || 'User';
+  const displayUsername = authorProfile?.username || 'User';
   
   return (
     <div className="w-full bg-background mb-6">
-      {/* Header with user info and follow button */}
+      {/* Header with user info */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
           <Link to={`/user/${confession.userId}`}>
@@ -303,6 +321,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
               {displayUsername}
             </Link>
+            {/* Follow button where time used to be */}
             {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
               <>
                 <span className="text-muted-foreground">•</span>
@@ -316,9 +335,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 </Button>
               </>
             )}
-            <span className="text-muted-foreground text-xs">
-              {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-            </span>
           </div>
         </div>
         
@@ -343,6 +359,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+      
+      {/* Room hashtag */}
+      <div className="px-4 pb-2">
+        <span className="text-blue-500 font-semibold text-sm">#{confession.room}</span>
       </div>
       
       {/* Media content */}
@@ -378,8 +399,24 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Action buttons */}
+      {/* Text content */}
       <div className="px-4 pt-3">
+        <div className="mb-2">
+          <span className="font-semibold text-sm mr-2">{displayUsername}</span>
+          <span className="text-sm leading-relaxed">{displayContent}</span>
+          {shouldTruncate && !showFullContent && (
+            <button 
+              onClick={() => setShowFullContent(true)}
+              className="text-muted-foreground text-sm ml-1 hover:text-foreground"
+            >
+              more
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Action buttons */}
+      <div className="px-4 pt-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
@@ -445,20 +482,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </Button>
         </div>
         
-        {/* Caption */}
-        <div className="mb-2">
-          <span className="font-semibold text-sm mr-2">{displayUsername}</span>
-          <span className="text-sm leading-relaxed">{displayContent}</span>
-          {shouldTruncate && !showFullContent && (
-            <button 
-              onClick={() => setShowFullContent(true)}
-              className="text-muted-foreground text-sm ml-1 hover:text-foreground"
-            >
-              more
-            </button>
-          )}
-        </div>
-        
         {/* Comments */}
         {confession.commentCount > 0 && (
           <div className="mb-2">
@@ -484,13 +507,20 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         
         {/* Last comment */}
         {lastComment && (
-          <div className="mb-1">
+          <div className="mb-2">
             <span className="font-semibold text-sm mr-2">
-              {lastComment.profiles?.username || 'User'}
+              {lastComment.username}
             </span>
             <span className="text-sm text-muted-foreground">{lastComment.content}</span>
           </div>
         )}
+        
+        {/* Time at the bottom */}
+        <div className="pb-2">
+          <span className="text-xs text-muted-foreground">
+            {formatTimeShort(new Date(confession.timestamp))}
+          </span>
+        </div>
       </div>
     </div>
   );
