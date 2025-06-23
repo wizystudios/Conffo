@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -12,9 +13,7 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
-  profiles?: {
-    username: string;
-  } | null;
+  username?: string;
 }
 
 interface CommentSectionProps {
@@ -35,22 +34,38 @@ export function CommentSection({ confessionId, onUpdate }: CommentSectionProps) 
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get the comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles!user_id (
-            username
-          )
-        `)
+        .select('id, content, created_at, user_id')
         .eq('confession_id', confessionId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      setComments(data || []);
+      if (commentsError) throw commentsError;
+
+      // Then, get the usernames for each comment
+      const commentsWithUsernames = await Promise.all(
+        (commentsData || []).map(async (comment) => {
+          if (comment.user_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('username')
+              .eq('id', comment.user_id)
+              .maybeSingle();
+            
+            return {
+              ...comment,
+              username: profileData?.username || null
+            };
+          }
+          return {
+            ...comment,
+            username: null
+          };
+        })
+      );
+
+      setComments(commentsWithUsernames);
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
@@ -107,7 +122,7 @@ export function CommentSection({ confessionId, onUpdate }: CommentSectionProps) 
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm">
-                      {comment.profiles?.username || 'Anonymous User'}
+                      {comment.username || 'Anonymous User'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(comment.created_at).toLocaleDateString()}
