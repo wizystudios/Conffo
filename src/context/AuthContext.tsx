@@ -42,7 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
 
-      // If no profile exists, create one with username from email
       if (!profile) {
         const emailUsername = authUser.email?.split('@')[0] || 'user';
         
@@ -141,7 +140,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
@@ -150,16 +148,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      
       setSession(session);
       
       if (session?.user) {
-        // Defer profile fetching to prevent potential deadlocks
         setTimeout(async () => {
           const userWithProfile = await fetchUserProfile(session.user.id);
           setUser(userWithProfile);
@@ -177,7 +171,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clean up auth state
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
           localStorage.removeItem(key);
@@ -185,12 +178,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       await supabase.auth.signOut({ scope: 'global' });
-      
-      // Force page reload for clean state
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error signing out:', error);
-      // Force redirect even if sign out fails
       window.location.href = '/auth';
     }
   };

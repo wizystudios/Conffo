@@ -44,18 +44,15 @@ export function UsernameDisplay({
         
         if (error) {
           console.error('Error fetching username:', error);
-          // Set default values
           setUsername('User');
           setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
         } else if (data) {
           setUsername(data.username || 'User');
           setAvatarUrl(data.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
         } else {
-          // No profile found, create a basic one and set defaults
           setUsername('User');
           setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
           
-          // Try to create a basic profile if it doesn't exist
           try {
             await supabase
               .from('profiles')
@@ -69,7 +66,6 @@ export function UsernameDisplay({
           }
         }
         
-        // Check if user has active stories
         if (showStoryIndicator) {
           try {
             const userHasStory = await hasActiveStory(userId);

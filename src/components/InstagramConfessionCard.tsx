@@ -29,7 +29,6 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InstagramConfessionCardProps {
@@ -48,7 +47,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [authorProfile, setAuthorProfile] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Format time to short format like Instagram
   const formatTimeShort = (date: Date) => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -61,11 +59,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     return `${Math.floor(diffInSeconds / 31536000)}y`;
   };
   
-  // Fetch author profile and check relationships
   useEffect(() => {
     const fetchAuthorAndRelationships = async () => {
       try {
-        // Get author profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -75,7 +71,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         if (profile) {
           setAuthorProfile(profile);
         } else {
-          // Create a default avatar URL
           const avatarSeed = confession.userId || 'anonymous';
           setAuthorProfile({ 
             username: 'User', 
@@ -85,7 +80,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
 
         if (!user) return;
         
-        // Check if saved
         const { data: savedData } = await supabase
           .from('saved_confessions')
           .select('id')
@@ -97,7 +91,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           setIsSaved(true);
         }
         
-        // Check if following
         const { data: followData } = await supabase
           .from('user_follows')
           .select('id')
@@ -109,7 +102,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           setIsFollowing(true);
         }
         
-        // Get last comment
         const { data: commentData } = await supabase
           .from('comments')
           .select(`
@@ -124,7 +116,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           .maybeSingle();
         
         if (commentData) {
-          // Get commenter username
           const { data: commenterProfile } = await supabase
             .from('profiles')
             .select('username')
@@ -144,7 +135,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     fetchAuthorAndRelationships();
   }, [confession.id, confession.userId, user]);
 
-  // Auto-play video when it comes into view
   useEffect(() => {
     if (videoRef.current && confession.mediaType === 'video') {
       const video = videoRef.current;
@@ -170,10 +160,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   const handleReaction = async (reaction: Reaction) => {
     if (!isAuthenticated || !user || isUpdating) {
-      toast({
-        variant: "destructive",
-        description: "Please sign in to react",
-      });
       return;
     }
     
@@ -184,10 +170,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Error toggling reaction:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to record reaction",
-      });
     } finally {
       setIsUpdating(false);
     }
@@ -195,41 +177,34 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   const handleFollow = async () => {
     if (!isAuthenticated || !user || confession.userId === user.id) {
-      if (!isAuthenticated) {
-        toast({
-          variant: "destructive",
-          description: "Please sign in to follow users",
-        });
-      }
       return;
     }
     
     try {
       if (isFollowing) {
-        await supabase.rpc('unfollow_user', {
-          follower_uuid: user.id,
-          following_uuid: confession.userId
-        });
-        setIsFollowing(false);
-        toast({
-          description: "Unfollowed",
-        });
+        const { error } = await supabase
+          .from('user_follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', confession.userId);
+          
+        if (!error) {
+          setIsFollowing(false);
+        }
       } else {
-        await supabase.rpc('follow_user', {
-          follower_uuid: user.id,
-          following_uuid: confession.userId
-        });
-        setIsFollowing(true);
-        toast({
-          description: "Following",
-        });
+        const { error } = await supabase
+          .from('user_follows')
+          .insert({
+            follower_id: user.id,
+            following_id: confession.userId
+          });
+          
+        if (!error) {
+          setIsFollowing(true);
+        }
       }
     } catch (error) {
       console.error('Error following/unfollowing user:', error);
-      toast({
-        variant: "destructive",
-        description: "Action failed",
-      });
     }
   };
   
@@ -242,10 +217,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   const handleSave = async () => {
     if (!isAuthenticated || !user) {
-      toast({
-        variant: "destructive",
-        description: "Please sign in to save posts",
-      });
       return;
     }
     
@@ -253,16 +224,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       const result = await saveConfession(confession.id, user.id);
       if (result) {
         setIsSaved(!isSaved);
-        toast({
-          description: isSaved ? "Removed from saved" : "Saved",
-        });
       }
     } catch (error) {
       console.error('Error saving confession:', error);
-      toast({
-        variant: "destructive",
-        description: "Save failed",
-      });
     }
   };
   
@@ -276,9 +240,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         });
       } else {
         navigator.clipboard.writeText(`${window.location.origin}/confession/${confession.id}`);
-        toast({
-          description: "Link copied",
-        });
       }
     } catch (error) {
       console.error('Error sharing:', error);
@@ -287,10 +248,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
 
   const handleCommentClick = () => {
     if (!isAuthenticated) {
-      toast({
-        variant: "destructive",
-        description: "Please sign in to comment",
-      });
       return;
     }
   };
@@ -298,7 +255,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const userReactions = confession.userReactions || [];
   const isLiked = userReactions.includes('heart');
   
-  // Truncate content if too long
   const shouldTruncate = confession.content.length > 150;
   const displayContent = shouldTruncate && !showFullContent 
     ? confession.content.substring(0, 150) + '...'
@@ -308,7 +264,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   return (
     <div className="w-full bg-background mb-6">
-      {/* Header with user info */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
           <Link to={`/user/${confession.userId}`}>
@@ -321,7 +276,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
               {displayUsername}
             </Link>
-            {/* Follow button where time used to be */}
             {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
               <>
                 <span className="text-muted-foreground">•</span>
@@ -349,11 +303,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
               {isSaved ? 'Unsave' : 'Save'}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast({ description: "Feature coming soon" })}>
+            <DropdownMenuItem onClick={() => {}}>
               <Copy className="h-4 w-4 mr-2" />
               Remix
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast({ description: "Feature coming soon" })}>
+            <DropdownMenuItem onClick={() => {}}>
               <Flag className="h-4 w-4 mr-2" />
               Report
             </DropdownMenuItem>
@@ -361,12 +315,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Room hashtag */}
       <div className="px-4 pb-2">
         <span className="text-blue-500 font-semibold text-sm">#{confession.room}</span>
       </div>
       
-      {/* Media content */}
       {confession.mediaUrl && (
         <div className="w-full">
           {confession.mediaType === 'image' ? (
@@ -399,7 +351,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Text content */}
       <div className="px-4 pt-3">
         <div className="mb-2">
           <span className="font-semibold text-sm mr-2">{displayUsername}</span>
@@ -415,7 +366,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      {/* Action buttons */}
       <div className="px-4 pt-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-4">
@@ -482,7 +432,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </Button>
         </div>
         
-        {/* Comments */}
         {confession.commentCount > 0 && (
           <div className="mb-2">
             {isAuthenticated ? (
@@ -494,10 +443,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             ) : (
               <span 
                 className="text-muted-foreground text-sm cursor-pointer hover:text-foreground"
-                onClick={() => toast({
-                  variant: "destructive",
-                  description: "Please sign in to view comments",
-                })}
+                onClick={() => {}}
               >
                 View all {confession.commentCount} comments
               </span>
@@ -505,7 +451,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </div>
         )}
         
-        {/* Last comment */}
         {lastComment && (
           <div className="mb-2">
             <span className="font-semibold text-sm mr-2">
@@ -515,7 +460,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </div>
         )}
         
-        {/* Time at the bottom */}
         <div className="pb-2">
           <span className="text-xs text-muted-foreground">
             {formatTimeShort(new Date(confession.timestamp))}
