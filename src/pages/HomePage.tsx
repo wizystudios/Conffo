@@ -16,24 +16,12 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<string>('recent');
   const [showConfessionForm, setShowConfessionForm] = useState(false);
 
-  // Listen for create-confession event from navbar
   useEffect(() => {
     const handleCreateConfession = () => setShowConfessionForm(true);
     window.addEventListener('create-confession', handleCreateConfession);
     return () => window.removeEventListener('create-confession', handleCreateConfession);
   }, []);
 
-  // Debug authentication status
-  useEffect(() => {
-    console.log("HomePage - Auth status:", {
-      isAuthenticated,
-      userId: user?.id,
-      username: user?.username,
-      isLoading
-    });
-  }, [isAuthenticated, user, isLoading]);
-
-  // Using React Query for data fetching with performance optimizations
   const { 
     data: recentConfessions = [],
     isLoading: isLoadingRecent,
@@ -42,7 +30,9 @@ export default function HomePage() {
     queryKey: ['confessions', 'recent', user?.id],
     queryFn: () => getConfessions(undefined, user?.id),
     enabled: true,
-    staleTime: 60000, // 1 minute cache
+    staleTime: 30000,
+    cacheTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const {
@@ -53,16 +43,17 @@ export default function HomePage() {
     queryKey: ['confessions', 'trending', user?.id],
     queryFn: () => getTrendingConfessions(5, user?.id),
     enabled: activeTab === 'trending',
-    staleTime: 300000, // 5 minutes cache for trending
+    staleTime: 180000,
+    cacheTime: 300000,
+    refetchOnWindowFocus: false,
   });
 
   const handleConfessionSuccess = () => {
-    // Refetch confessions without showing toast notifications
     refetchRecent();
     if (activeTab === 'trending') {
       refetchTrending();
     }
-    setShowConfessionForm(false); // Hide the form after successful submission
+    setShowConfessionForm(false);
   };
 
   const handleTabChange = (value: string) => {
@@ -73,14 +64,12 @@ export default function HomePage() {
   };
 
   const handleCreateStory = () => {
-    // Dispatch event for story creation
     window.dispatchEvent(new Event('create-story'));
   };
   
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        {/* Story-like navigation bar */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-0">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-4">
@@ -128,7 +117,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Following users bar */}
         <FollowingUsersBar />
 
         {isAuthenticated && showConfessionForm && (
@@ -141,15 +129,11 @@ export default function HomePage() {
           </div>
         )}
         
-        {/* Content based on active tab */}
         {activeTab === 'recent' ? (
           <>
             {isLoadingRecent ? (
-              <div className="flex justify-center py-12">
-                <div className="text-center">
-                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Loading confessions...</p>
-                </div>
+              <div className="flex justify-center py-8">
+                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : recentConfessions.length > 0 ? (
               <div className="space-y-0">
@@ -170,11 +154,8 @@ export default function HomePage() {
         ) : (
           <>
             {isLoadingTrending ? (
-              <div className="flex justify-center py-12">
-                <div className="text-center">
-                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-sm text-muted-foreground">Loading trending confessions...</p>
-                </div>
+              <div className="flex justify-center py-8">
+                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : trendingConfessions.length > 0 ? (
               <div className="space-y-0">

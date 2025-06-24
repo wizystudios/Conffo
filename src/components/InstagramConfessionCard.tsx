@@ -16,7 +16,9 @@ import {
   EyeOff,
   Info,
   Flag,
-  BookmarkCheck
+  BookmarkCheck,
+  Phone,
+  Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,6 +32,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { UsernameDisplay } from '@/components/UsernameDisplay';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -44,7 +47,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [isFollowing, setIsFollowing] = useState(false);
   const [lastComment, setLastComment] = useState<any>(null);
   const [showFullContent, setShowFullContent] = useState(false);
-  const [authorProfile, setAuthorProfile] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const formatTimeShort = (date: Date) => {
@@ -60,26 +62,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
   
   useEffect(() => {
-    const fetchAuthorAndRelationships = async () => {
+    const fetchUserData = async () => {
+      if (!user) return;
+      
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, avatar_url')
-          .eq('id', confession.userId)
-          .maybeSingle();
-        
-        if (profile) {
-          setAuthorProfile(profile);
-        } else {
-          const avatarSeed = confession.userId || 'anonymous';
-          setAuthorProfile({ 
-            username: 'User', 
-            avatar_url: `https://api.dicebear.com/7.x/micah/svg?seed=${avatarSeed}` 
-          });
-        }
-
-        if (!user) return;
-        
         const { data: savedData } = await supabase
           .from('saved_confessions')
           .select('id')
@@ -128,11 +114,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           });
         }
       } catch (error) {
-        console.error('Error fetching author and relationships:', error);
+        console.error('Error fetching user data:', error);
       }
     };
     
-    fetchAuthorAndRelationships();
+    fetchUserData();
   }, [confession.id, confession.userId, user]);
 
   useEffect(() => {
@@ -246,6 +232,28 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     }
   };
 
+  const handleCall = (type: 'audio' | 'video') => {
+    // Placeholder for call functionality
+    console.log(`Initiating ${type} call with user ${confession.userId}`);
+  };
+
+  const handleDelete = async () => {
+    if (!user || confession.userId !== user.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('confessions')
+        .delete()
+        .eq('id', confession.id);
+        
+      if (!error && onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Error deleting confession:', error);
+    }
+  };
+
   const handleCommentClick = () => {
     if (!isAuthenticated) {
       return;
@@ -259,37 +267,31 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const displayContent = shouldTruncate && !showFullContent 
     ? confession.content.substring(0, 150) + '...'
     : confession.content;
-
-  const displayUsername = authorProfile?.username || 'User';
   
   return (
     <div className="w-full bg-background mb-6">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
-          <Link to={`/user/${confession.userId}`}>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={authorProfile?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`} />
-              <AvatarFallback>{displayUsername.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-          </Link>
-          <div className="flex items-center space-x-2">
-            <Link to={`/user/${confession.userId}`} className="font-semibold text-sm hover:opacity-80">
-              {displayUsername}
-            </Link>
-            {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
-              <>
-                <span className="text-muted-foreground">•</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleFollow}
-                  className="h-auto p-0 text-blue-500 font-semibold text-sm hover:bg-transparent"
-                >
-                  Follow
-                </Button>
-              </>
-            )}
-          </div>
+          <UsernameDisplay 
+            userId={confession.userId}
+            showAvatar={true}
+            size="md"
+            linkToProfile={true}
+            showStoryIndicator={true}
+          />
+          {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
+            <>
+              <span className="text-muted-foreground">•</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFollow}
+                className="h-auto p-0 text-blue-500 font-semibold text-sm hover:bg-transparent"
+              >
+                Follow
+              </Button>
+            </>
+          )}
         </div>
         
         <DropdownMenu>
@@ -299,18 +301,28 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            {isAuthenticated && confession.userId !== user?.id && (
+              <>
+                <DropdownMenuItem onClick={() => handleCall('audio')}>
+                  <Phone className="h-4 w-4 mr-2" />
+                  Audio Call
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCall('video')}>
+                  <Video className="h-4 w-4 mr-2" />
+                  Video Call
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuItem onClick={handleSave}>
               {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
               {isSaved ? 'Unsave' : 'Save'}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}}>
-              <Copy className="h-4 w-4 mr-2" />
-              Remix
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {}}>
-              <Flag className="h-4 w-4 mr-2" />
-              Report
-            </DropdownMenuItem>
+            {user?.id === confession.userId && (
+              <DropdownMenuItem onClick={handleDelete} className="text-red-500">
+                <Flag className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -353,8 +365,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       
       <div className="px-4 pt-3">
         <div className="mb-2">
-          <span className="font-semibold text-sm mr-2">{displayUsername}</span>
-          <span className="text-sm leading-relaxed">{displayContent}</span>
+          <UsernameDisplay 
+            userId={confession.userId}
+            showAvatar={false}
+            size="sm"
+            linkToProfile={true}
+            showStoryIndicator={false}
+          />
+          <span className="text-sm leading-relaxed ml-2">{displayContent}</span>
           {shouldTruncate && !showFullContent && (
             <button 
               onClick={() => setShowFullContent(true)}
