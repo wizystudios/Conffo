@@ -11,13 +11,13 @@ import { ConfessionCard } from '@/components/ConfessionCard';
 import { UserConfessions } from '@/components/UserConfessions';
 import { getConfessionById } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
-import { AlertCircle, User, Save, Download, LogOut, Upload, Camera, UserPlus, Users, UserMinus, Eye, EyeOff, Settings } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { AlertCircle, User, Save, Download, LogOut, Upload, Camera, UserPlus, Users, UserMinus, Eye, EyeOff, Settings, Phone, Video } from 'lucide-react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase, checkIfFollowing, getFollowersCount, getFollowingCount, addFollow, removeFollow } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { Switch } from '@/components/ui/switch';
+import { CallInterface } from '@/components/CallInterface';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -27,8 +27,6 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [savedConfessions, setSavedConfessions] = useState<Confession[]>([]);
-  const [loadingSaved, setLoadingSaved] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('posts');
   const [profileUser, setProfileUser] = useState<any>(null);
@@ -36,10 +34,9 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [loadingFollow, setLoadingFollow] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isProfilePublic, setIsProfilePublic] = useState(true);
-  const [profilePrivacyLoading, setProfilePrivacyLoading] = useState(false);
+  const [showCallInterface, setShowCallInterface] = useState(false);
+  const [callType, setCallType] = useState<'audio' | 'video'>('audio');
 
   // Determine if viewing own profile or someone else's
   useEffect(() => {
@@ -152,7 +149,6 @@ export default function ProfilePage() {
     const fetchSavedConfessions = async () => {
       if (!isAuthenticated || !isOwnProfile) return;
       
-      setLoadingSaved(true);
       try {
         const savedIds = await getSavedConfessions();
         const confessions: Confession[] = [];
@@ -171,51 +167,40 @@ export default function ProfilePage() {
         setSavedConfessions(confessions);
       } catch (error) {
         console.error('Error fetching saved confessions:', error);
-      } finally {
-        setLoadingSaved(false);
       }
     };
     
     fetchSavedConfessions();
   }, [isAuthenticated, user?.id, getSavedConfessions, isOwnProfile]);
 
+  const handleCall = (type: 'audio' | 'video') => {
+    setCallType(type);
+    setShowCallInterface(true);
+  };
+
   const handleToggleFollow = async () => {
-    if (!user || !userId || isOwnProfile || loadingFollow) return;
+    if (!user || !userId || isOwnProfile) return;
     
-    setLoadingFollow(true);
     try {
       if (isFollowing) {
         // Unfollow
         await removeFollow(user.id, userId);
         setIsFollowing(false);
         setFollowersCount(prev => Math.max(0, prev - 1));
-        toast({
-          description: "You have unfollowed this user"
-        });
       } else {
         // Follow
         await addFollow(user.id, userId);
         setIsFollowing(true);
         setFollowersCount(prev => prev + 1);
-        toast({
-          description: "You are now following this user"
-        });
       }
     } catch (error) {
       console.error('Error toggling follow:', error);
-      toast({
-        variant: "destructive",
-        description: isFollowing ? "Failed to unfollow user" : "Failed to follow user"
-      });
-    } finally {
-      setLoadingFollow(false);
     }
   };
 
   const handleToggleProfilePrivacy = async () => {
     if (!isOwnProfile || !user) return;
     
-    setProfilePrivacyLoading(true);
     try {
       const newPrivacyValue = !isProfilePublic;
       
@@ -227,17 +212,8 @@ export default function ProfilePage() {
       if (error) throw error;
       
       setIsProfilePublic(newPrivacyValue);
-      toast({
-        description: newPrivacyValue ? "Your profile is now public" : "Your profile is now private"
-      });
     } catch (error) {
       console.error('Error updating profile privacy:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to update profile privacy settings"
-      });
-    } finally {
-      setProfilePrivacyLoading(false);
     }
   };
 
@@ -249,21 +225,11 @@ export default function ProfilePage() {
       
       const file = e.target.files[0];
       
-      // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        toast({
-          variant: "destructive",
-          description: "File size must be less than 2MB"
-        });
         return;
       }
       
-      // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast({
-          variant: "destructive",
-          description: "Please select an image file"
-        });
         return;
       }
       
@@ -271,16 +237,13 @@ export default function ProfilePage() {
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
       
-      setUploadingImage(true);
-      
-      // Check if avatars bucket exists, create if not
       const { data: buckets } = await supabase.storage.listBuckets();
       const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
       
       if (!avatarBucketExists) {
         const { error: bucketError } = await supabase.storage.createBucket('avatars', {
           public: true,
-          fileSizeLimit: 1024 * 1024 * 2 // 2MB
+          fileSizeLimit: 1024 * 1024 * 2
         });
         
         if (bucketError) {
@@ -288,7 +251,6 @@ export default function ProfilePage() {
         }
       }
       
-      // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
@@ -301,14 +263,12 @@ export default function ProfilePage() {
         throw uploadError;
       }
       
-      // Get public URL
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
       
       const publicUrl = data.publicUrl;
       
-      // Update user profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
@@ -320,35 +280,17 @@ export default function ProfilePage() {
       }
       
       setAvatarUrl(publicUrl);
-      
-      toast({
-        description: "Profile picture updated successfully"
-      });
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to update profile picture"
-      });
-    } finally {
-      setUploadingImage(false);
     }
   };
 
   const handleSaveProfile = async () => {
     try {
       if (!username.trim()) {
-        toast({
-          title: "Username cannot be empty",
-          description: "Please enter a valid username",
-          variant: "destructive"
-        });
         return;
       }
       
-      setIsSaving(true);
-      
-      // Update the profile directly in Supabase
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -365,18 +307,8 @@ export default function ProfilePage() {
         console.error('Error updating profile:', error);
         throw error;
       }
-      
-      toast({
-        description: "Profile updated successfully"
-      });
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to update profile"
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -422,7 +354,6 @@ export default function ProfilePage() {
                         accept="image/*"
                         className="hidden"
                         onChange={handleUploadAvatar}
-                        disabled={uploadingImage}
                       />
                     </label>
                   )}
@@ -447,24 +378,37 @@ export default function ProfilePage() {
               </div>
               
               {!isOwnProfile && isAuthenticated && (
-                <Button 
-                  variant={isFollowing ? "outline" : "default"}
-                  className="w-full" 
-                  onClick={handleToggleFollow}
-                  disabled={loadingFollow}
-                >
-                  {isFollowing ? (
-                    <>
-                      <UserMinus className="h-4 w-4 mr-2" />
-                      Unfollow
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Follow
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant={isFollowing ? "outline" : "default"}
+                    className="flex-1" 
+                    onClick={handleToggleFollow}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleCall('audio')}
+                  >
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleCall('video')}
+                  >
+                    <Video className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -492,41 +436,6 @@ export default function ProfilePage() {
             {isOwnProfile ? (
               <>
                 <TabsContent value="settings" className="p-4">
-                  {uploadingImage && (
-                    <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded-md mb-4">
-                      Uploading profile picture...
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20 mb-6">
-                    <div>
-                      <h3 className="text-sm font-medium flex items-center gap-2">
-                        {isProfilePublic ? (
-                          <>
-                            <Eye className="h-4 w-4 text-green-500" />
-                            Public Profile
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="h-4 w-4 text-amber-500" />
-                            Private Profile
-                          </>
-                        )}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {isProfilePublic 
-                          ? "Anyone can view your profile and posts" 
-                          : "Only followers can see your profile details"
-                        }
-                      </p>
-                    </div>
-                    <Switch 
-                      checked={isProfilePublic} 
-                      onCheckedChange={handleToggleProfilePrivacy}
-                      disabled={profilePrivacyLoading}
-                    />
-                  </div>
-                  
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">Username</Label>
@@ -570,12 +479,8 @@ export default function ProfilePage() {
                       />
                     </div>
                     
-                    <Button 
-                      onClick={handleSaveProfile} 
-                      disabled={isSaving}
-                      className="w-full"
-                    >
-                      {isSaving ? "Saving..." : "Save Profile"}
+                    <Button onClick={handleSaveProfile} className="w-full">
+                      Save Profile
                     </Button>
                     
                     <div className="pt-4 border-t border-border">
@@ -589,11 +494,7 @@ export default function ProfilePage() {
                 
                 <TabsContent value="saved">
                   <div className="space-y-0">
-                    {loadingSaved ? (
-                      <div className="flex justify-center py-12">
-                        <p className="text-muted-foreground">Loading saved confessions...</p>
-                      </div>
-                    ) : savedConfessions.length > 0 ? (
+                    {savedConfessions.length > 0 ? (
                       <div className="space-y-0">
                         {savedConfessions.map(confession => (
                           <ConfessionCard 
@@ -643,6 +544,15 @@ export default function ProfilePage() {
             )}
           </Tabs>
         </div>
+        
+        <CallInterface
+          isOpen={showCallInterface}
+          onClose={() => setShowCallInterface(false)}
+          callType={callType}
+          targetUserId={userId || ''}
+          targetUsername={profileUser?.username}
+          targetAvatarUrl={profileUser?.avatar_url}
+        />
       </div>
     </Layout>
   );

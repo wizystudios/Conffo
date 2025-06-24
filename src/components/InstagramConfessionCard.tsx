@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,6 +32,7 @@ import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
+import { CallInterface } from '@/components/CallInterface';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -47,6 +47,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [isFollowing, setIsFollowing] = useState(false);
   const [lastComment, setLastComment] = useState<any>(null);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [showCallInterface, setShowCallInterface] = useState(false);
+  const [callType, setCallType] = useState<'audio' | 'video'>('audio');
+  const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const formatTimeShort = (date: Date) => {
@@ -66,6 +69,17 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       if (!user) return;
       
       try {
+        // Get confession author info
+        const { data: authorData } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', confession.userId)
+          .maybeSingle();
+        
+        if (authorData) {
+          setConfessionAuthor(authorData);
+        }
+        
         const { data: savedData } = await supabase
           .from('saved_confessions')
           .select('id')
@@ -233,8 +247,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
 
   const handleCall = (type: 'audio' | 'video') => {
-    // Placeholder for call functionality
-    console.log(`Initiating ${type} call with user ${confession.userId}`);
+    setCallType(type);
+    setShowCallInterface(true);
   };
 
   const handleDelete = async () => {
@@ -244,7 +258,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       const { error } = await supabase
         .from('confessions')
         .delete()
-        .eq('id', confession.id);
+        .eq('id', confession.id)
+        .eq('user_id', user.id);
         
       if (!error && onUpdate) {
         onUpdate();
@@ -484,6 +499,15 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </span>
         </div>
       </div>
+      
+      <CallInterface
+        isOpen={showCallInterface}
+        onClose={() => setShowCallInterface(false)}
+        callType={callType}
+        targetUserId={confession.userId}
+        targetUsername={confessionAuthor?.username}
+        targetAvatarUrl={confessionAuthor?.avatar_url}
+      />
     </div>
   );
 }

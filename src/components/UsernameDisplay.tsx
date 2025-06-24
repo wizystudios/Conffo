@@ -21,21 +21,17 @@ export function UsernameDisplay({
   linkToProfile = true,
   showStoryIndicator = true
 }: UsernameDisplayProps) {
-  const [username, setUsername] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [hasStory, setHasStory] = useState(false);
   
   useEffect(() => {
     const fetchUsername = async () => {
       if (!userId) {
-        setIsLoading(false);
         return;
       }
       
       try {
-        setIsLoading(true);
-        
         const { data, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -50,7 +46,9 @@ export function UsernameDisplay({
           setUsername(data.username || 'User');
           setAvatarUrl(data.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
         } else {
-          setUsername('User');
+          // Create profile if doesn't exist
+          const defaultUsername = `user_${userId.slice(0, 8)}`;
+          setUsername(defaultUsername);
           setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
           
           try {
@@ -58,7 +56,7 @@ export function UsernameDisplay({
               .from('profiles')
               .insert({
                 id: userId,
-                username: 'User',
+                username: defaultUsername,
                 updated_at: new Date().toISOString()
               });
           } catch (insertError) {
@@ -79,8 +77,6 @@ export function UsernameDisplay({
         console.error('Error in fetchUsername:', error);
         setUsername('User');
         setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
-      } finally {
-        setIsLoading(false);
       }
     };
     
@@ -104,19 +100,6 @@ export function UsernameDisplay({
     md: 'text-sm',
     lg: 'text-base'
   };
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-2">
-        {showAvatar && (
-          <Avatar className={avatarSizeClass[size]}>
-            <AvatarFallback className="bg-primary/20">...</AvatarFallback>
-          </Avatar>
-        )}
-        <span className={`${textSizeClass[size]} text-muted-foreground`}>Loading...</span>
-      </div>
-    );
-  }
 
   const content = (
     <div className="flex items-center gap-2">

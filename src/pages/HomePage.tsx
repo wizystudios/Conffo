@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,33 +18,38 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleCreateConfession = () => setShowConfessionForm(true);
+    const handleCreateStory = () => setShowConfessionForm(true);
+    
     window.addEventListener('create-confession', handleCreateConfession);
-    return () => window.removeEventListener('create-confession', handleCreateConfession);
+    window.addEventListener('create-story', handleCreateStory);
+    
+    return () => {
+      window.removeEventListener('create-confession', handleCreateConfession);
+      window.removeEventListener('create-story', handleCreateStory);
+    };
   }, []);
 
   const { 
     data: recentConfessions = [],
-    isLoading: isLoadingRecent,
     refetch: refetchRecent 
   } = useQuery({
     queryKey: ['confessions', 'recent', user?.id],
     queryFn: () => getConfessions(undefined, user?.id),
     enabled: true,
-    staleTime: 30000,
-    gcTime: 60000,
+    staleTime: 0,
+    gcTime: 0,
     refetchOnWindowFocus: false,
   });
 
   const {
     data: trendingConfessions = [],
-    isLoading: isLoadingTrending,
     refetch: refetchTrending
   } = useQuery({
     queryKey: ['confessions', 'trending', user?.id],
     queryFn: () => getTrendingConfessions(5, user?.id),
     enabled: activeTab === 'trending',
-    staleTime: 180000,
-    gcTime: 300000,
+    staleTime: 0,
+    gcTime: 0,
     refetchOnWindowFocus: false,
   });
 
@@ -130,11 +136,7 @@ export default function HomePage() {
         
         {activeTab === 'recent' ? (
           <>
-            {isLoadingRecent ? (
-              <div className="flex justify-center py-8">
-                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : recentConfessions.length > 0 ? (
+            {recentConfessions.length > 0 ? (
               <div className="space-y-0">
                 {recentConfessions.map((confession) => (
                   <InstagramConfessionCard 
@@ -152,11 +154,7 @@ export default function HomePage() {
           </>
         ) : (
           <>
-            {isLoadingTrending ? (
-              <div className="flex justify-center py-8">
-                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : trendingConfessions.length > 0 ? (
+            {trendingConfessions.length > 0 ? (
               <div className="space-y-0">
                 {trendingConfessions.map((confession) => (
                   <InstagramConfessionCard 
