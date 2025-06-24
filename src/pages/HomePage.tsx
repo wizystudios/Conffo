@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,7 +30,7 @@ export default function HomePage() {
     queryFn: () => getConfessions(undefined, user?.id),
     enabled: true,
     staleTime: 30000,
-    cacheTime: 60000,
+    gcTime: 60000,
     refetchOnWindowFocus: false,
   });
 
@@ -44,7 +43,7 @@ export default function HomePage() {
     queryFn: () => getTrendingConfessions(5, user?.id),
     enabled: activeTab === 'trending',
     staleTime: 180000,
-    cacheTime: 300000,
+    gcTime: 300000,
     refetchOnWindowFocus: false,
   });
 
