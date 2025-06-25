@@ -31,26 +31,26 @@ export default function HomePage() {
 
   const { 
     data: recentConfessions = [],
-    refetch: refetchRecent 
+    refetch: refetchRecent,
+    isLoading: isLoadingRecent
   } = useQuery({
     queryKey: ['confessions', 'recent', user?.id],
     queryFn: () => getConfessions(undefined, user?.id),
     enabled: true,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
   });
 
   const {
     data: trendingConfessions = [],
-    refetch: refetchTrending
+    refetch: refetchTrending,
+    isLoading: isLoadingTrending
   } = useQuery({
     queryKey: ['confessions', 'trending', user?.id],
     queryFn: () => getTrendingConfessions(5, user?.id),
     enabled: activeTab === 'trending',
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true,
   });
 
   const handleConfessionSuccess = () => {
@@ -71,6 +71,9 @@ export default function HomePage() {
   const handleCreateStory = () => {
     window.dispatchEvent(new Event('create-story'));
   };
+  
+  const currentConfessions = activeTab === 'recent' ? recentConfessions : trendingConfessions;
+  const isLoadingConfessions = activeTab === 'recent' ? isLoadingRecent : isLoadingTrending;
   
   return (
     <Layout>
@@ -134,29 +137,20 @@ export default function HomePage() {
           </div>
         )}
         
-        {activeTab === 'recent' ? (
-          <>
-            {recentConfessions.length > 0 ? (
-              <div className="space-y-0">
-                {recentConfessions.map((confession) => (
-                  <InstagramConfessionCard 
-                    key={confession.id} 
-                    confession={confession}
-                    onUpdate={handleConfessionSuccess} 
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No confessions yet. Be the first!</p>
-              </div>
-            )}
-          </>
+        {isLoadingConfessions ? (
+          <div className="space-y-4 p-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="p-4 animate-pulse">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+              </Card>
+            ))}
+          </div>
         ) : (
           <>
-            {trendingConfessions.length > 0 ? (
+            {currentConfessions.length > 0 ? (
               <div className="space-y-0">
-                {trendingConfessions.map((confession) => (
+                {currentConfessions.map((confession) => (
                   <InstagramConfessionCard 
                     key={confession.id} 
                     confession={confession}
@@ -166,7 +160,12 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No trending confessions yet.</p>
+                <p className="text-muted-foreground">
+                  {activeTab === 'recent' 
+                    ? 'No confessions yet. Be the first!' 
+                    : 'No trending confessions yet.'
+                  }
+                </p>
               </div>
             )}
           </>

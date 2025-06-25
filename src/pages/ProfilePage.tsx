@@ -18,6 +18,7 @@ import { supabase, checkIfFollowing, getFollowersCount, getFollowingCount, addFo
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { Switch } from '@/components/ui/switch';
 import { CallInterface } from '@/components/CallInterface';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -37,12 +38,14 @@ export default function ProfilePage() {
   const [isProfilePublic, setIsProfilePublic] = useState(true);
   const [showCallInterface, setShowCallInterface] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const queryClient = useQueryClient();
 
   // Determine if viewing own profile or someone else's
   useEffect(() => {
     if (userId && user) {
       setIsOwnProfile(userId === user.id);
-      setActiveTab(isOwnProfile ? 'settings' : 'posts');
+      setActiveTab(userId === user.id ? 'settings' : 'posts');
     } else if (!userId && user) {
       setIsOwnProfile(true);
       setActiveTab('settings');
@@ -91,49 +94,31 @@ export default function ProfilePage() {
         } else {
           // If no profile exists, create a basic one
           if (isOwnProfile && user?.id) {
+            const defaultUsername = user.email?.split('@')[0] || 'User';
             const { error: insertError } = await supabase
               .from('profiles')
               .insert({
                 id: user.id,
-                username: user.email?.split('@')[0] || 'User',
+                username: defaultUsername,
                 updated_at: new Date().toISOString()
               });
             
             if (insertError) {
               console.error('Error creating profile:', insertError);
             } else {
-              setUsername(user.email?.split('@')[0] || 'User');
+              setUsername(defaultUsername);
             }
           }
         }
         
-        // Check if the current user is following this profile
-        if (user && !isOwnProfile) {
-          try {
-            const isFollowingResult = await checkIfFollowing(user.id, targetUserId);
-            setIsFollowing(isFollowingResult);
-          } catch (error) {
-            console.error('Error checking follow status:', error);
-            setIsFollowing(false);
-          }
-        }
-        
-        // Get followers count
-        try {
-          const followersCountResult = await getFollowersCount(targetUserId);
-          setFollowersCount(followersCountResult);
-        } catch (error) {
-          console.error('Error getting followers count:', error);
-          setFollowersCount(0);
-        }
-        
-        // Get following count
-        try {
-          const followingCountResult = await getFollowingCount(targetUserId);
-          setFollowingCount(followingCountResult);
-        } catch (error) {
-          console.error('Error getting following count:', error);
-          setFollowingCount(0);
+        // Check follow status and get counts
+        if (user && !isOwnProfile && targetUserId) {
+          await Promise.all([
+            checkFollowStatus(targetUserId),
+            getFollowCounts(targetUserId)
+          ]);
+        } else if (targetUserId) {
+          await getFollowCounts(targetUserId);
         }
         
       } catch (error) {
@@ -143,6 +128,51 @@ export default function ProfilePage() {
 
     fetchProfileData();
   }, [userId, user, isOwnProfile, isAuthenticated]);
+
+  const checkFollowStatus = async (targetUserId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', targetUserId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking follow status:', error);
+        setIsFollowing(false);
+      } else {
+        setIsFollowing(!!data);
+      }
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      setIsFollowing(false);
+    }
+  };
+
+  const getFollowCounts = async (targetUserId: string) => {
+    try {
+      const [followersResponse, followingResponse] = await Promise.all([
+        supabase
+          .from('user_follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', targetUserId),
+        supabase
+          .from('user_follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('follower_id', targetUserId)
+      ]);
+      
+      setFollowersCount(followersResponse.count || 0);
+      setFollowingCount(followingResponse.count || 0);
+    } catch (error) {
+      console.error('Error getting follow counts:', error);
+      setFollowersCount(0);
+      setFollowingCount(0);
+    }
+  };
 
   // Load saved confessions
   useEffect(() => {
@@ -179,22 +209,45 @@ export default function ProfilePage() {
   };
 
   const handleToggleFollow = async () => {
-    if (!user || !userId || isOwnProfile) return;
+    if (!user || !userId || isOwnProfile || isUpdating) return;
+    
+    setIsUpdating(true);
     
     try {
       if (isFollowing) {
         // Unfollow
-        await removeFollow(user.id, userId);
+        const { error } = await supabase
+          .from('user_follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', userId);
+          
+        if (error) throw error;
+        
         setIsFollowing(false);
         setFollowersCount(prev => Math.max(0, prev - 1));
       } else {
         // Follow
-        await addFollow(user.id, userId);
+        const { error } = await supabase
+          .from('user_follows')
+          .insert({
+            follower_id: user.id,
+            following_id: userId
+          });
+          
+        if (error) throw error;
+        
         setIsFollowing(true);
         setFollowersCount(prev => prev + 1);
       }
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['follows'] });
+      queryClient.invalidateQueries({ queryKey: ['confessions'] });
     } catch (error) {
       console.error('Error toggling follow:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -307,6 +360,9 @@ export default function ProfilePage() {
         console.error('Error updating profile:', error);
         throw error;
       }
+      
+      // Invalidate queries that might use profile data
+      queryClient.invalidateQueries({ queryKey: ['confessions'] });
     } catch (error) {
       console.error('Error updating profile:', error);
     }
@@ -383,16 +439,17 @@ export default function ProfilePage() {
                     variant={isFollowing ? "outline" : "default"}
                     className="flex-1" 
                     onClick={handleToggleFollow}
+                    disabled={isUpdating}
                   >
                     {isFollowing ? (
                       <>
                         <UserMinus className="h-4 w-4 mr-2" />
-                        Unfollow
+                        {isUpdating ? 'Updating...' : 'Unfollow'}
                       </>
                     ) : (
                       <>
                         <UserPlus className="h-4 w-4 mr-2" />
-                        Follow
+                        {isUpdating ? 'Following...' : 'Follow'}
                       </>
                     )}
                   </Button>

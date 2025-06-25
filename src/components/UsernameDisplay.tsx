@@ -24,33 +24,38 @@ export function UsernameDisplay({
   const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [hasStory, setHasStory] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const fetchUsername = async () => {
+    const fetchUserData = async () => {
       if (!userId) {
+        setIsLoading(false);
         return;
       }
       
       try {
-        const { data, error } = await supabase
+        // First try to get existing profile
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', userId)
           .maybeSingle();
         
-        if (error) {
-          console.error('Error fetching username:', error);
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          // Set fallback values
           setUsername('User');
           setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
-        } else if (data) {
-          setUsername(data.username || 'User');
-          setAvatarUrl(data.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+        } else if (profileData) {
+          setUsername(profileData.username || 'User');
+          setAvatarUrl(profileData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
         } else {
-          // Create profile if doesn't exist
+          // Profile doesn't exist, create a default one
           const defaultUsername = `user_${userId.slice(0, 8)}`;
           setUsername(defaultUsername);
           setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
           
+          // Try to create the profile (fail silently if it already exists)
           try {
             await supabase
               .from('profiles')
@@ -60,10 +65,11 @@ export function UsernameDisplay({
                 updated_at: new Date().toISOString()
               });
           } catch (insertError) {
-            console.error('Error creating profile:', insertError);
+            console.log('Profile creation failed (might already exist):', insertError);
           }
         }
         
+        // Check for active story if needed
         if (showStoryIndicator) {
           try {
             const userHasStory = await hasActiveStory(userId);
@@ -74,15 +80,15 @@ export function UsernameDisplay({
           }
         }
       } catch (error) {
-        console.error('Error in fetchUsername:', error);
+        console.error('Error in fetchUserData:', error);
         setUsername('User');
         setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    if (userId) {
-      fetchUsername();
-    }
+    fetchUserData();
   }, [userId, showStoryIndicator]);
 
   const getInitials = (name: string) => {
@@ -100,6 +106,17 @@ export function UsernameDisplay({
     md: 'text-sm',
     lg: 'text-base'
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        {showAvatar && (
+          <div className={`${avatarSizeClass[size]} bg-muted rounded-full animate-pulse`} />
+        )}
+        <div className={`${textSizeClass[size]} bg-muted rounded h-4 w-16 animate-pulse`} />
+      </div>
+    );
+  }
 
   const content = (
     <div className="flex items-center gap-2">
