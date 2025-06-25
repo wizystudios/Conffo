@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +20,7 @@ import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { Switch } from '@/components/ui/switch';
 import { CallInterface } from '@/components/CallInterface';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -39,6 +41,7 @@ export default function ProfilePage() {
   const [showCallInterface, setShowCallInterface] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
 
   // Determine if viewing own profile or someone else's
@@ -226,6 +229,10 @@ export default function ProfilePage() {
         
         setIsFollowing(false);
         setFollowersCount(prev => Math.max(0, prev - 1));
+        
+        toast({
+          description: "Unfollowed successfully"
+        });
       } else {
         // Follow
         const { error } = await supabase
@@ -239,6 +246,10 @@ export default function ProfilePage() {
         
         setIsFollowing(true);
         setFollowersCount(prev => prev + 1);
+        
+        toast({
+          description: "Followed successfully"
+        });
       }
       
       // Invalidate related queries
@@ -246,6 +257,10 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['confessions'] });
     } catch (error) {
       console.error('Error toggling follow:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update follow status"
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -265,8 +280,16 @@ export default function ProfilePage() {
       if (error) throw error;
       
       setIsProfilePublic(newPrivacyValue);
+      
+      toast({
+        description: newPrivacyValue ? "Profile is now public" : "Profile is now private"
+      });
     } catch (error) {
       console.error('Error updating profile privacy:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update privacy settings"
+      });
     }
   };
 
@@ -279,36 +302,30 @@ export default function ProfilePage() {
       const file = e.target.files[0];
       
       if (file.size > 2 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          description: "File size must be less than 2MB"
+        });
         return;
       }
       
       if (!file.type.startsWith('image/')) {
+        toast({
+          variant: "destructive",
+          description: "Please upload an image file"
+        });
         return;
       }
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-      
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
-      
-      if (!avatarBucketExists) {
-        const { error: bucketError } = await supabase.storage.createBucket('avatars', {
-          public: true,
-          fileSizeLimit: 1024 * 1024 * 2
-        });
-        
-        if (bucketError) {
-          console.error('Error creating bucket:', bucketError);
-        }
-      }
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = fileName;
       
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
       
       if (uploadError) {
@@ -333,16 +350,32 @@ export default function ProfilePage() {
       }
       
       setAvatarUrl(publicUrl);
+      
+      toast({
+        description: "Profile picture updated successfully"
+      });
     } catch (error) {
       console.error('Error uploading avatar:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to upload profile picture"
+      });
     }
   };
 
   const handleSaveProfile = async () => {
+    if (!user?.id || isSaving) return;
+    
     try {
       if (!username.trim()) {
+        toast({
+          variant: "destructive",
+          description: "Username cannot be empty"
+        });
         return;
       }
+      
+      setIsSaving(true);
       
       const { error } = await supabase
         .from('profiles')
@@ -354,7 +387,7 @@ export default function ProfilePage() {
           is_public: isProfilePublic,
           updated_at: new Date().toISOString()
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
         
       if (error) {
         console.error('Error updating profile:', error);
@@ -363,8 +396,18 @@ export default function ProfilePage() {
       
       // Invalidate queries that might use profile data
       queryClient.invalidateQueries({ queryKey: ['confessions'] });
+      
+      toast({
+        description: "Profile updated successfully"
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update profile"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -494,6 +537,34 @@ export default function ProfilePage() {
               <>
                 <TabsContent value="settings" className="p-4">
                   <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20">
+                      <div>
+                        <h3 className="text-sm font-medium flex items-center gap-2">
+                          {isProfilePublic ? (
+                            <>
+                              <Eye className="h-4 w-4 text-green-500" />
+                              Public Profile
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="h-4 w-4 text-amber-500" />
+                              Private Profile
+                            </>
+                          )}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isProfilePublic 
+                            ? "Anyone can view your profile" 
+                            : "Only followers can see your profile"
+                          }
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={isProfilePublic} 
+                        onCheckedChange={handleToggleProfilePrivacy}
+                      />
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="username">Username</Label>
                       <Input 
@@ -536,8 +607,22 @@ export default function ProfilePage() {
                       />
                     </div>
                     
-                    <Button onClick={handleSaveProfile} className="w-full">
-                      Save Profile
+                    <Button 
+                      onClick={handleSaveProfile} 
+                      className="w-full"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Saving...
+                        </div>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Profile
+                        </>
+                      )}
                     </Button>
                     
                     <div className="pt-4 border-t border-border">

@@ -36,29 +36,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (!authUser) return null;
 
-      let { data: profile } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('username, avatar_url, is_admin')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      }
 
       if (!profile) {
         const emailUsername = authUser.email?.split('@')[0] || 'user';
         
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: userId,
-            username: emailUsername,
-            updated_at: new Date().toISOString()
-          });
+        try {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              username: emailUsername,
+              updated_at: new Date().toISOString()
+            });
 
-        if (!insertError) {
-          profile = {
-            username: emailUsername,
-            avatar_url: null,
-            is_admin: false
-          };
+          if (!insertError) {
+            profile = {
+              username: emailUsername,
+              avatar_url: null,
+              is_admin: false
+            };
+          } else {
+            console.error('Error creating profile:', insertError);
+          }
+        } catch (error) {
+          console.error('Error in profile creation:', error);
         }
       }
       
@@ -154,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       
       if (session?.user) {
+        // Use setTimeout to prevent potential deadlocks
         setTimeout(async () => {
           const userWithProfile = await fetchUserProfile(session.user.id);
           setUser(userWithProfile);
@@ -171,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Clean up local storage
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
           localStorage.removeItem(key);
