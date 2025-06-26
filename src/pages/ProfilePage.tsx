@@ -13,41 +13,79 @@ import { FollowButton } from '@/components/FollowButton';
 import { SimpleProfileForm } from '@/components/SimpleProfileForm';
 import { CallInterface } from '@/components/CallInterface';
 
+interface ProfileData {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  is_public: boolean;
+}
+
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('posts');
-  const [profileUser, setProfileUser] = useState<any>(null);
-  const [isOwnProfile, setIsOwnProfile] = useState(true);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [showCallInterface, setShowCallInterface] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
+  // Determine if this is the user's own profile
   useEffect(() => {
-    if (userId && user) {
-      setIsOwnProfile(userId === user.id);
-      setActiveTab(userId === user.id ? 'settings' : 'posts');
-    } else if (!userId && user) {
-      setIsOwnProfile(true);
-      setActiveTab('settings');
-    }
+    if (!user) return;
+    
+    const ownProfile = !userId || userId === user.id;
+    setIsOwnProfile(ownProfile);
+    setActiveTab(ownProfile ? 'settings' : 'posts');
   }, [userId, user]);
 
+  // Fetch profile data
   useEffect(() => {
     const fetchProfileData = async () => {
-      const targetUserId = userId || user?.id;
-      if (!targetUserId) return;
-
+      if (!user) return;
+      
+      setIsLoadingProfile(true);
+      const targetUserId = userId || user.id;
+      
       try {
-        const { data } = await supabase
+        // Get profile data
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
           .eq('id', targetUserId)
           .maybeSingle();
 
-        if (data) {
-          setProfileUser(data);
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
+
+        // If no profile exists, create a basic one from user data
+        if (!profile && targetUserId === user.id) {
+          const newProfile: ProfileData = {
+            id: user.id,
+            username: user.username || user.email?.split('@')[0] || 'User',
+            avatar_url: user.avatarUrl || null,
+            bio: null,
+            contact_email: null,
+            contact_phone: null,
+            is_public: true
+          };
+          setProfileData(newProfile);
+        } else if (profile) {
+          setProfileData({
+            id: profile.id,
+            username: profile.username || 'User',
+            avatar_url: profile.avatar_url,
+            bio: profile.bio,
+            contact_email: profile.contact_email,
+            contact_phone: profile.contact_phone,
+            is_public: profile.is_public
+          });
         }
         
         // Get follow counts
@@ -65,7 +103,9 @@ export default function ProfilePage() {
         setFollowersCount(followersResponse.count || 0);
         setFollowingCount(followingResponse.count || 0);
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching profile data:', error);
+      } finally {
+        setIsLoadingProfile(false);
       }
     };
 
@@ -77,7 +117,18 @@ export default function ProfilePage() {
     setShowCallInterface(true);
   };
 
-  if (isLoading) {
+  const handleFollowChange = () => {
+    // Refresh follow counts when follow status changes
+    if (userId) {
+      supabase
+        .from('user_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId)
+        .then(({ count }) => setFollowersCount(count || 0));
+    }
+  };
+
+  if (isLoading || isLoadingProfile) {
     return (
       <Layout>
         <div className="flex justify-center items-center py-12">
@@ -87,13 +138,22 @@ export default function ProfilePage() {
     );
   }
   
-  if (!isAuthenticated && isOwnProfile && !userId) {
+  if (!isAuthenticated && !userId) {
     return <Navigate to="/auth" />;
   }
 
-  const displayUser = profileUser || user;
-  const username = displayUser?.username || displayUser?.email?.split('@')[0] || 'User';
-  const avatarUrl = displayUser?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${displayUser?.id}`;
+  if (!profileData) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Profile not found</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  const username = profileData.username || 'User';
+  const avatarUrl = profileData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profileData.id}`;
 
   return (
     <Layout>
@@ -127,10 +187,10 @@ export default function ProfilePage() {
                 </div>
               </div>
               
-              {!isOwnProfile && isAuthenticated && (
+              {!isOwnProfile && isAuthenticated && userId && (
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <FollowButton userId={userId!} />
+                    <FollowButton userId={userId} onFollowChange={handleFollowChange} />
                   </div>
                   <Button 
                     variant="outline"
@@ -192,9 +252,34 @@ export default function ProfilePage() {
                   <UserConfessions userId={userId} />
                 </TabsContent>
                 
-                <TabsContent value="info">
-                  <div className="text-center py-12 mx-4">
-                    <p className="text-muted-foreground">User info</p>
+                <TabsContent value="info" className="p-4">
+                  <div className="space-y-4">
+                    <div className="bg-muted/20 rounded-lg p-4">
+                      <h3 className="font-semibold mb-2">Profile Information</h3>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="font-medium">Username:</span> {username}
+                        </div>
+                        {profileData.bio && (
+                          <div>
+                            <span className="font-medium">Bio:</span> {profileData.bio}
+                          </div>
+                        )}
+                        {profileData.contact_email && (
+                          <div>
+                            <span className="font-medium">Contact Email:</span> {profileData.contact_email}
+                          </div>
+                        )}
+                        {profileData.contact_phone && (
+                          <div>
+                            <span className="font-medium">Contact Phone:</span> {profileData.contact_phone}
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-medium">Profile Type:</span> {profileData.is_public ? 'Public' : 'Private'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
               </>
@@ -202,14 +287,16 @@ export default function ProfilePage() {
           </Tabs>
         </div>
         
-        <CallInterface
-          isOpen={showCallInterface}
-          onClose={() => setShowCallInterface(false)}
-          callType={callType}
-          targetUserId={userId || ''}
-          targetUsername={username}
-          targetAvatarUrl={avatarUrl}
-        />
+        {userId && (
+          <CallInterface
+            isOpen={showCallInterface}
+            onClose={() => setShowCallInterface(false)}
+            callType={callType}
+            targetUserId={userId}
+            targetUsername={username}
+            targetAvatarUrl={avatarUrl}
+          />
+        )}
       </div>
     </Layout>
   );
