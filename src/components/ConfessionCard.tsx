@@ -2,16 +2,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { ThumbsUp, MessageSquare, MessageCircle, Heart, AlertCircle, Bookmark, BookmarkCheck, Share, Download } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Heart, Bookmark, BookmarkCheck, Share, Download } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RoomBadge } from './RoomBadge';
 import { UsernameDisplay } from './UsernameDisplay';
 import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ReactionButtonProps {
@@ -19,28 +17,18 @@ interface ReactionButtonProps {
   count: number;
   isActive?: boolean;
   onClick: () => void;
-  label: string;
 }
 
-const ReactionButton = ({ icon, count, isActive, onClick, label }: ReactionButtonProps) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className={`flex items-center gap-1 ${isActive ? 'bg-secondary' : ''}`}
-          onClick={onClick}
-        >
-          {icon}
-          <span>{count}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{label}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+const ReactionButton = ({ icon, count, isActive, onClick }: ReactionButtonProps) => (
+  <Button 
+    variant="ghost" 
+    size="sm" 
+    className={`flex items-center gap-1 ${isActive ? 'bg-secondary' : ''}`}
+    onClick={onClick}
+  >
+    {icon}
+    <span>{count}</span>
+  </Button>
 );
 
 interface ConfessionCardProps {
@@ -54,10 +42,6 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const tapTimer = useRef<NodeJS.Timeout | null>(null);
-  const tapCount = useRef(0);
-  const lastTap = useRef(0);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   
   // Check if this confession is saved by the current user
   useEffect(() => {
@@ -65,16 +49,14 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
       if (!user) return;
       
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('saved_confessions')
           .select('id')
           .eq('confession_id', confession.id)
           .eq('user_id', user.id)
           .maybeSingle();
         
-        if (!error && data) {
-          setIsSaved(true);
-        }
+        setIsSaved(!!data);
       } catch (error) {
         console.error('Error checking saved status:', error);
       }
@@ -83,100 +65,33 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     checkIfSaved();
   }, [confession.id, user]);
   
-  // Implement Intersection Observer for video autoplay
-  useEffect(() => {
-    if (confession.mediaType === 'video' && !detailed) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              // Get the video element inside the observed container
-              const video = entry.target.querySelector('video') as HTMLVideoElement;
-              if (video) {
-                videoRef.current = video;
-                video.play().catch(err => console.error('Autoplay failed:', err));
-              }
-            } else {
-              const video = entry.target.querySelector('video') as HTMLVideoElement;
-              if (video) {
-                video.pause();
-              }
-            }
-          });
-        },
-        { threshold: 0.6 } // Video plays when 60% visible
-      );
-      
-      if (cardRef.current) {
-        observer.observe(cardRef.current);
-      }
-      
-      return () => {
-        if (cardRef.current) {
-          observer.unobserve(cardRef.current);
-        }
-      };
-    }
-  }, [confession.mediaType, detailed]);
-  
   const handleReaction = async (reaction: Reaction) => {
-    if (!user || isUpdating) return;
-    
-    if (!isAuthenticated) {
-      toast({
-        variant: "destructive",
-        description: "Please sign in to react to confessions",
-      });
-      return;
-    }
+    if (!user || isUpdating || !isAuthenticated) return;
     
     setIsUpdating(true);
     
     try {
       await toggleReaction(confession.id, user.id, reaction);
-      
-      if (onUpdate) {
-        onUpdate();
-      }
-      
-      // No toast notification for better UX
+      if (onUpdate) onUpdate();
     } catch (error) {
-      console.error('Error toggling reaction:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to record your reaction",
-      });
+      console.error('Reaction failed:', error);
     } finally {
       setIsUpdating(false);
     }
   };
   
   const handleSaveConfession = async () => {
-    if (!user || isUpdating) return;
-    
-    if (!isAuthenticated) {
-      toast({
-        variant: "destructive",
-        description: "Please sign in to save confessions",
-      });
-      return;
-    }
+    if (!user || isUpdating || !isAuthenticated) return;
     
     setIsUpdating(true);
     
     try {
       const result = await saveConfession(confession.id, user.id);
-      
       if (result) {
         setIsSaved(!isSaved);
-        // No toast notification for better UX
       }
     } catch (error) {
-      console.error('Error saving confession:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to save confession",
-      });
+      console.error('Save failed:', error);
     } finally {
       setIsUpdating(false);
     }
@@ -186,39 +101,28 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'ConfessZone Confession',
+          title: 'ConfessZone',
           text: `${confession.content.substring(0, 50)}...`,
           url: `${window.location.origin}/confession/${confession.id}`
         });
       } else {
-        // Fallback for browsers that don't support native sharing
         navigator.clipboard.writeText(`${window.location.origin}/confession/${confession.id}`);
-        toast({
-          description: "Link copied to clipboard",
-        });
       }
     } catch (error) {
-      console.error('Error sharing confession:', error);
+      console.error('Share failed:', error);
     }
   };
   
   const downloadConfession = () => {
-    // Create text content
     const text = `
-      Confession from ${new Date(confession.timestamp).toLocaleString()}
-      Room: ${confession.room}
-      
       ${confession.content}
       
-      Reactions:
-      👍 ${confession.reactions.like} | 😂 ${confession.reactions.laugh} | 😲 ${confession.reactions.shock} | ❤️ ${confession.reactions.heart}
-      
-      Comments: ${confession.commentCount}
+      Room: ${confession.room}
+      ${new Date(confession.timestamp).toLocaleString()}
       
       Downloaded from ConfessZone
     `.trim();
     
-    // Create blob and download link
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -230,55 +134,13 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
     URL.revokeObjectURL(url);
   };
   
-  // Handle double tap to like
-  const handleTap = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) { // 300ms between taps for double-tap
-      tapCount.current++;
-      if (tapCount.current === 2) {
-        // Double tap detected
-        handleReaction('heart');
-        tapCount.current = 0;
-      }
-    } else {
-      tapCount.current = 1;
-    }
-    lastTap.current = now;
-  };
-  
-  // Handle long press to download
-  const handleTouchStart = () => {
-    tapTimer.current = setTimeout(() => {
-      downloadConfession();
-    }, 800); // 800ms for long press
-  };
-  
-  const handleTouchEnd = () => {
-    if (tapTimer.current) {
-      clearTimeout(tapTimer.current);
-      tapTimer.current = null;
-    }
-  };
-  
   const userReactions = confession.userReactions || [];
   
   return (
-    <Card 
-      ref={cardRef} 
-      onClick={handleTap}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-      onMouseDown={handleTouchStart}
-      onMouseUp={handleTouchEnd}
-      onMouseLeave={handleTouchEnd}
-      className="touch-none"
-    >
+    <Card ref={cardRef}>
       <CardContent className={detailed ? "pt-6" : "pt-4"}>
         <div className="flex justify-between items-center mb-4">
-          <Link to={`/user/${confession.userId}`} className="hover:opacity-80">
-            <UsernameDisplay userId={confession.userId} size="md" />
-          </Link>
+          <UsernameDisplay userId={confession.userId} size="md" />
           <span className="text-sm text-muted-foreground">
             {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
           </span>
@@ -309,17 +171,9 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
           </div>
         )}
         
-        {!detailed && (
-          <div className="flex mt-4">
-            <RoomBadge room={confession.room} />
-          </div>
-        )}
-        
-        {detailed && (
-          <div className="flex justify-between items-center mt-4">
-            <RoomBadge room={confession.room} />
-          </div>
-        )}
+        <div className="flex mt-4">
+          <RoomBadge room={confession.room} />
+        </div>
       </CardContent>
       
       <CardFooter className="flex justify-between border-t pt-3 pb-2">
@@ -329,14 +183,12 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
             count={confession.reactions.like} 
             isActive={userReactions.includes('like')}
             onClick={() => handleReaction('like')}
-            label="Like"
           />
           <ReactionButton 
             icon={<Heart className="h-4 w-4" />} 
             count={confession.reactions.heart} 
             isActive={userReactions.includes('heart')}
             onClick={() => handleReaction('heart')}
-            label="Love"
           />
         </div>
         
@@ -348,27 +200,23 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
                 size="sm" 
                 className="flex items-center gap-1" 
                 onClick={handleSaveConfession}
+                disabled={isUpdating}
               >
                 {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                <span className="hidden sm:inline">Save</span>
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="flex items-center gap-1" 
                 onClick={handleShareConfession}
               >
                 <Share className="h-4 w-4" />
-                <span className="hidden sm:inline">Share</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-1"
                 onClick={downloadConfession}
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Save</span>
               </Button>
             </>
           )}

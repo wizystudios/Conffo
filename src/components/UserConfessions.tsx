@@ -7,11 +7,10 @@ import { InstagramConfessionCard } from './InstagramConfessionCard';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Trash2, Edit } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { ConfessionEditDialog } from './ConfessionEditDialog';
 
 interface UserConfessionsProps {
-  userId?: string; // Optional, if not provided, use current user
+  userId?: string;
   onUpdate?: () => void;
 }
 
@@ -35,7 +34,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
         const userConfessions = await getUserConfessions(viewingUserId);
         setConfessions(userConfessions);
       } catch (error) {
-        console.error('Error fetching user confessions:', error);
+        console.error('Error fetching confessions:', error);
       } finally {
         setIsLoading(false);
       }
@@ -53,22 +52,10 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
       
       if (success) {
         setConfessions(prev => prev.filter(c => c.id !== confessionId));
-        toast({
-          description: "Confession deleted successfully"
-        });
-        
-        if (onUpdate) {
-          onUpdate();
-        }
-      } else {
-        throw new Error("Failed to delete confession");
+        if (onUpdate) onUpdate();
       }
     } catch (error) {
-      console.error('Error deleting confession:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to delete confession"
-      });
+      console.error('Delete failed:', error);
     } finally {
       setIsDeleting(false);
     }
@@ -81,23 +68,13 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
 
   const handleConfessionUpdated = (updatedConfession: Confession) => {
     setConfessions(prev => prev.map(c => c.id === updatedConfession.id ? updatedConfession : c));
-    
-    if (onUpdate) {
-      onUpdate();
-    }
-    
-    toast({
-      description: "Confession updated successfully"
-    });
+    if (onUpdate) onUpdate();
   };
 
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="text-center">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading confessions...</p>
-        </div>
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -105,14 +82,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
   if (confessions.length === 0) {
     return (
       <div className="text-center py-12 mx-4">
-        <div className="border-2 border-dashed border-muted rounded-2xl p-8">
-          <p className="text-muted-foreground mb-2">No confessions found.</p>
-          <p className="text-sm text-muted-foreground">
-            {isOwnProfile 
-              ? "Share your thoughts anonymously to see them listed here." 
-              : "This user hasn't shared any confessions yet."}
-          </p>
-        </div>
+        <p className="text-muted-foreground">No confessions found.</p>
       </div>
     );
   }
@@ -130,7 +100,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="h-8 w-8 p-0 rounded-full hover:bg-muted"
+                className="h-8 w-8 p-0 rounded-full"
                 onClick={() => handleEdit(confession)}
               >
                 <Edit className="h-4 w-4" />
@@ -147,10 +117,9 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Confession</AlertDialogTitle>
+                    <AlertDialogTitle>Delete?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete this confession?
-                      This action cannot be undone.
+                      This cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
-import { hasActiveStory } from '@/services/storyService';
-import { StoryRing } from '@/components/story/StoryRing';
+import { useAuth } from '@/context/AuthContext';
 
 interface UsernameDisplayProps {
   userId: string;
@@ -21,9 +20,9 @@ export function UsernameDisplay({
   linkToProfile = true,
   showStoryIndicator = true
 }: UsernameDisplayProps) {
+  const { user } = useAuth();
   const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [hasStory, setHasStory] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -34,66 +33,40 @@ export function UsernameDisplay({
       }
       
       try {
-        // First try to get existing profile
-        const { data: profileData, error: profileError } = await supabase
+        // If this is the current user, use their data from context
+        if (user && userId === user.id) {
+          setUsername(user.username || user.email?.split('@')[0] || 'User');
+          setAvatarUrl(user.avatarUrl || null);
+          setIsLoading(false);
+          return;
+        }
+        
+        // For other users, try to fetch from profiles
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', userId)
           .maybeSingle();
         
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          // Set fallback values
-          setUsername('User');
-          setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
-        } else if (profileData) {
-          setUsername(profileData.username || 'User');
-          setAvatarUrl(profileData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+        if (profileData?.username) {
+          setUsername(profileData.username);
+          setAvatarUrl(profileData.avatar_url);
         } else {
-          // Profile doesn't exist, create a default one
-          const defaultUsername = `user_${userId.slice(0, 8)}`;
-          setUsername(defaultUsername);
-          setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
-          
-          // Try to create the profile (fail silently if it already exists)
-          try {
-            await supabase
-              .from('profiles')
-              .insert({
-                id: userId,
-                username: defaultUsername,
-                updated_at: new Date().toISOString()
-              });
-          } catch (insertError) {
-            console.log('Profile creation failed (might already exist):', insertError);
-          }
-        }
-        
-        // Check for active story if needed
-        if (showStoryIndicator) {
-          try {
-            const userHasStory = await hasActiveStory(userId);
-            setHasStory(userHasStory);
-          } catch (error) {
-            console.error('Error checking stories:', error);
-            setHasStory(false);
-          }
+          // Fallback to a simple username
+          setUsername(`user_${userId.slice(0, 8)}`);
+          setAvatarUrl(null);
         }
       } catch (error) {
-        console.error('Error in fetchUserData:', error);
-        setUsername('User');
-        setAvatarUrl(`https://api.dicebear.com/7.x/micah/svg?seed=${userId}`);
+        console.error('Error fetching user data:', error);
+        setUsername(`user_${userId.slice(0, 8)}`);
+        setAvatarUrl(null);
       } finally {
         setIsLoading(false);
       }
     };
     
     fetchUserData();
-  }, [userId, showStoryIndicator]);
-
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : 'U';
-  };
+  }, [userId, user]);
 
   const avatarSizeClass = {
     sm: 'h-6 w-6',
@@ -121,22 +94,13 @@ export function UsernameDisplay({
   const content = (
     <div className="flex items-center gap-2">
       {showAvatar && (
-        hasStory && showStoryIndicator ? (
-          <StoryRing 
-            userId={userId}
-            username={username || undefined}
-            avatarUrl={avatarUrl}
-            size={size === 'sm' ? 'sm' : size === 'md' ? 'md' : 'lg'}
-          />
-        ) : (
-          <Avatar className={avatarSizeClass[size]}>
-            <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-            <AvatarFallback>{getInitials(username || 'U')}</AvatarFallback>
-          </Avatar>
-        )
+        <Avatar className={avatarSizeClass[size]}>
+          <AvatarImage src={avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`} alt={username} />
+          <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
       )}
       <span className={`${textSizeClass[size]} font-medium`}>
-        {username || 'User'}
+        {username}
       </span>
     </div>
   );
