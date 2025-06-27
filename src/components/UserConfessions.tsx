@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getUserConfessions, deleteConfession } from '@/services/supabaseDataService';
@@ -64,7 +63,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
                 .map(async (item: any) => {
                   const confession = item.confessions;
                   
-                  // Get reaction counts
+                  // Get reaction counts with proper type checking
                   const { data: reactionData } = await supabase.rpc(
                     'get_reaction_counts',
                     { confession_uuid: confession.id }
@@ -85,12 +84,20 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
                     
                   const userReactions = userReactionData ? userReactionData.map(r => r.type) : [];
                   
+                  // Safely parse reaction data with proper type checking
                   const reactions = {
-                    like: reactionData?.like || 0,
-                    laugh: reactionData?.laugh || 0,
-                    shock: reactionData?.shock || 0,
-                    heart: reactionData?.heart || 0
+                    like: 0,
+                    laugh: 0,
+                    shock: 0,
+                    heart: 0
                   };
+
+                  if (reactionData && typeof reactionData === 'object' && reactionData !== null) {
+                    if ('like' in reactionData) reactions.like = Number(reactionData.like) || 0;
+                    if ('laugh' in reactionData) reactions.laugh = Number(reactionData.laugh) || 0;
+                    if ('shock' in reactionData) reactions.shock = Number(reactionData.shock) || 0;
+                    if ('heart' in reactionData) reactions.heart = Number(reactionData.heart) || 0;
+                  }
                   
                   return {
                     id: confession.id,
