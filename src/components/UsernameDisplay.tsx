@@ -28,14 +28,15 @@ export function UsernameDisplay({
   useEffect(() => {
     const fetchUserData = async () => {
       if (!userId) {
+        console.log('UsernameDisplay: No userId provided');
         setIsLoading(false);
         return;
       }
       
       try {
-        console.log('Fetching user data for userId:', userId);
+        console.log('UsernameDisplay: Fetching user data for userId:', userId);
         
-        // Always fetch from profiles table to get the most up-to-date data
+        // Fetch from profiles table
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -43,23 +44,29 @@ export function UsernameDisplay({
           .maybeSingle();
         
         if (error) {
-          console.error('Error fetching profile data:', error);
-          // Fallback to a simple username
-          setUsername(`user_${userId.slice(0, 8)}`);
+          console.error('UsernameDisplay: Error fetching profile data:', error);
+          // Use fallback username
+          const fallbackUsername = `user_${userId.slice(0, 8)}`;
+          console.log('UsernameDisplay: Using fallback username:', fallbackUsername);
+          setUsername(fallbackUsername);
           setAvatarUrl(null);
         } else if (profileData) {
-          // Use the username from profiles table or fallback
+          // Use profile data
           const displayName = profileData.username || `user_${userId.slice(0, 8)}`;
+          console.log('UsernameDisplay: Profile data found, username:', displayName);
           setUsername(displayName);
           setAvatarUrl(profileData.avatar_url);
         } else {
           // No profile found, use fallback
-          setUsername(`user_${userId.slice(0, 8)}`);
+          const fallbackUsername = `user_${userId.slice(0, 8)}`;
+          console.log('UsernameDisplay: No profile found, using fallback:', fallbackUsername);
+          setUsername(fallbackUsername);
           setAvatarUrl(null);
         }
       } catch (error) {
-        console.error('Error in fetchUserData:', error);
-        setUsername(`user_${userId.slice(0, 8)}`);
+        console.error('UsernameDisplay: Error in fetchUserData:', error);
+        const fallbackUsername = `user_${userId.slice(0, 8)}`;
+        setUsername(fallbackUsername);
         setAvatarUrl(null);
       } finally {
         setIsLoading(false);
@@ -106,7 +113,7 @@ export function UsernameDisplay({
     </div>
   );
   
-  // Only show profile links if user is authenticated or if it's a public profile
+  // Only show profile links if user is authenticated
   if (linkToProfile && userId && isAuthenticated) {
     return (
       <Link to={`/user/${userId}`} className="hover:opacity-80">

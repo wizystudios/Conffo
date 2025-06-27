@@ -58,7 +58,7 @@ export default function ProfilePage() {
       try {
         console.log('Fetching profile for user:', targetUserId);
         
-        // Get profile data with better error handling
+        // Get profile data
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
@@ -69,19 +69,8 @@ export default function ProfilePage() {
           console.error('Error fetching profile:', profileError);
         }
 
-        // If no profile exists and it's the current user, create a basic one
-        if (!profile && targetUserId === user.id) {
-          const newProfile: ProfileData = {
-            id: user.id,
-            username: user.username || user.email?.split('@')[0] || 'User',
-            avatar_url: user.avatarUrl || null,
-            bio: null,
-            contact_email: null,
-            contact_phone: null,
-            is_public: true
-          };
-          setProfileData(newProfile);
-        } else if (profile) {
+        // Set profile data or create fallback
+        if (profile) {
           setProfileData({
             id: profile.id,
             username: profile.username || user.email?.split('@')[0] || 'User',
@@ -92,19 +81,20 @@ export default function ProfilePage() {
             is_public: profile.is_public ?? true
           });
         } else {
-          // For other users, create basic profile data
-          setProfileData({
+          // Create fallback profile data
+          const fallbackProfile: ProfileData = {
             id: targetUserId,
-            username: `user_${targetUserId.slice(0, 8)}`,
+            username: user.email?.split('@')[0] || 'User',
             avatar_url: null,
             bio: null,
             contact_email: null,
             contact_phone: null,
             is_public: true
-          });
+          };
+          setProfileData(fallbackProfile);
         }
         
-        // Get follow counts with error handling
+        // Get follow counts
         try {
           const [followersResponse, followingResponse] = await Promise.all([
             supabase
@@ -126,7 +116,7 @@ export default function ProfilePage() {
         }
       } catch (error) {
         console.error('Error fetching profile data:', error);
-        // Set fallback data
+        // Set fallback data on error
         setProfileData({
           id: targetUserId,
           username: `user_${targetUserId.slice(0, 8)}`,
@@ -161,6 +151,7 @@ export default function ProfilePage() {
   };
 
   const handleProfileUpdate = () => {
+    console.log('Profile update triggered, refreshing data...');
     // Refresh profile data after update
     if (userId || user?.id) {
       const targetUserId = userId || user!.id;
@@ -169,8 +160,14 @@ export default function ProfilePage() {
         .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
         .eq('id', targetUserId)
         .maybeSingle()
-        .then(({ data: updatedProfile }) => {
+        .then(({ data: updatedProfile, error }) => {
+          if (error) {
+            console.error('Error refreshing profile:', error);
+            return;
+          }
+          
           if (updatedProfile) {
+            console.log('Profile data refreshed:', updatedProfile);
             setProfileData({
               id: updatedProfile.id,
               username: updatedProfile.username || 'User',
@@ -304,7 +301,7 @@ export default function ProfilePage() {
               <>
                 <TabsContent value="settings" className="p-4">
                   <div className="space-y-4">
-                    <SimpleProfileForm />
+                    <SimpleProfileForm onUpdate={handleProfileUpdate} />
                     
                     <div className="pt-4 border-t border-border">
                       <Button variant="destructive" onClick={logout} className="w-full">
