@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -95,6 +94,12 @@ export function FollowersModal({ isOpen, onClose, userId, initialTab = 'follower
     }
   };
 
+  const handleTabChange = (value: string) => {
+    if (value === 'followers' || value === 'following') {
+      setActiveTab(value);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -102,7 +107,7 @@ export function FollowersModal({ isOpen, onClose, userId, initialTab = 'follower
           <DialogTitle>Connections</DialogTitle>
         </DialogHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="followers">
               Followers ({followers.length})

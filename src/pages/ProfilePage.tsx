@@ -315,7 +315,7 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  <UserConfessions />
+                  <UserConfessions onUpdate={handleProfileUpdate} />
                 </TabsContent>
               </>
             ) : (
