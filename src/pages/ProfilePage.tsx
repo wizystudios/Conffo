@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -316,7 +315,7 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  <UserConfessions userId={user?.id} onUpdate={handleProfileUpdate} />
+                  <UserConfessions userId={user?.id} />
                 </TabsContent>
               </>
             ) : (
