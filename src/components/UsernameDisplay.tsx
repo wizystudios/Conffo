@@ -33,7 +33,9 @@ export function UsernameDisplay({
       }
       
       try {
-        // If this is the current user, use their data from context
+        console.log('Fetching user data for userId:', userId);
+        
+        // If this is the current user, use their data from context first
         if (user && userId === user.id) {
           setUsername(user.username || user.email?.split('@')[0] || 'User');
           setAvatarUrl(user.avatarUrl || null);
@@ -41,23 +43,28 @@ export function UsernameDisplay({
           return;
         }
         
-        // For other users, try to fetch from profiles
-        const { data: profileData } = await supabase
+        // For other users, fetch from profiles with error handling
+        const { data: profileData, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
           .eq('id', userId)
           .maybeSingle();
         
-        if (profileData?.username) {
-          setUsername(profileData.username);
+        if (error) {
+          console.error('Error fetching profile data:', error);
+          // Fallback to a simple username
+          setUsername(`user_${userId.slice(0, 8)}`);
+          setAvatarUrl(null);
+        } else if (profileData) {
+          setUsername(profileData.username || `user_${userId.slice(0, 8)}`);
           setAvatarUrl(profileData.avatar_url);
         } else {
-          // Fallback to a simple username
+          // No profile found, use fallback
           setUsername(`user_${userId.slice(0, 8)}`);
           setAvatarUrl(null);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error in fetchUserData:', error);
         setUsername(`user_${userId.slice(0, 8)}`);
         setAvatarUrl(null);
       } finally {

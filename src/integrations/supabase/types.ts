@@ -438,6 +438,10 @@ export type Database = {
         Args: { p_follower_id: string; p_following_id: string }
         Returns: undefined
       }
+      can_access_profile: {
+        Args: { profile_user_id: string }
+        Returns: boolean
+      }
       check_if_following: {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: boolean
@@ -463,6 +467,10 @@ export type Database = {
       get_comment_count: {
         Args: { confession_uuid: string }
         Returns: number
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_followers_count: {
         Args: { user_uuid: string }

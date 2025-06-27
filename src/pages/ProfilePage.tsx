@@ -53,7 +53,9 @@ export default function ProfilePage() {
       const targetUserId = userId || user.id;
       
       try {
-        // Get profile data
+        console.log('Fetching profile for user:', targetUserId);
+        
+        // Get profile data with better error handling
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
@@ -64,7 +66,7 @@ export default function ProfilePage() {
           console.error('Error fetching profile:', profileError);
         }
 
-        // If no profile exists, create a basic one from user data
+        // If no profile exists and it's the current user, create a basic one
         if (!profile && targetUserId === user.id) {
           const newProfile: ProfileData = {
             id: user.id,
@@ -79,31 +81,58 @@ export default function ProfilePage() {
         } else if (profile) {
           setProfileData({
             id: profile.id,
-            username: profile.username || 'User',
+            username: profile.username || user.email?.split('@')[0] || 'User',
             avatar_url: profile.avatar_url,
             bio: profile.bio,
             contact_email: profile.contact_email,
             contact_phone: profile.contact_phone,
-            is_public: profile.is_public
+            is_public: profile.is_public ?? true
+          });
+        } else {
+          // For other users, create basic profile data
+          setProfileData({
+            id: targetUserId,
+            username: `user_${targetUserId.slice(0, 8)}`,
+            avatar_url: null,
+            bio: null,
+            contact_email: null,
+            contact_phone: null,
+            is_public: true
           });
         }
         
-        // Get follow counts
-        const [followersResponse, followingResponse] = await Promise.all([
-          supabase
-            .from('user_follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('following_id', targetUserId),
-          supabase
-            .from('user_follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('follower_id', targetUserId)
-        ]);
-        
-        setFollowersCount(followersResponse.count || 0);
-        setFollowingCount(followingResponse.count || 0);
+        // Get follow counts with error handling
+        try {
+          const [followersResponse, followingResponse] = await Promise.all([
+            supabase
+              .from('user_follows')
+              .select('*', { count: 'exact', head: true })
+              .eq('following_id', targetUserId),
+            supabase
+              .from('user_follows') 
+              .select('*', { count: 'exact', head: true })
+              .eq('follower_id', targetUserId)
+          ]);
+          
+          setFollowersCount(followersResponse.count || 0);
+          setFollowingCount(followingResponse.count || 0);
+        } catch (followError) {
+          console.error('Error fetching follow counts:', followError);
+          setFollowersCount(0);
+          setFollowingCount(0);
+        }
       } catch (error) {
         console.error('Error fetching profile data:', error);
+        // Set fallback data
+        setProfileData({
+          id: targetUserId,
+          username: `user_${targetUserId.slice(0, 8)}`,
+          avatar_url: null,
+          bio: null,
+          contact_email: null,
+          contact_phone: null,
+          is_public: true
+        });
       } finally {
         setIsLoadingProfile(false);
       }
@@ -125,6 +154,31 @@ export default function ProfilePage() {
         .select('*', { count: 'exact', head: true })
         .eq('following_id', userId)
         .then(({ count }) => setFollowersCount(count || 0));
+    }
+  };
+
+  const handleProfileUpdate = () => {
+    // Refresh profile data after update
+    if (userId || user?.id) {
+      const targetUserId = userId || user!.id;
+      supabase
+        .from('profiles')
+        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
+        .eq('id', targetUserId)
+        .maybeSingle()
+        .then(({ data: updatedProfile }) => {
+          if (updatedProfile) {
+            setProfileData({
+              id: updatedProfile.id,
+              username: updatedProfile.username || 'User',
+              avatar_url: updatedProfile.avatar_url,
+              bio: updatedProfile.bio,
+              contact_email: updatedProfile.contact_email,
+              contact_phone: updatedProfile.contact_phone,
+              is_public: updatedProfile.is_public ?? true
+            });
+          }
+        });
     }
   };
 
@@ -231,7 +285,7 @@ export default function ProfilePage() {
               <>
                 <TabsContent value="settings" className="p-4">
                   <div className="space-y-4">
-                    <SimpleProfileForm />
+                    <SimpleProfileForm onUpdate={handleProfileUpdate} />
                     
                     <div className="pt-4 border-t border-border">
                       <Button variant="destructive" onClick={logout} className="w-full">
@@ -243,7 +297,7 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  <UserConfessions />
+                  <UserConfessions onUpdate={handleProfileUpdate} />
                 </TabsContent>
               </>
             ) : (
@@ -278,6 +332,9 @@ export default function ProfilePage() {
                         <div>
                           <span className="font-medium">Profile Type:</span> {profileData.is_public ? 'Public' : 'Private'}
                         </div>
+                        {!profileData.bio && !profileData.contact_email && !profileData.contact_phone && (
+                          <p className="text-muted-foreground text-xs">No additional information available.</p>
+                        )}
                       </div>
                     </div>
                   </div>

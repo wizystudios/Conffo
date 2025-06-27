@@ -36,6 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (!authUser) return null;
 
+      console.log('Fetching user profile for:', userId);
+
       let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('username, avatar_url, is_admin')
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!profile) {
+        console.log('No profile found, creating default profile');
         const emailUsername = authUser.email?.split('@')[0] || 'user';
         
         try {
@@ -64,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               avatar_url: null,
               is_admin: false
             };
+            console.log('Created default profile');
           } else {
             console.error('Error creating profile:', insertError);
           }
@@ -87,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     if (session?.user?.id) {
+      console.log('Refreshing user profile');
       const updatedUser = await fetchUserProfile(session.user.id);
       setUser(updatedUser);
     }
@@ -96,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
+      console.log('Updating username to:', username);
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -106,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       await refreshUser();
+      console.log('Username updated successfully');
     } catch (error) {
       console.error('Error updating username:', error);
       throw error;
@@ -116,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
+      console.log('Updating user profile:', profileData);
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -126,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       await refreshUser();
+      console.log('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -161,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
       setSession(session);
       
       if (session?.user) {
@@ -182,6 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      console.log('Signing out user');
       // Clean up local storage
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
