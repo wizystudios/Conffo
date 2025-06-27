@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
 import { SimpleProfileForm } from '@/components/SimpleProfileForm';
 import { CallInterface } from '@/components/CallInterface';
+import { FollowersModal } from '@/components/FollowersModal';
 
 interface ProfileData {
   id: string;
@@ -33,6 +34,8 @@ export default function ProfilePage() {
   const [showCallInterface, setShowCallInterface] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
 
   // Determine if this is the user's own profile
   useEffect(() => {
@@ -181,6 +184,16 @@ export default function ProfilePage() {
     }
   };
 
+  const handleFollowersClick = () => {
+    setFollowersModalTab('followers');
+    setShowFollowersModal(true);
+  };
+
+  const handleFollowingClick = () => {
+    setFollowersModalTab('following');
+    setShowFollowersModal(true);
+  };
+
   if (isLoading || isLoadingProfile) {
     return (
       <Layout>
@@ -227,15 +240,21 @@ export default function ProfilePage() {
                   <h2 className="text-xl font-bold">{username}</h2>
                   
                   <div className="flex items-center gap-4 mt-2">
-                    <div className="text-center">
+                    <button 
+                      className="text-center hover:opacity-80 cursor-pointer"
+                      onClick={handleFollowersClick}
+                    >
                       <p className="font-medium">{followersCount}</p>
                       <p className="text-xs text-muted-foreground">Followers</p>
-                    </div>
+                    </button>
                     
-                    <div className="text-center">
+                    <button 
+                      className="text-center hover:opacity-80 cursor-pointer"
+                      onClick={handleFollowingClick}
+                    >
                       <p className="font-medium">{followingCount}</p>
                       <p className="text-xs text-muted-foreground">Following</p>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -296,7 +315,7 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  <UserConfessions onUpdate={handleProfileUpdate} />
+                  <UserConfessions />
                 </TabsContent>
               </>
             ) : (
@@ -344,14 +363,23 @@ export default function ProfilePage() {
         </div>
         
         {userId && (
-          <CallInterface
-            isOpen={showCallInterface}
-            onClose={() => setShowCallInterface(false)}
-            callType={callType}
-            targetUserId={userId}
-            targetUsername={username}
-            targetAvatarUrl={avatarUrl}
-          />
+          <>
+            <CallInterface
+              isOpen={showCallInterface}
+              onClose={() => setShowCallInterface(false)}
+              callType={callType}
+              targetUserId={userId}
+              targetUsername={username}
+              targetAvatarUrl={avatarUrl}
+            />
+            
+            <FollowersModal
+              isOpen={showFollowersModal}
+              onClose={() => setShowFollowersModal(false)}
+              userId={userId}
+              initialTab={followersModalTab}
+            />
+          </>
         )}
       </div>
     </Layout>

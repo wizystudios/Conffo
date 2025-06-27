@@ -20,7 +20,7 @@ export function UsernameDisplay({
   linkToProfile = true,
   showStoryIndicator = true
 }: UsernameDisplayProps) {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,15 +35,7 @@ export function UsernameDisplay({
       try {
         console.log('Fetching user data for userId:', userId);
         
-        // If this is the current user, use their data from context first
-        if (user && userId === user.id) {
-          setUsername(user.username || user.email?.split('@')[0] || 'User');
-          setAvatarUrl(user.avatarUrl || null);
-          setIsLoading(false);
-          return;
-        }
-        
-        // For other users, fetch from profiles with error handling
+        // Always fetch from profiles table to get the most up-to-date data
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -56,7 +48,9 @@ export function UsernameDisplay({
           setUsername(`user_${userId.slice(0, 8)}`);
           setAvatarUrl(null);
         } else if (profileData) {
-          setUsername(profileData.username || `user_${userId.slice(0, 8)}`);
+          // Use the username from profiles table or fallback
+          const displayName = profileData.username || `user_${userId.slice(0, 8)}`;
+          setUsername(displayName);
           setAvatarUrl(profileData.avatar_url);
         } else {
           // No profile found, use fallback
@@ -112,7 +106,8 @@ export function UsernameDisplay({
     </div>
   );
   
-  if (linkToProfile && userId) {
+  // Only show profile links if user is authenticated or if it's a public profile
+  if (linkToProfile && userId && isAuthenticated) {
     return (
       <Link to={`/user/${userId}`} className="hover:opacity-80">
         {content}
