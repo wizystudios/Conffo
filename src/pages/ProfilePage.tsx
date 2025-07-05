@@ -301,7 +301,7 @@ export default function ProfilePage() {
               <>
                 <TabsContent value="settings" className="p-4">
                   <div className="space-y-4">
-                    <SimpleProfileForm onUpdate={handleProfileUpdate} />
+                    <SimpleProfileForm />
                     
                     <div className="pt-4 border-t border-border">
                       <Button variant="destructive" onClick={logout} className="w-full">
