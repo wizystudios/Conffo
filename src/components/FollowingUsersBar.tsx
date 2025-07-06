@@ -20,63 +20,49 @@ export function FollowingUsersBar() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchFollowedUsers = async () => {
+    const fetchAllUsers = async () => {
       if (!isAuthenticated || !user) {
         setIsLoading(false);
         return;
       }
 
       try {
-        // Get users that current user follows
-        const { data: followData, error } = await supabase
-          .from('user_follows')
-          .select('following_id')
-          .eq('follower_id', user.id);
+        // Get all users except current user
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .neq('id', user.id)
+          .limit(20);
 
-        if (error) {
-          console.error('Error fetching followed users:', error);
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
           return;
         }
 
-        if (followData && followData.length > 0) {
-          // Get profile data for followed users
-          const followingIds = followData.map(f => f.following_id);
-          
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url')
-            .in('id', followingIds);
-
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError);
-            return;
-          }
-
-          const users: FollowedUser[] = [];
-          
-          for (const profile of (profiles || [])) {
-            const userHasStory = await hasActiveStory(profile.id);
-            users.push({
-              id: profile.id,
-              username: profile.username,
-              avatar_url: profile.avatar_url,
-              hasStory: userHasStory
-            });
-          }
-          
-          setFollowedUsers(users);
+        const users: FollowedUser[] = [];
+        
+        for (const profile of (profiles || [])) {
+          const userHasStory = await hasActiveStory(profile.id);
+          users.push({
+            id: profile.id,
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+            hasStory: userHasStory
+          });
         }
+        
+        setFollowedUsers(users);
       } catch (error) {
-        console.error('Error in fetchFollowedUsers:', error);
+        console.error('Error in fetchAllUsers:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchFollowedUsers();
+    fetchAllUsers();
   }, [user, isAuthenticated]);
 
-  if (!isAuthenticated || isLoading || followedUsers.length === 0) {
+  if (!isAuthenticated || isLoading) {
     return null;
   }
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
-import { FollowingUsersBar } from '@/components/FollowingUsersBar';
+import { AllUsersBar } from '@/components/AllUsersBar';
 import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
@@ -125,7 +125,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <FollowingUsersBar />
+        <AllUsersBar />
 
         {isAuthenticated && showConfessionForm && (
           <div className="mx-4 mb-6 p-4 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">

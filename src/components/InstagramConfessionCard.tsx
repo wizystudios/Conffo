@@ -33,6 +33,7 @@ import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { CallInterface } from '@/components/CallInterface';
+import { CommentSection } from '@/components/CommentSection';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -465,40 +466,18 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </Button>
         </div>
         
-        {confession.commentCount > 0 && (
-          <div className="mb-2">
-            {isAuthenticated ? (
-              <Link to={`/confession/${confession.id}`}>
-                <span className="text-muted-foreground text-sm hover:text-foreground cursor-pointer">
-                  View all {confession.commentCount} comments
-                </span>
-              </Link>
-            ) : (
-              <span 
-                className="text-muted-foreground text-sm cursor-pointer hover:text-foreground"
-                onClick={() => {}}
-              >
-                View all {confession.commentCount} comments
-              </span>
-            )}
-          </div>
-        )}
-        
-        {lastComment && (
-          <div className="mb-2">
-            <span className="font-semibold text-sm mr-2">
-              {lastComment.username}
-            </span>
-            <span className="text-sm text-muted-foreground">{lastComment.content}</span>
-          </div>
-        )}
-        
         <div className="pb-2">
           <span className="text-xs text-muted-foreground">
             {formatTimeShort(new Date(confession.timestamp))}
           </span>
         </div>
       </div>
+      
+      {/* Comments Section */}
+      <CommentSection 
+        confessionId={confession.id} 
+        onUpdate={() => onUpdate?.()} 
+      />
       
       <CallInterface
         isOpen={showCallInterface}

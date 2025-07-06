@@ -13,12 +13,34 @@ import { toast } from '@/hooks/use-toast';
 export function SimpleProfileForm() {
   const { user, refreshUser } = useAuth();
   const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isProfilePublic, setIsProfilePublic] = useState(true);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
+  const [likesEnabled, setLikesEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
       setUsername(user.username || user.email?.split('@')[0] || '');
+      // Load additional profile data
+      const loadProfile = async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('bio, contact_email, contact_phone, is_public')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (data) {
+          setBio(data.bio || '');
+          setContactEmail(data.contact_email || '');
+          setContactPhone(data.contact_phone || '');
+          setIsProfilePublic(data.is_public ?? true);
+        }
+      };
+      loadProfile();
     }
   }, [user]);
 
@@ -29,47 +51,46 @@ export function SimpleProfileForm() {
     setIsLoading(true);
 
     try {
-      // First, check if username is taken by another user
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', username.trim())
-        .neq('id', user.id)
-        .maybeSingle();
-
-      if (existingUser) {
-        toast({
-          variant: "destructive",
-          description: "Username is already taken",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
           username: username.trim(),
+          bio: bio.trim() || null,
+          contact_email: contactEmail.trim() || null,
+          contact_phone: contactPhone.trim() || null,
+          is_public: isProfilePublic,
           updated_at: new Date().toISOString()
         });
 
       if (error) throw error;
 
-      if (refreshUser) {
-        await refreshUser();
-      }
-
-      toast({
-        description: "Profile updated successfully",
-      });
+      if (refreshUser) await refreshUser();
+      toast({ description: "Profile updated successfully" });
     } catch (error: any) {
-      console.error('Error updating profile:', error);
       toast({
         variant: "destructive",
         description: error.message || "Failed to update profile",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleReturnToAvatar = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      if (refreshUser) await refreshUser();
+      toast({ description: "Returned to default avatar" });
+    } catch (error) {
+      toast({ variant: "destructive", description: "Failed to reset avatar" });
     }
   };
 
