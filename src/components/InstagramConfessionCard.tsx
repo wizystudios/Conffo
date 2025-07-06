@@ -347,12 +347,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       </div>
       
       {confession.mediaUrl && (
-        <div className="w-full">
+        <div className="w-full bg-black">
           {confession.mediaType === 'image' ? (
             <img 
               src={confession.mediaUrl} 
               alt="Post media" 
-              className="w-full max-h-[500px] object-contain bg-black"
+              className="w-full max-h-[600px] object-cover"
               loading="lazy"
             />
           ) : confession.mediaType === 'video' ? (
@@ -363,7 +363,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 muted={isMuted}
                 loop
                 playsInline
-                className="w-full max-h-[500px] object-contain bg-black"
+                className="w-full max-h-[600px] object-cover"
               />
               <Button
                 variant="secondary"
@@ -379,7 +379,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       )}
       
       <div className="px-4 pt-3">
-        <div className="mb-2">
+        <div className="mb-2 flex flex-wrap items-baseline">
           <UsernameDisplay 
             userId={confession.userId}
             showAvatar={false}

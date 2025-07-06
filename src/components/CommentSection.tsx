@@ -30,6 +30,31 @@ export function CommentSection({ confessionId, onUpdate }: CommentSectionProps) 
 
   useEffect(() => {
     fetchComments();
+    
+    // Set up real-time subscription for new comments
+    const channel = supabase
+      .channel(`confession-comments-${confessionId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'comments',
+        filter: `confession_id=eq.${confessionId}`
+      }, () => {
+        fetchComments(); // Refresh comments when new ones are added
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'comments',
+        filter: `confession_id=eq.${confessionId}`
+      }, () => {
+        fetchComments(); // Refresh comments when comments are deleted
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [confessionId]);
 
   const fetchComments = async () => {
