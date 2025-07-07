@@ -33,7 +33,7 @@ import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { CallInterface } from '@/components/CallInterface';
-import { CommentModal } from '@/components/CommentModal';
+import { EnhancedCommentModal } from '@/components/EnhancedCommentModal';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -52,6 +52,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
+  const [currentCommentCount, setCurrentCommentCount] = useState(confession.commentCount || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const formatTimeShort = (date: Date) => {
@@ -431,8 +432,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               >
                 <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
               </Button>
-              {confession.commentCount > 0 && (
-                <span className="text-sm font-medium">{confession.commentCount}</span>
+              {currentCommentCount > 0 && (
+                <span className="text-sm font-medium">{currentCommentCount}</span>
               )}
             </div>
             
@@ -467,12 +468,13 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      <CommentModal
+      <EnhancedCommentModal
         isOpen={showCommentModal}
         onClose={() => setShowCommentModal(false)}
         confessionId={confession.id}
         confessionContent={confession.content}
         confessionAuthor={confessionAuthor?.username || 'Anonymous User'}
+        onCommentCountChange={setCurrentCommentCount}
       />
       
       <CallInterface

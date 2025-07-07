@@ -14,12 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_replies: {
+        Row: {
+          created_at: string
+          id: string
+          parent_comment_id: string
+          reply_comment_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_comment_id: string
+          reply_comment_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_comment_id?: string
+          reply_comment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_replies_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_replies_reply_comment_id_fkey"
+            columns: ["reply_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           confession_id: string
           content: string
           created_at: string
           id: string
+          parent_comment_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -27,6 +93,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -34,6 +101,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -42,6 +110,13 @@ export type Database = {
             columns: ["confession_id"]
             isOneToOne: false
             referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
             referencedColumns: ["id"]
           },
         ]
@@ -473,6 +548,10 @@ export type Database = {
         Args: { confession_uuid: string }
         Returns: number
       }
+      get_comment_like_count: {
+        Args: { comment_uuid: string }
+        Returns: number
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -511,6 +590,10 @@ export type Database = {
       unfollow_user: {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: undefined
+      }
+      user_liked_comment: {
+        Args: { comment_uuid: string; user_uuid: string }
+        Returns: boolean
       }
     }
     Enums: {

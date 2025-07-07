@@ -157,7 +157,7 @@ export function AllUsersBar() {
             </Button>
             
             <span className="text-xs text-center mt-1 truncate w-16">
-              Your Story
+              {currentUserProfile.username || 'You'}
             </span>
           </div>
         )}
@@ -185,8 +185,8 @@ export function AllUsersBar() {
               </Link>
             )}
             
-            {/* Follow/Following indicators */}
-            {!userData.isFollowing ? (
+            {/* Show follow button only for non-followed users */}
+            {!userData.isFollowing && (
               <Button
                 size="sm"
                 onClick={() => handleFollow(userData.id)}
@@ -194,10 +194,6 @@ export function AllUsersBar() {
               >
                 <Plus className="h-3 w-3" />
               </Button>
-            ) : (
-              <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
-                <Check className="h-3 w-3 text-white" />
-              </div>
             )}
             
             <span className="text-xs text-center mt-1 truncate w-16">
