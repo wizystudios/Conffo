@@ -33,7 +33,7 @@ import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { CallInterface } from '@/components/CallInterface';
-import { CommentSection } from '@/components/CommentSection';
+import { CommentModal } from '@/components/CommentModal';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -51,6 +51,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [showCallInterface, setShowCallInterface] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
+  const [showCommentModal, setShowCommentModal] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const formatTimeShort = (date: Date) => {
@@ -274,6 +275,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     if (!isAuthenticated) {
       return;
     }
+    setShowCommentModal(true);
   };
   
   const userReactions = confession.userReactions || [];
@@ -421,22 +423,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             </div>
             
             <div className="flex items-center space-x-1">
-              {isAuthenticated ? (
-                <Link to={`/confession/${confession.id}`}>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all">
-                    <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
-                  </Button>
-                </Link>
-              ) : (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
-                  onClick={handleCommentClick}
-                >
-                  <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
-                </Button>
-              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
+                onClick={handleCommentClick}
+              >
+                <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
+              </Button>
               {confession.commentCount > 0 && (
                 <span className="text-sm font-medium">{confession.commentCount}</span>
               )}
@@ -473,10 +467,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      {/* Comments Section */}
-      <CommentSection 
-        confessionId={confession.id} 
-        onUpdate={() => onUpdate?.()} 
+      <CommentModal
+        isOpen={showCommentModal}
+        onClose={() => setShowCommentModal(false)}
+        confessionId={confession.id}
+        confessionContent={confession.content}
+        confessionAuthor={confessionAuthor?.username || 'Anonymous User'}
       />
       
       <CallInterface

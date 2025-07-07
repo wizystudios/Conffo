@@ -15,11 +15,13 @@ interface User {
   avatar_url: string | null;
   hasStory: boolean;
   isFollowing: boolean;
+  isCurrentUser?: boolean;
 }
 
 export function AllUsersBar() {
   const { user, isAuthenticated } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +32,25 @@ export function AllUsersBar() {
       }
 
       try {
+        // Get current user profile first
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (currentProfile) {
+          const userHasStory = await hasActiveStory(currentProfile.id);
+          setCurrentUserProfile({
+            id: currentProfile.id,
+            username: currentProfile.username,
+            avatar_url: currentProfile.avatar_url,
+            hasStory: userHasStory,
+            isFollowing: false,
+            isCurrentUser: true
+          });
+        }
+
         // Get all users except current user
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
@@ -68,6 +89,10 @@ export function AllUsersBar() {
     fetchAllUsers();
   }, [user, isAuthenticated]);
 
+  const handleCreatePost = () => {
+    window.dispatchEvent(new Event('create-confession'));
+  };
+
   const handleFollow = async (targetUserId: string) => {
     if (!user) return;
     
@@ -98,6 +123,45 @@ export function AllUsersBar() {
   return (
     <div className="px-4 py-3 border-b border-border">
       <div className="flex items-center space-x-4 overflow-x-auto scrollbar-thin">
+        {/* Current User Profile with Plus Button */}
+        {currentUserProfile && (
+          <div className="flex flex-col items-center min-w-16 relative">
+            {currentUserProfile.hasStory ? (
+              <StoryRing
+                userId={currentUserProfile.id}
+                username={currentUserProfile.username}
+                avatarUrl={currentUserProfile.avatar_url}
+                size="md"
+              />
+            ) : (
+              <Link to={`/user/${currentUserProfile.id}`}>
+                <Avatar className="h-12 w-12 border-2 border-transparent hover:border-muted transition-colors">
+                  <AvatarImage 
+                    src={currentUserProfile.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${currentUserProfile.id}`} 
+                    alt={currentUserProfile.username || 'Your Profile'} 
+                  />
+                  <AvatarFallback>
+                    {currentUserProfile.username?.charAt(0).toUpperCase() || 'Y'}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            )}
+            
+            {/* Plus button for creating posts */}
+            <Button
+              size="sm"
+              onClick={handleCreatePost}
+              className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full p-0"
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+            
+            <span className="text-xs text-center mt-1 truncate w-16">
+              Your Story
+            </span>
+          </div>
+        )}
+        
         {users.map((userData) => (
           <div key={userData.id} className="flex flex-col items-center min-w-16 relative">
             {userData.hasStory ? (
@@ -121,8 +185,8 @@ export function AllUsersBar() {
               </Link>
             )}
             
-            {/* Follow button */}
-            {!userData.isFollowing && (
+            {/* Follow/Following indicators */}
+            {!userData.isFollowing ? (
               <Button
                 size="sm"
                 onClick={() => handleFollow(userData.id)}
@@ -130,9 +194,7 @@ export function AllUsersBar() {
               >
                 <Plus className="h-3 w-3" />
               </Button>
-            )}
-            
-            {userData.isFollowing && (
+            ) : (
               <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
                 <Check className="h-3 w-3 text-white" />
               </div>
