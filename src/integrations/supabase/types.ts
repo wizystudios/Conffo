@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      audio_posts: {
+        Row: {
+          audio_url: string
+          confession_id: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          waveform_data: Json | null
+        }
+        Insert: {
+          audio_url: string
+          confession_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          waveform_data?: Json | null
+        }
+        Update: {
+          audio_url?: string
+          confession_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          waveform_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_posts_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -164,6 +199,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      image_verification: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          status: string
+          user_id: string
+          verification_data: Json | null
+          verification_type: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          status?: string
+          user_id: string
+          verification_data?: Json | null
+          verification_type: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          status?: string
+          user_id?: string
+          verification_data?: Json | null
+          verification_type?: string
+          verified_at?: string | null
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
