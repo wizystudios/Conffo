@@ -13,6 +13,9 @@ import { FollowButton } from '@/components/FollowButton';
 import { SimpleProfileForm } from '@/components/SimpleProfileForm';
 import { CallInterface } from '@/components/CallInterface';
 import { FollowersModal } from '@/components/FollowersModal';
+import { AvatarCustomization } from '@/components/AvatarCustomization';
+import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
+import { RealImageVerification } from '@/components/RealImageVerification';
 
 interface ProfileData {
   id: string;
@@ -283,11 +286,13 @@ export default function ProfilePage() {
         {/* Tabs */}
         <div className="max-w-lg mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-background border-b border-border rounded-none">
+            <TabsList className="grid w-full grid-cols-4 bg-background border-b border-border rounded-none">
               {isOwnProfile ? (
                 <>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
-                  <TabsTrigger value="posts">Posts</TabsTrigger>
+                  <TabsTrigger value="avatar">Avatar</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  <TabsTrigger value="verify">Verify</TabsTrigger>
                 </>
               ) : (
                 <>
@@ -310,6 +315,18 @@ export default function ProfilePage() {
                       </Button>
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="avatar" className="p-4">
+                  <AvatarCustomization onAvatarUpdate={handleProfileUpdate} />
+                </TabsContent>
+
+                <TabsContent value="advanced" className="p-4">
+                  <EnhancedProfileSettings />
+                </TabsContent>
+
+                <TabsContent value="verify" className="p-4">
+                  <RealImageVerification />
                 </TabsContent>
 
                 <TabsContent value="posts">
