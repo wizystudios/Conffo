@@ -202,12 +202,21 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          date_of_birth: string | null
+          gender: string | null
           id: string
+          interests: string[] | null
           is_admin: boolean
           is_moderator: boolean
           is_public: boolean | null
+          is_verified: boolean | null
+          location: string | null
+          privacy_settings: Json | null
           updated_at: string
           username: string | null
+          verification_date: string | null
+          verification_type: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -215,12 +224,21 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
           id: string
+          interests?: string[] | null
           is_admin?: boolean
           is_moderator?: boolean
           is_public?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          privacy_settings?: Json | null
           updated_at?: string
           username?: string | null
+          verification_date?: string | null
+          verification_type?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -228,12 +246,21 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          gender?: string | null
           id?: string
+          interests?: string[] | null
           is_admin?: boolean
           is_moderator?: boolean
           is_public?: boolean | null
+          is_verified?: boolean | null
+          location?: string | null
+          privacy_settings?: Json | null
           updated_at?: string
           username?: string | null
+          verification_date?: string | null
+          verification_type?: string | null
+          website?: string | null
         }
         Relationships: []
       }
