@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, TrendingUp, Clock, PlusCircle } from 'lucide-react';
+import { PeopleYouMayKnow } from '@/components/PeopleYouMayKnow';
 
 export default function HomePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -150,12 +151,18 @@ export default function HomePage() {
           <>
             {currentConfessions.length > 0 ? (
               <div className="space-y-0">
-                {currentConfessions.map((confession) => (
-                  <InstagramConfessionCard 
-                    key={confession.id} 
-                    confession={confession}
-                    onUpdate={handleConfessionSuccess} 
-                  />
+                {currentConfessions.map((confession, index) => (
+                  <div key={confession.id}>
+                    <InstagramConfessionCard 
+                      confession={confession}
+                      onUpdate={handleConfessionSuccess} 
+                    />
+                    {(index + 1) % 2 === 0 && (
+                      <div className="py-4">
+                        <PeopleYouMayKnow />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (

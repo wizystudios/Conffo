@@ -186,13 +186,13 @@ export function EnhancedCommentModal({
       setNewComment('');
       setReplyingTo(null);
       toast({
-        description: replyingTo ? "Reply added successfully!" : "Comment added successfully!"
+        description: replyingTo ? "✅ Reply added!" : "✅ Comment added!"
       });
     } catch (error) {
       console.error('Error adding comment:', error);
       toast({
         variant: "destructive",
-        description: "Failed to add comment"
+        description: "❌ Failed to add comment"
       });
     } finally {
       setIsSubmitting(false);
@@ -284,15 +284,19 @@ export function EnhancedCommentModal({
                 className="h-6 px-0 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => setReplyingTo(comment.id)}
               >
-                Reply
+                Reply {comment.replies && comment.replies.length > 0 && `(${comment.replies.length})`}
               </Button>
             )}
           </div>
+          
+          {/* Collapsible replies */}
+          {!isReply && comment.replies && comment.replies.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {comment.replies.map(reply => renderComment(reply, true))}
+            </div>
+          )}
         </div>
       </div>
-      
-      {/* Render replies */}
-      {comment.replies && comment.replies.map(reply => renderComment(reply, true))}
     </div>
   );
 
@@ -336,7 +340,7 @@ export function EnhancedCommentModal({
       </div>
 
       {/* Comments List */}
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-20 scrollbar-hide" style={{ height: 'calc(100vh - 240px)' }}>
         {isLoading ? (
           <div className="p-8 text-center">
             <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>

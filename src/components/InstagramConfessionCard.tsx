@@ -288,7 +288,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     : confession.content;
   
   return (
-    <div className="w-full bg-background mb-6">
+    <div className="w-full bg-background mb-0 border-b border-border">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
           <UsernameDisplay 

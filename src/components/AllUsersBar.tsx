@@ -105,13 +105,13 @@ export function AllUsersBar() {
       ));
       
       toast({
-        description: "Following user!",
+        description: "✅ Following user!",
       });
     } catch (error) {
       console.error('Error following user:', error);
       toast({
         variant: "destructive",
-        description: "Failed to follow user"
+        description: "❌ Failed to follow user"
       });
     }
   };
@@ -122,7 +122,7 @@ export function AllUsersBar() {
 
   return (
     <div className="px-4 py-3 border-b border-border">
-      <div className="flex items-center space-x-4 overflow-x-auto scrollbar-thin">
+      <div className="flex items-center space-x-4 overflow-x-auto scrollbar-hide">
         {/* Current User Profile with Plus Button */}
         {currentUserProfile && (
           <div className="flex flex-col items-center min-w-16 relative">

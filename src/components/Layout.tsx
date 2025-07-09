@@ -2,6 +2,7 @@
 import { ReactNode, Component } from 'react';
 import { NavBar } from './NavBar';
 import { Footer } from './Footer';
+import { BottomNavigation } from './BottomNavigation';
 
 interface LayoutProps {
   children: ReactNode;
@@ -50,10 +51,11 @@ export function Layout({ children }: LayoutProps) {
     <ErrorBoundary>
       <div className="min-h-screen bg-background flex flex-col">
         <NavBar />
-        <main className="container max-w-full px-2 sm:px-3 md:px-4 flex-grow pt-16 sm:pt-20 pb-4">
+        <main className="container max-w-full px-2 sm:px-3 md:px-4 flex-grow pt-16 sm:pt-20 pb-16 md:pb-4">
           {children}
         </main>
         <Footer />
+        <BottomNavigation />
       </div>
     </ErrorBoundary>
   );
