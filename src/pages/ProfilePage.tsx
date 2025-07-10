@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
 import { SimpleProfileForm } from '@/components/SimpleProfileForm';
 import { CallInterface } from '@/components/CallInterface';
-import { FollowersModal } from '@/components/FollowersModal';
+import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal';
 import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
 import { RealImageVerification } from '@/components/RealImageVerification';
@@ -47,7 +47,7 @@ export default function ProfilePage() {
     
     const ownProfile = !userId || userId === user.id;
     setIsOwnProfile(ownProfile);
-    setActiveTab(ownProfile ? 'settings' : 'posts');
+    setActiveTab('posts'); // Always start with posts tab
   }, [userId, user]);
 
   // Fetch profile data
@@ -240,21 +240,21 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-bold">{username}</h2>
                   
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-6 mt-2">
                     <button 
-                      className="text-center hover:opacity-80 cursor-pointer"
+                      className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
                       onClick={handleFollowersClick}
                     >
-                      <p className="font-medium">{followersCount}</p>
-                      <p className="text-xs text-muted-foreground">Followers</p>
+                      <span className="font-semibold">{followersCount}</span>
+                      <span className="text-sm text-muted-foreground">Followers</span>
                     </button>
                     
                     <button 
-                      className="text-center hover:opacity-80 cursor-pointer"
+                      className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
                       onClick={handleFollowingClick}
                     >
-                      <p className="font-medium">{followingCount}</p>
-                      <p className="text-xs text-muted-foreground">Following</p>
+                      <span className="font-semibold">{followingCount}</span>
+                      <span className="text-sm text-muted-foreground">Following</span>
                     </button>
                   </div>
                 </div>
@@ -286,9 +286,10 @@ export default function ProfilePage() {
         {/* Tabs */}
         <div className="max-w-lg mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-background border-b border-border rounded-none">
+            <TabsList className="grid w-full grid-cols-5 bg-background border-b border-border rounded-none">
               {isOwnProfile ? (
                 <>
+                  <TabsTrigger value="posts">Posts</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
                   <TabsTrigger value="avatar">Avatar</TabsTrigger>
                   <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -304,6 +305,10 @@ export default function ProfilePage() {
             
             {isOwnProfile ? (
               <>
+                <TabsContent value="posts">
+                  <UserConfessions userId={user?.id} />
+                </TabsContent>
+
                 <TabsContent value="settings" className="p-4">
                   <div className="space-y-4">
                     <SimpleProfileForm />
@@ -327,10 +332,6 @@ export default function ProfilePage() {
 
                 <TabsContent value="verify" className="p-4">
                   <RealImageVerification />
-                </TabsContent>
-
-                <TabsContent value="posts">
-                  <UserConfessions userId={user?.id} />
                 </TabsContent>
               </>
             ) : (
@@ -388,7 +389,7 @@ export default function ProfilePage() {
               targetAvatarUrl={avatarUrl}
             />
             
-            <FollowersModal
+            <FullScreenFollowersModal
               isOpen={showFollowersModal}
               onClose={() => setShowFollowersModal(false)}
               userId={userId}
