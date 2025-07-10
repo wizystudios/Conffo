@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
+import { EnhancedRegistrationForm } from '@/components/EnhancedRegistrationForm';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -232,48 +233,7 @@ export default function AuthPage() {
             </TabsContent>
             
             <TabsContent value="register" className="space-y-4">
-              <form onSubmit={handleSignUp} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-sm font-medium">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        id="signup-email" 
-                        type="email" 
-                        placeholder="your@email.com" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-12 bg-background/50"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        id="signup-password" 
-                        type="password" 
-                        placeholder="Create a password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 h-12 bg-background/50"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-base font-semibold" 
-                  disabled={loading}
-                >
-                  {loading ? "Creating account..." : "Create Account"}
-                </Button>
-              </form>
+              <EnhancedRegistrationForm />
             </TabsContent>
           </Tabs>
         </div>
