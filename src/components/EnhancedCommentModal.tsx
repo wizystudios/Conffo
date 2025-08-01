@@ -28,6 +28,7 @@ interface EnhancedCommentModalProps {
   confessionContent: string;
   confessionAuthor: string;
   onCommentCountChange?: (count: number) => void;
+  onCommentSuccess?: () => void;
 }
 
 export function EnhancedCommentModal({ 
@@ -36,7 +37,8 @@ export function EnhancedCommentModal({
   confessionId, 
   confessionContent, 
   confessionAuthor,
-  onCommentCountChange 
+  onCommentCountChange,
+  onCommentSuccess 
 }: EnhancedCommentModalProps) {
   const { user, isAuthenticated } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -185,6 +187,12 @@ export function EnhancedCommentModal({
 
       setNewComment('');
       setReplyingTo(null);
+      
+      // Trigger success animation
+      if (onCommentSuccess) {
+        onCommentSuccess();
+      }
+      
       toast({
         description: replyingTo ? "✅ Reply added!" : "✅ Comment added!"
       });

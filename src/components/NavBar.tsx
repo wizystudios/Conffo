@@ -149,7 +149,11 @@ export function NavBar() {
           className="flex items-center gap-2 text-xl font-semibold"
           onClick={() => setOpen(false)}
         >
-          <Sparkles className="h-5 w-5 text-primary" />
+          <img 
+            src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
+            alt="Conffo" 
+            className="h-8 w-8 object-contain"
+          />
           <span>Conffo</span>
         </Link>
         

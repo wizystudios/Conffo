@@ -8,6 +8,9 @@ import { useState, lazy, Suspense, useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { WelcomeScreen } from "./components/WelcomeScreen";
+import { ConffoLoader } from "./components/ConffoLoader";
+import { FishSuccessAnimation } from "./components/FishSuccessAnimation";
+import { useSuccessAnimation } from "./hooks/useSuccessAnimation";
 import HomePage from "./pages/HomePage";
 
 // Use lazy loading for non-critical pages
@@ -23,19 +26,17 @@ const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const StoriesPage = lazy(() => import("./pages/StoriesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="text-center">
-      <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
-    </div>
-  </div>
-);
+// Import the LoadingFallback component
+import { LoadingFallback } from "./components/LoadingFallback";
 
 const App = () => {
   const [showWelcome, setShowWelcome] = useState(() => {
     return !localStorage.getItem('welcomeCompleted');
   });
+  const [showLoader, setShowLoader] = useState(() => {
+    return !localStorage.getItem('appInitialized');
+  });
+  const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
 
   // Create a new QueryClient instance with error handling
   const [queryClient] = useState(() => 
@@ -54,7 +55,26 @@ const App = () => {
     localStorage.setItem('welcomeCompleted', 'true');
     setShowWelcome(false);
   };
+
+  const handleLoaderComplete = () => {
+    localStorage.setItem('appInitialized', 'true');
+    setShowLoader(false);
+  };
+
+  // Global success animation listener
+  useEffect(() => {
+    const handleSuccess = (event: CustomEvent) => {
+      triggerSuccess(event.detail?.message);
+    };
+
+    window.addEventListener('conffo-success', handleSuccess as EventListener);
+    return () => window.removeEventListener('conffo-success', handleSuccess as EventListener);
+  }, [triggerSuccess]);
   
+  if (showLoader) {
+    return <ConffoLoader onComplete={handleLoaderComplete} />;
+  }
+
   if (showWelcome) {
     return <WelcomeScreen onComplete={handleWelcomeComplete} />;
   }
@@ -84,6 +104,11 @@ const App = () => {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              <FishSuccessAnimation 
+                show={showAnimation} 
+                message={message}
+                onComplete={hideAnimation}
+              />
             </AuthProvider>
           </TooltipProvider>
         </ThemeProvider>

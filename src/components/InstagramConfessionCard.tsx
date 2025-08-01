@@ -170,6 +170,13 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     
     try {
       await toggleReaction(confession.id, user.id, reaction);
+      
+      // Trigger success animation for likes
+      const event = new CustomEvent('conffo-success', {
+        detail: { message: 'Liked! 🐟' }
+      });
+      window.dispatchEvent(event);
+      
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Error toggling reaction:', error);
@@ -227,6 +234,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       const result = await saveConfession(confession.id, user.id);
       if (result) {
         setIsSaved(!isSaved);
+        
+        // Trigger success animation for saves
+        const event = new CustomEvent('conffo-success', {
+          detail: { message: 'Saved! 🐟' }
+        });
+        window.dispatchEvent(event);
       }
     } catch (error) {
       console.error('Error saving confession:', error);
@@ -277,6 +290,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       return;
     }
     setShowCommentModal(true);
+  };
+
+  const handleCommentSuccess = () => {
+    // Trigger success animation when comment is posted
+    const event = new CustomEvent('conffo-success', {
+      detail: { message: 'Comment posted! 🐟' }
+    });
+    window.dispatchEvent(event);
   };
   
   const userReactions = confession.userReactions || [];
@@ -475,6 +496,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         confessionContent={confession.content}
         confessionAuthor={confessionAuthor?.username || 'Anonymous User'}
         onCommentCountChange={setCurrentCommentCount}
+        onCommentSuccess={handleCommentSuccess}
       />
       
       <CallInterface
