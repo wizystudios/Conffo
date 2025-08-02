@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { markAllNotificationsAsRead, getUserNotifications, deleteNotification, getNotificationSender } from "@/utils/notificationUtils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, formatDistanceToNow } from "date-fns";
+import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
 export function NavBar() {
   const [open, setOpen] = useState(false);
@@ -26,6 +27,7 @@ export function NavBar() {
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
   const notificationPopoverRef = useRef(null);
   const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
+  const isNavbarVisible = useScrollNavbar();
   
   // Fetch notifications
   const { data: notifications = [], refetch: refetchNotifications } = useQuery({
@@ -142,7 +144,7 @@ export function NavBar() {
   };
   
   return (
-    <div className="bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/60 fixed top-0 left-0 right-0 border-b z-40 shadow-sm">
+    <div className={`bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/60 fixed top-0 left-0 right-0 border-b z-40 shadow-sm transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="container mx-auto flex justify-between items-center px-4 py-3">
         <Link 
           to="/" 
@@ -150,9 +152,9 @@ export function NavBar() {
           onClick={() => setOpen(false)}
         >
           <img 
-            src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
+            src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
             alt="Conffo" 
-            className="h-8 w-8 object-contain"
+            className="h-8 w-8 object-contain filter brightness-0 dark:brightness-100 dark:invert"
           />
           <span>Conffo</span>
         </Link>

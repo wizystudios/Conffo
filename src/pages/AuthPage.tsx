@@ -72,10 +72,11 @@ export default function AuthPage() {
       
       console.log("Sign in successful, user data:", data);
       
-      toast({
-        title: "Login successful",
-        description: "You have been logged in successfully.",
+      // Trigger success animation with logo
+      const successEvent = new CustomEvent('conffo-success', {
+        detail: { message: 'Welcome back!' }
       });
+      window.dispatchEvent(successEvent);
       
       // Force a full page reload to ensure clean state
       setTimeout(() => {
@@ -117,10 +118,11 @@ export default function AuthPage() {
       
       console.log("Sign up successful, user data:", data);
       
-      toast({
-        title: "Registration successful",
-        description: "Please check your email for confirmation instructions.",
+      // Trigger success animation with logo
+      const successEvent = new CustomEvent('conffo-success', {
+        detail: { message: 'Account created successfully!' }
       });
+      window.dispatchEvent(successEvent);
       
       // If auto-confirm is enabled (recommended for development)
       if (data?.user) {

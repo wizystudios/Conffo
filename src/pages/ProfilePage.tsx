@@ -16,6 +16,7 @@ import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal'
 import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
 import { RealImageVerification } from '@/components/RealImageVerification';
+import { ProfileInfoSection } from '@/components/ProfileInfoSection';
 
 interface ProfileData {
   id: string;
@@ -340,38 +341,8 @@ export default function ProfilePage() {
                   <UserConfessions userId={userId} />
                 </TabsContent>
                 
-                <TabsContent value="info" className="p-4">
-                  <div className="space-y-4">
-                    <div className="bg-muted/20 rounded-lg p-4">
-                      <h3 className="font-semibold mb-2">Profile Information</h3>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <span className="font-medium">Username:</span> {username}
-                        </div>
-                        {profileData.bio && (
-                          <div>
-                            <span className="font-medium">Bio:</span> {profileData.bio}
-                          </div>
-                        )}
-                        {profileData.contact_email && (
-                          <div>
-                            <span className="font-medium">Contact Email:</span> {profileData.contact_email}
-                          </div>
-                        )}
-                        {profileData.contact_phone && (
-                          <div>
-                            <span className="font-medium">Contact Phone:</span> {profileData.contact_phone}
-                          </div>
-                        )}
-                        <div>
-                          <span className="font-medium">Profile Type:</span> {profileData.is_public ? 'Public' : 'Private'}
-                        </div>
-                        {!profileData.bio && !profileData.contact_email && !profileData.contact_phone && (
-                          <p className="text-muted-foreground text-xs">No additional information available.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                <TabsContent value="info">
+                  <ProfileInfoSection userId={userId!} isOwnProfile={false} />
                 </TabsContent>
               </>
             )}

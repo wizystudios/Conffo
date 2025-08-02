@@ -31,9 +31,9 @@ export function ConffoLoader({ onComplete, duration = 3000 }: ConffoLoaderProps)
         {/* Animated Logo */}
         <div className="relative mb-8 animate-bounce">
           <img 
-            src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
+            src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
             alt="Conffo" 
-            className="w-32 h-32 object-contain animate-pulse"
+            className="w-32 h-32 object-contain animate-pulse filter brightness-0 dark:brightness-100 dark:invert"
           />
           {/* Floating bubbles animation */}
           <div className="absolute -top-4 -right-2">

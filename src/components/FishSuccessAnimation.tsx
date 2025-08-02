@@ -39,9 +39,9 @@ export function FishSuccessAnimation({
         <div className="relative z-10 animate-bounce">
           <div className="transform transition-all duration-500 animate-scale-in">
             <img 
-              src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
+              src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
               alt="Success" 
-              className="w-24 h-24 object-contain animate-pulse"
+              className="w-24 h-24 object-contain animate-pulse filter brightness-0 dark:brightness-100 dark:invert"
             />
           </div>
           

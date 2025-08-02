@@ -18,11 +18,11 @@ export function Footer() {
           </div>
           
           <div className="flex items-center space-x-2">
-            <Avatar className="h-6 w-6 sm:h-8 sm:w-8 bg-primary/10">
-              <AvatarFallback className="bg-primary/10">
-                <MessageSquare className="h-3 w-3 sm:h-5 sm:w-5 text-primary" />
-              </AvatarFallback>
-            </Avatar>
+            <img 
+              src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
+              alt="Conffo" 
+              className="h-6 w-6 sm:h-8 sm:w-8 object-contain filter brightness-0 dark:brightness-100 dark:invert"
+            />
             <span className="text-sm sm:text-base font-medium">Conffo</span>
             <span className="text-xs text-muted-foreground">from</span>
             <div className="flex items-center">
