@@ -87,14 +87,13 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
 
   const privacySettings = profile.privacy_settings || {};
   
-  // Check visibility based on privacy settings
-  const canViewContact = isOwnProfile || privacySettings?.contact_visibility === 'public' || 
-    (privacySettings?.contact_visibility === 'friends' && !isOwnProfile);
-  const canViewEmail = isOwnProfile || privacySettings?.email_visibility === 'public';
-  const canViewPhone = isOwnProfile || privacySettings?.phone_visibility === 'public';
-  const canViewGender = isOwnProfile || privacySettings?.gender_visibility === 'public';
-  const canViewLocation = isOwnProfile || privacySettings?.location_visibility === 'public';
-  const canViewBirthDate = isOwnProfile || privacySettings?.birth_date_visibility === 'public';
+  // Check visibility based on privacy settings - now default to showing everything unless explicitly private
+  const canViewContact = isOwnProfile || (privacySettings?.contact_visibility !== 'private' && privacySettings?.contact_visibility !== 'friends');
+  const canViewEmail = isOwnProfile || privacySettings?.email_visibility !== 'private';
+  const canViewPhone = isOwnProfile || privacySettings?.phone_visibility !== 'private';
+  const canViewGender = isOwnProfile || privacySettings?.gender_visibility !== 'private';
+  const canViewLocation = isOwnProfile || privacySettings?.location_visibility !== 'private';
+  const canViewBirthDate = isOwnProfile || privacySettings?.birth_date_visibility !== 'private';
 
   return (
     <div className="p-4 space-y-4">
@@ -173,7 +172,7 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
       </Card>
 
       {/* Contact Information Card */}
-      {canViewContact && (profile.contact_email || profile.contact_phone) && (
+      {((canViewEmail && profile.contact_email) || (canViewPhone && profile.contact_phone)) && (
         <Card className="border-border/60">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">

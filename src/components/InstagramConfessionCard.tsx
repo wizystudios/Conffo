@@ -312,6 +312,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     <div className="w-full bg-background mb-0 border-b border-border">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
+          <span className="text-blue-500 font-semibold text-sm">#{confession.room}</span>
           <UsernameDisplay 
             userId={confession.userId}
             showAvatar={true}
@@ -365,10 +366,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-      
-      <div className="px-4 pb-2">
-        <span className="text-blue-500 font-semibold text-sm">#{confession.room}</span>
       </div>
       
       {confession.mediaUrl && (

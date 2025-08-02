@@ -3,12 +3,13 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2 } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2, ChevronDown, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { useTheme } from "@/context/ThemeContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -154,7 +155,7 @@ export function NavBar() {
           <img 
             src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
             alt="Conffo" 
-            className="h-8 w-8 object-contain filter brightness-0 dark:brightness-100 dark:invert"
+            className="h-8 w-8 object-contain filter brightness-100 dark:brightness-0 dark:invert"
           />
           <span>Conffo</span>
         </Link>
@@ -192,125 +193,24 @@ export function NavBar() {
         <div className="hidden md:flex items-center gap-2">
           {isAuthenticated && (
             <>
-              <Popover open={notificationPopoverOpen} onOpenChange={setNotificationPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="relative"
-                  >
-                    {showNotificationBadge ? (
-                      <>
-                        <BellDot className="h-5 w-5" />
-                        <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary">
-                          {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                        </Badge>
-                      </>
-                    ) : (
-                      <Bell className="h-5 w-5" />
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent ref={notificationPopoverRef} className="w-80 p-0 max-h-[70vh] overflow-y-auto">
-                  <div className="p-4 border-b">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium">Notifications</h3>
-                      <div className="flex items-center gap-1">
-                        {notifications.length > 0 && (
-                          <>
-                            {unreadNotificationsCount > 0 && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={handleMarkNotificationsAsRead}
-                                className="h-8 px-2 text-xs"
-                              >
-                                <Check className="h-3.5 w-3.5 mr-1" />
-                                Mark all read
-                              </Button>
-                            )}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={handleDeleteAllNotifications}
-                              className="h-8 px-2 text-xs"
-                            >
-                              <Trash2 className="h-3.5 w-3.5 mr-1" />
-                              Clear all
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {selectedNotifications.length > 0 && (
-                      <div className="flex justify-between items-center mt-2 pt-2 border-t">
-                        <span className="text-xs text-muted-foreground">
-                          {selectedNotifications.length} selected
-                        </span>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={handleDeleteSelectedNotifications}
-                          className="h-7 text-xs"
-                        >
-                          Delete selected
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="divide-y">
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div 
-                          key={notification.id} 
-                          className={`p-4 hover:bg-muted/50 relative ${!notification.is_read ? 'bg-primary/5' : ''}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 pt-1">
-                              <Checkbox 
-                                checked={selectedNotifications.includes(notification.id)}
-                                onCheckedChange={() => toggleNotificationSelection(notification.id)}
-                              />
-                            </div>
-                            <div className="flex-grow min-w-0">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-grow min-w-0">
-                                  {notification.senderInfo?.username && (
-                                    <div className="mb-2">
-                                      <UsernameDisplay
-                                        userId={notification.senderInfo.userId}
-                                        showAvatar={true}
-                                        size="sm"
-                                      />
-                                    </div>
-                                  )}
-                                  <p className="text-sm break-words line-clamp-3">
-                                    {notification.content.replace('Someone', notification.senderInfo?.username || 'Someone')}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <p className="text-xs text-muted-foreground">
-                                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                                    </p>
-                                    {!notification.is_read && (
-                                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center">
-                        <p className="text-sm text-muted-foreground">No notifications</p>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <Link to="/notifications">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="relative"
+                >
+                  {showNotificationBadge ? (
+                    <>
+                      <BellDot className="h-5 w-5" />
+                      <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary">
+                        {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                      </Badge>
+                    </>
+                  ) : (
+                    <Bell className="h-5 w-5" />
+                  )}
+                </Button>
+              </Link>
               
               <Button 
                 onClick={handleCreateNew} 
@@ -326,22 +226,41 @@ export function NavBar() {
           )}
           
           {isAuthenticated && user ? (
-            <>
-              <Link to="/profile">
-                <Button variant="ghost" className="gap-2">
-                  <Avatar className="h-7 w-7">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2 p-2">
+                  <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatarUrl || ""} alt={user?.username || "User"} />
                     <AvatarFallback>{user?.username?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden sm:inline">{user?.username || "Profile"}</span>
+                  <ChevronDown className="h-4 w-4" />
                 </Button>
-              </Link>
-              
-              <Button variant="outline" onClick={logout}>
-                <LogIn className="h-5 w-5 mr-1" />
-                <span>Logout</span>
-              </Button>
-            </>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleCreateNew}
+                    className="w-full justify-start gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Post/Story
+                  </Button>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="w-full flex items-center gap-2 p-2">
+                    <Settings className="h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-red-600">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : isAuthenticated ? (
             <Link to="/profile">
               <Button variant="ghost" className="gap-2">

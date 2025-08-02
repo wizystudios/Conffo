@@ -104,23 +104,13 @@ export default function HomePage() {
             
             <div className="flex items-center space-x-2">
               {isAuthenticated && (
-                <>
-                  <Button 
-                    onClick={handleCreateStory} 
-                    size="sm" 
-                    variant="outline"
-                    className="rounded-full shadow-md hover:shadow-lg transition-all"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    onClick={() => setShowConfessionForm(!showConfessionForm)} 
-                    size="sm" 
-                    className="rounded-full shadow-md hover:shadow-lg transition-all"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </>
+                <Button 
+                  onClick={() => setShowConfessionForm(!showConfessionForm)} 
+                  size="sm" 
+                  className="rounded-full shadow-md hover:shadow-lg transition-all"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               )}
             </div>
           </div>

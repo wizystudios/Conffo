@@ -4,6 +4,8 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserConfessions } from '@/components/UserConfessions';
+import { UserSavedPosts } from '@/components/UserSavedPosts';
+import { UserLikedPosts } from '@/components/UserLikedPosts';
 import { Button } from '@/components/ui/button';
 import { LogOut, Phone, Video } from 'lucide-react';
 import { Navigate, useParams } from 'react-router-dom';
@@ -299,6 +301,8 @@ export default function ProfilePage() {
               ) : (
                 <>
                   <TabsTrigger value="posts">Posts</TabsTrigger>
+                  <TabsTrigger value="saved">Saved</TabsTrigger>
+                  <TabsTrigger value="liked">Liked</TabsTrigger>
                   <TabsTrigger value="info">Info</TabsTrigger>
                 </>
               )}
@@ -339,6 +343,14 @@ export default function ProfilePage() {
               <>
                 <TabsContent value="posts">
                   <UserConfessions userId={userId} />
+                </TabsContent>
+                
+                <TabsContent value="saved">
+                  <UserSavedPosts userId={userId} />
+                </TabsContent>
+                
+                <TabsContent value="liked">
+                  <UserLikedPosts userId={userId} />
                 </TabsContent>
                 
                 <TabsContent value="info">
