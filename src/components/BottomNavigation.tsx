@@ -26,9 +26,18 @@ export function BottomNavigation() {
           </Link>
         ))}
         
-        {isAuthenticated && (
+        {isAuthenticated && user && (
           <Link to="/profile" className="flex flex-col items-center py-2 px-4">
-            <User className={`h-6 w-6 ${isActive('/profile') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <div className="relative">
+              <img 
+                src={user.avatarUrl || '/placeholder.svg'} 
+                alt="Profile"
+                className={`h-6 w-6 rounded-full object-cover border-2 ${isActive('/profile') ? 'border-primary' : 'border-transparent'}`}
+              />
+              {isActive('/profile') && (
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></div>
+              )}
+            </div>
           </Link>
         )}
       </div>

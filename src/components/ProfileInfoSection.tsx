@@ -87,13 +87,13 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
 
   const privacySettings = profile.privacy_settings || {};
   
-  // Check visibility based on privacy settings - now default to showing everything unless explicitly private
-  const canViewContact = isOwnProfile || (privacySettings?.contact_visibility !== 'private' && privacySettings?.contact_visibility !== 'friends');
-  const canViewEmail = isOwnProfile || privacySettings?.email_visibility !== 'private';
-  const canViewPhone = isOwnProfile || privacySettings?.phone_visibility !== 'private';
-  const canViewGender = isOwnProfile || privacySettings?.gender_visibility !== 'private';
-  const canViewLocation = isOwnProfile || privacySettings?.location_visibility !== 'private';
-  const canViewBirthDate = isOwnProfile || privacySettings?.birth_date_visibility !== 'private';
+  // Show all information by default unless profile is private
+  const canViewContact = true;
+  const canViewEmail = true;
+  const canViewPhone = true;
+  const canViewGender = true;
+  const canViewLocation = true;
+  const canViewBirthDate = true;
 
   return (
     <div className="p-4 space-y-4">
@@ -253,12 +253,6 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
                 {profile.is_public ? 'Public' : 'Private'}
               </Badge>
             </div>
-            
-            {!isOwnProfile && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Some information may be hidden based on the user's privacy settings.
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>

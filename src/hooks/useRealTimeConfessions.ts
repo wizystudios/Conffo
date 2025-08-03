@@ -6,15 +6,15 @@ export function useRealTimeConfessions(initialConfessions: Confession[]) {
   const [confessions, setConfessions] = useState<Confession[]>(initialConfessions);
 
   useEffect(() => {
-    // Set up real-time subscription for new confessions
-    const channel = supabase
+    // Set up real-time subscription for confessions and reactions
+    const confessionsChannel = supabase
       .channel('public:confessions')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'confessions'
       }, (payload) => {
-        console.log('New confession:', payload);
+        console.log('New confession received in real-time:', payload);
         // Add the new confession to the top of the list
         const newConfession = payload.new as any;
         const confession: Confession = {
@@ -37,13 +37,95 @@ export function useRealTimeConfessions(initialConfessions: Confession[]) {
         schema: 'public',
         table: 'confessions'
       }, (payload) => {
-        console.log('Confession deleted:', payload);
+        console.log('Confession deleted in real-time:', payload);
         setConfessions(prev => prev.filter(c => c.id !== payload.old.id));
       })
       .subscribe();
 
+    // Set up real-time subscription for reactions
+    const reactionsChannel = supabase
+      .channel('public:reactions')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'reactions'
+      }, (payload) => {
+        console.log('New reaction received in real-time:', payload);
+        const newReaction = payload.new as any;
+        setConfessions(prev => prev.map(confession =>
+          confession.id === newReaction.confession_id
+            ? {
+                ...confession,
+                reactions: {
+                  ...confession.reactions,
+                  [newReaction.type]: confession.reactions[newReaction.type] + 1
+                }
+              }
+            : confession
+        ));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'reactions'
+      }, (payload) => {
+        console.log('Reaction deleted in real-time:', payload);
+        const deletedReaction = payload.old as any;
+        setConfessions(prev => prev.map(confession =>
+          confession.id === deletedReaction.confession_id
+            ? {
+                ...confession,
+                reactions: {
+                  ...confession.reactions,
+                  [deletedReaction.type]: Math.max(0, confession.reactions[deletedReaction.type] - 1)
+                }
+              }
+            : confession
+        ));
+      })
+      .subscribe();
+
+    // Set up real-time subscription for comments to update comment count
+    const commentsChannel = supabase
+      .channel('public:comments')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'comments'
+      }, (payload) => {
+        console.log('New comment received in real-time for comment count:', payload);
+        const newComment = payload.new as any;
+        setConfessions(prev => prev.map(confession =>
+          confession.id === newComment.confession_id
+            ? {
+                ...confession,
+                commentCount: confession.commentCount + 1
+              }
+            : confession
+        ));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'comments'
+      }, (payload) => {
+        console.log('Comment deleted in real-time for comment count:', payload);
+        const deletedComment = payload.old as any;
+        setConfessions(prev => prev.map(confession =>
+          confession.id === deletedComment.confession_id
+            ? {
+                ...confession,
+                commentCount: Math.max(0, confession.commentCount - 1)
+              }
+            : confession
+        ));
+      })
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(confessionsChannel);
+      supabase.removeChannel(reactionsChannel);
+      supabase.removeChannel(commentsChannel);
     };
   }, []);
 

@@ -24,6 +24,7 @@ const AuthPage = lazy(() => import("./pages/AuthPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const StoriesPage = lazy(() => import("./pages/StoriesPage"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Import the LoadingFallback component
@@ -97,6 +98,7 @@ const App = () => {
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
                   <Route path="/trending" element={<TrendingPage />} />
                   <Route path="/stories" element={<StoriesPage />} />
+                  <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />

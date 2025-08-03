@@ -15,7 +15,7 @@ export function useRealTimeComments(confessionId: string, initialComments: Comme
         table: 'comments',
         filter: `confession_id=eq.${confessionId}`
       }, (payload) => {
-        console.log('New comment:', payload);
+        console.log('New comment received in real-time:', payload);
         const newComment = payload.new as any;
         const comment: Comment = {
           id: newComment.id,
@@ -24,7 +24,8 @@ export function useRealTimeComments(confessionId: string, initialComments: Comme
           timestamp: new Date(newComment.created_at).getTime(),
           confessionId: newComment.confession_id
         };
-        setComments(prev => [...prev, comment]);
+        // Add comment immediately to the top of the list for real-time effect
+        setComments(prev => [comment, ...prev]);
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -32,8 +33,26 @@ export function useRealTimeComments(confessionId: string, initialComments: Comme
         table: 'comments',
         filter: `confession_id=eq.${confessionId}`
       }, (payload) => {
-        console.log('Comment deleted:', payload);
+        console.log('Comment deleted in real-time:', payload);
         setComments(prev => prev.filter(c => c.id !== payload.old.id));
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'comments',
+        filter: `confession_id=eq.${confessionId}`
+      }, (payload) => {
+        console.log('Comment updated in real-time:', payload);
+        const updatedComment = payload.new as any;
+        setComments(prev => prev.map(comment => 
+          comment.id === updatedComment.id 
+            ? {
+                ...comment,
+                content: updatedComment.content,
+                timestamp: new Date(updatedComment.created_at).getTime()
+              }
+            : comment
+        ));
       })
       .subscribe();
 

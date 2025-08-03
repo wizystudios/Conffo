@@ -144,8 +144,8 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   
   return (
     <>
-      <Card ref={cardRef}>
-        <CardContent className={detailed ? "pt-6" : "pt-4"}>
+      <Card ref={cardRef} className="mx-1">
+        <CardContent className={detailed ? "pt-6 px-3" : "pt-4 px-3"}>
           <div className="flex justify-between items-center mb-4">
             <UsernameDisplay userId={confession.userId} size="md" />
             <span className="text-sm text-muted-foreground">
@@ -215,7 +215,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
           )}
         </CardContent>
         
-        <CardFooter className="flex justify-between border-t pt-3 pb-2">
+        <CardFooter className="flex justify-between border-t pt-3 pb-2 px-3">
           <div className="flex gap-1">
             <ReactionButton 
               icon={<ThumbsUp className="h-4 w-4" />} 
