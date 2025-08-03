@@ -310,7 +310,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   return (
     <div className="w-full bg-background mb-0 border-b border-border">
-      <div className="flex items-center justify-between px-3 py-3">
+      <div className="flex items-center justify-between px-2 py-3">
         <div className="flex items-center space-x-3">
           <span className="text-blue-500 font-semibold text-sm">#{confession.room}</span>
           <UsernameDisplay 
@@ -400,7 +400,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      <div className="px-3 pt-3">
+      <div className="px-2 pt-3">
         <div className="mb-2 flex flex-wrap items-baseline">
           <UsernameDisplay 
             userId={confession.userId}
@@ -421,7 +421,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      <div className="px-3 pt-2">
+      <div className="px-2 pt-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">

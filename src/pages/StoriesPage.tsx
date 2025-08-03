@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StoryCreator } from '@/components/story/StoryCreator';
 import { StoryRing } from '@/components/story/StoryRing';
@@ -9,12 +11,15 @@ import { getActiveStories } from '@/services/storyService';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Story } from '@/types';
+import { Plus, Search, TrendingUp, Clock } from 'lucide-react';
 
 export default function StoriesPage() {
   const { user, isAuthenticated } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
   const [selectedUserIndex, setSelectedUserIndex] = useState<number | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Get all active stories with optimized query
   const { data: stories = [], refetch: refetchStories } = useQuery({
@@ -75,8 +80,44 @@ export default function StoriesPage() {
       <div className="space-y-6 pt-14">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Stories</CardTitle>
+            <CardTitle className="flex items-center gap-4">
+              Stories
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <Clock className="h-4 w-4 mr-1" />
+                  Recent
+                </Button>
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  Trending
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowSearch(!showSearch)}
+                  className="text-muted-foreground"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardTitle>
+            {isAuthenticated && (
+              <Button onClick={() => setIsCreating(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Story
+              </Button>
+            )}
           </CardHeader>
+          {showSearch && (
+            <div className="px-6 pb-4">
+              <Input
+                placeholder="Search by hashtag, username, or content..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          )}
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
               {/* My Story first (if authenticated) */}

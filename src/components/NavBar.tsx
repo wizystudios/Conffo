@@ -153,14 +153,14 @@ export function NavBar() {
           onClick={() => setOpen(false)}
         >
           <img 
-            src="/lovable-uploads/077e77ce-5772-45c0-9765-c8320d07edf3.png" 
+            src="/lovable-uploads/5affd7c4-65bb-4b3a-af86-0cf0b47b138f.png" 
             alt="Conffo" 
             className="h-8 w-8 object-contain block dark:hidden"
           />
           <img 
-            src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
+            src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
             alt="Conffo" 
-            className="h-8 w-8 object-contain hidden dark:block filter brightness-100 invert"
+            className="h-8 w-8 object-contain hidden dark:block"
           />
           <span>Conffo</span>
         </Link>
@@ -242,16 +242,26 @@ export function NavBar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleCreateNew}
-                    className="w-full justify-start gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create Post/Story
-                  </Button>
-                </DropdownMenuItem>
+                 <DropdownMenuItem 
+                   onClick={() => {
+                     const event = new CustomEvent('create-confession');
+                     window.dispatchEvent(event);
+                   }}
+                   className="gap-2"
+                 >
+                   <Plus className="h-4 w-4" />
+                   Create Confession
+                 </DropdownMenuItem>
+                 <DropdownMenuItem 
+                   onClick={() => {
+                     const event = new CustomEvent('create-story');
+                     window.dispatchEvent(event);
+                   }}
+                   className="gap-2"
+                 >
+                   <Plus className="h-4 w-4" />
+                   Create Story
+                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="w-full flex items-center gap-2 p-2">
