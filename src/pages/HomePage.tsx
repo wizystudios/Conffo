@@ -82,10 +82,6 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        <div className="px-4 py-3 mb-4">
-          <SearchBar />
-        </div>
-
         <div className={`sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-0 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-4">
@@ -120,6 +116,10 @@ export default function HomePage() {
                 </Button>
               )}
             </div>
+          </div>
+          
+          <div className="px-4 pb-3">
+            <SearchBar />
           </div>
         </div>
 

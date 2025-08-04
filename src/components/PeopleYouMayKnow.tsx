@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { X, Users } from 'lucide-react';
+import { Users, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { FollowButton } from '@/components/FollowButton';
+import { PeopleYouMayKnowModal } from '@/components/PeopleYouMayKnowModal';
 
 interface SuggestedUser {
   id: string;
@@ -17,7 +17,7 @@ interface SuggestedUser {
 export function PeopleYouMayKnow() {
   const { user } = useAuth();
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
-  const [hiddenUsers, setHiddenUsers] = useState<Set<string>>(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function PeopleYouMayKnow() {
           .select('id, username, avatar_url')
           .neq('id', user.id)
           .not('id', 'in', followingIds.length > 0 ? `(${followingIds.join(',')})` : '()')
-          .limit(6);
+          .limit(3);
 
         if (error) throw error;
 
@@ -60,44 +60,25 @@ export function PeopleYouMayKnow() {
     fetchSuggestedUsers();
   }, [user]);
 
-  const handleHideUser = (userId: string) => {
-    setHiddenUsers(prev => new Set([...prev, userId]));
-  };
-
-  const visibleUsers = suggestedUsers.filter(user => !hiddenUsers.has(user.id));
-
-  if (isLoading || visibleUsers.length === 0) return null;
+  if (isLoading || suggestedUsers.length === 0) return null;
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Users className="h-5 w-5" />
-          People You May Know
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-          {visibleUsers.map((suggestedUser) => (
-            <div
-              key={suggestedUser.id}
-              className="relative flex-shrink-0 border rounded-lg p-3 hover:bg-muted/50 transition-colors min-w-[120px] cursor-pointer"
-              onClick={() => window.open(`/profile?userId=${suggestedUser.id}`, '_self')}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-foreground z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleHideUser(suggestedUser.id);
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-              
-              <div className="flex flex-col items-center space-y-2">
-                <Avatar className="h-16 w-16">
+    <>
+      <Card className="w-full cursor-pointer" onClick={() => setIsModalOpen(true)}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between text-lg">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              People You May Know
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            {suggestedUsers.slice(0, 3).map((suggestedUser) => (
+              <div key={suggestedUser.id} className="flex flex-col items-center space-y-2">
+                <Avatar className="h-12 w-12">
                   <AvatarImage 
                     src={suggestedUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${suggestedUser.id}`} 
                     alt={suggestedUser.username} 
@@ -106,28 +87,19 @@ export function PeopleYouMayKnow() {
                     {suggestedUser.username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                
-                <div className="text-center">
-                  <p className="font-medium text-sm truncate max-w-[100px]">
-                    {suggestedUser.username}
-                  </p>
-                  {suggestedUser.mutualFollowers && suggestedUser.mutualFollowers > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {suggestedUser.mutualFollowers} mutual
-                    </p>
-                  )}
-                </div>
-                
-                <div onClick={(e) => e.stopPropagation()}>
-                  <FollowButton 
-                    userId={suggestedUser.id} 
-                  />
-                </div>
+                <p className="text-xs font-medium truncate max-w-[60px]">
+                  {suggestedUser.username}
+                </p>
               </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      
+      <PeopleYouMayKnowModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
+    </>
   );
 }
