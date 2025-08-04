@@ -153,7 +153,7 @@ export function NavBar() {
           onClick={() => setOpen(false)}
         >
           <img 
-            src="/lovable-uploads/5affd7c4-65bb-4b3a-af86-0cf0b47b138f.png" 
+            src="/lovable-uploads/ce53fd65-dc4f-4335-984b-567f5fbae96d.png" 
             alt="Conffo" 
             className="h-8 w-8 object-contain block dark:hidden"
           />

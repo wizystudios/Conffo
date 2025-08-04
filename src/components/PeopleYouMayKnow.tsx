@@ -77,23 +77,27 @@ export function PeopleYouMayKnow() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-3">
-          {visibleUsers.slice(0, 4).map((suggestedUser) => (
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+          {visibleUsers.map((suggestedUser) => (
             <div
               key={suggestedUser.id}
-              className="relative border rounded-lg p-3 hover:bg-muted/50 transition-colors"
+              className="relative flex-shrink-0 border rounded-lg p-3 hover:bg-muted/50 transition-colors min-w-[120px] cursor-pointer"
+              onClick={() => window.open(`/profile?userId=${suggestedUser.id}`, '_self')}
             >
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => handleHideUser(suggestedUser.id)}
+                className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-foreground z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleHideUser(suggestedUser.id);
+                }}
               >
                 <X className="h-3 w-3" />
               </Button>
               
               <div className="flex flex-col items-center space-y-2">
-                <Avatar className="h-12 w-12">
+                <Avatar className="h-16 w-16">
                   <AvatarImage 
                     src={suggestedUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${suggestedUser.id}`} 
                     alt={suggestedUser.username} 
@@ -104,7 +108,7 @@ export function PeopleYouMayKnow() {
                 </Avatar>
                 
                 <div className="text-center">
-                  <p className="font-medium text-sm truncate max-w-[80px]">
+                  <p className="font-medium text-sm truncate max-w-[100px]">
                     {suggestedUser.username}
                   </p>
                   {suggestedUser.mutualFollowers && suggestedUser.mutualFollowers > 0 && (
@@ -114,9 +118,11 @@ export function PeopleYouMayKnow() {
                   )}
                 </div>
                 
-                <FollowButton 
-                  userId={suggestedUser.id} 
-                />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <FollowButton 
+                    userId={suggestedUser.id} 
+                  />
+                </div>
               </div>
             </div>
           ))}

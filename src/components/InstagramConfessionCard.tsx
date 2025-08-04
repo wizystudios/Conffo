@@ -395,6 +395,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               >
                 {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <Volume2 className="h-4 w-4 text-white" />}
               </Button>
+              
+              {/* View count overlay */}
+              <div className="absolute bottom-4 left-4 bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                <div className="w-1 h-1 bg-white rounded-full"></div>
+                {Math.floor(Math.random() * 10000) + 100} views
+              </div>
             </div>
           ) : null}
         </div>

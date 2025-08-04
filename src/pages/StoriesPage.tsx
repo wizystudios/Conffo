@@ -80,44 +80,13 @@ export default function StoriesPage() {
       <div className="space-y-6 pt-14">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-4">
-              Stories
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <Clock className="h-4 w-4 mr-1" />
-                  Recent
-                </Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  Trending
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowSearch(!showSearch)}
-                  className="text-muted-foreground"
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardTitle>
+            <CardTitle>Stories</CardTitle>
             {isAuthenticated && (
-              <Button onClick={() => setIsCreating(true)} size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Story
+              <Button onClick={() => setIsCreating(true)} size="icon" variant="outline">
+                <Plus className="h-4 w-4" />
               </Button>
             )}
           </CardHeader>
-          {showSearch && (
-            <div className="px-6 pb-4">
-              <Input
-                placeholder="Search by hashtag, username, or content..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          )}
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
               {/* My Story first (if authenticated) */}
