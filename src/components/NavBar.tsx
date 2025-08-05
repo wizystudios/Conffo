@@ -483,19 +483,6 @@ export function NavBar() {
                   </Link>
                 </div>
                 
-                <div className="mt-6 pt-6 border-t">
-                  <Button 
-                    onClick={() => {
-                      handleCreateNew();
-                      setOpen(false);
-                    }} 
-                    variant="outline"
-                    className="w-full justify-center bg-primary/10 hover:bg-primary/20 text-primary"
-                  >
-                    <PlusSquare className="h-5 w-5 mr-2" />
-                    <span>Create New Post</span>
-                  </Button>
-                </div>
                 
                 <div className="mt-auto space-y-4">
                   <Button

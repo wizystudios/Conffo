@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Hash, TrendingUp, Sparkles, User } from 'lucide-react';
+import { Home, Hash, TrendingUp, Sparkles, User, LogIn, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
 
 export function BottomNavigation() {
   const { user, isAuthenticated } = useAuth();
@@ -8,6 +9,18 @@ export function BottomNavigation() {
   
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+  
+  const handleCreateNew = () => {
+    if (location.pathname === '/stories') {
+      // Trigger story creation dialog using a custom event
+      const event = new CustomEvent('create-story');
+      window.dispatchEvent(event);
+    } else {
+      // Default to confession
+      const event = new CustomEvent('create-confession');
+      window.dispatchEvent(event);
+    }
   };
   
   const links = [
@@ -26,7 +39,21 @@ export function BottomNavigation() {
           </Link>
         ))}
         
-        {isAuthenticated && user && (
+        {/* Plus button for authenticated users */}
+        {isAuthenticated && (
+          <Button 
+            onClick={handleCreateNew} 
+            variant="ghost"
+            size="icon"
+            className="flex flex-col items-center py-2 px-4"
+            aria-label="Create new post"
+          >
+            <Plus className="h-6 w-6 text-primary" />
+          </Button>
+        )}
+        
+        {/* Profile or Sign In */}
+        {isAuthenticated && user ? (
           <Link to="/profile" className="flex flex-col items-center py-2 px-4">
             <div className="relative">
               <img 
@@ -38,6 +65,10 @@ export function BottomNavigation() {
                 <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></div>
               )}
             </div>
+          </Link>
+        ) : (
+          <Link to="/auth" className="flex flex-col items-center py-2 px-4">
+            <LogIn className="h-6 w-6 text-muted-foreground" />
           </Link>
         )}
       </div>
