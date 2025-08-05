@@ -31,12 +31,6 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 import { LoadingFallback } from "./components/LoadingFallback";
 
 const App = () => {
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return !localStorage.getItem('welcomeCompleted');
-  });
-  const [showLoader, setShowLoader] = useState(() => {
-    return !localStorage.getItem('appInitialized');
-  });
   const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
 
   // Create a new QueryClient instance with error handling
@@ -52,16 +46,6 @@ const App = () => {
     })
   );
 
-  const handleWelcomeComplete = () => {
-    localStorage.setItem('welcomeCompleted', 'true');
-    setShowWelcome(false);
-  };
-
-  const handleLoaderComplete = () => {
-    localStorage.setItem('appInitialized', 'true');
-    setShowLoader(false);
-  };
-
   // Global success animation listener
   useEffect(() => {
     const handleSuccess = (event: CustomEvent) => {
@@ -71,14 +55,6 @@ const App = () => {
     window.addEventListener('conffo-success', handleSuccess as EventListener);
     return () => window.removeEventListener('conffo-success', handleSuccess as EventListener);
   }, [triggerSuccess]);
-  
-  if (showLoader) {
-    return <ConffoLoader onComplete={handleLoaderComplete} />;
-  }
-
-  if (showWelcome) {
-    return <WelcomeScreen onComplete={handleWelcomeComplete} />;
-  }
   
   return (
     <QueryClientProvider client={queryClient}>

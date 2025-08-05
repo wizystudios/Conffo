@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { AllUsersBar } from '@/components/AllUsersBar';
-import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
+import { EnhancedMultimediaForm } from '@/components/EnhancedMultimediaForm';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataService';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, TrendingUp, Clock, PlusCircle } from 'lucide-react';
 import { PeopleYouMayKnow } from '@/components/PeopleYouMayKnow';
-import { SearchBar } from '@/components/SearchBar';
+import { EnhancedSearchBar } from '@/components/EnhancedSearchBar';
 import { useScrollNavbar } from '@/hooks/useScrollNavbar';
 
 export default function HomePage() {
@@ -84,7 +84,7 @@ export default function HomePage() {
       <div className="max-w-lg mx-auto">
         <div className={`sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-0 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 flex-1">
               <Button
                 variant={activeTab === 'recent' ? 'default' : 'ghost'}
                 size="sm"
@@ -103,6 +103,10 @@ export default function HomePage() {
                 <TrendingUp className="h-4 w-4" />
                 Trending
               </Button>
+              
+              <div className="flex-1 max-w-xs ml-2">
+                <EnhancedSearchBar />
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -117,10 +121,6 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          
-          <div className="px-4 pb-3">
-            <SearchBar />
-          </div>
         </div>
 
         <AllUsersBar />
@@ -128,7 +128,7 @@ export default function HomePage() {
         {isAuthenticated && showConfessionForm && (
           <div className="mx-4 mb-6 p-4 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">
             <h2 className="text-lg font-semibold mb-4">Share Your Confession</h2>
-            <EnhancedConfessionForm 
+            <EnhancedMultimediaForm 
               onSuccess={handleConfessionSuccess} 
               onCancel={() => setShowConfessionForm(false)}
             />
