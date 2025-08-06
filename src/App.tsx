@@ -25,6 +25,11 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const StoriesPage = lazy(() => import("./pages/StoriesPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const ChatListPage = lazy(() => import("./pages/ChatListPage"));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const RecentPage = lazy(() => import("./pages/RecentPage"));
+const CreatePostPage = lazy(() => import("./pages/CreatePostPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Import the LoadingFallback component
@@ -74,7 +79,12 @@ const App = () => {
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
                   <Route path="/trending" element={<TrendingPage />} />
                   <Route path="/stories" element={<StoriesPage />} />
-                  <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/chat" element={<ChatListPage />} />
+          <Route path="/chat/:userId" element={<ChatPage />} />
+          <Route path="/recent" element={<RecentPage />} />
+          <Route path="/create" element={<CreatePostPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />

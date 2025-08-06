@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2, ChevronDown, Plus } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2, ChevronDown, Plus, Clock, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { useTheme } from "@/context/ThemeContext";
@@ -154,15 +154,14 @@ export function NavBar() {
         >
           <img 
             src="/lovable-uploads/ce53fd65-dc4f-4335-984b-567f5fbae96d.png" 
-            alt="Conffo" 
+            alt="Logo" 
             className="h-8 w-8 object-contain block dark:hidden"
           />
           <img 
             src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
-            alt="Conffo" 
+            alt="Logo" 
             className="h-8 w-8 object-contain hidden dark:block"
           />
-          <span>Conffo</span>
         </Link>
         
         <div className="hidden md:flex items-center space-x-1">
@@ -173,10 +172,10 @@ export function NavBar() {
             </Button>
           </Link>
           
-          <Link to="/rooms">
-            <Button variant={isActive('/rooms') ? "default" : "ghost"}>
-              <Hash className="h-5 w-5 mr-1" />
-              <span>Rooms</span>
+          <Link to="/recent">
+            <Button variant={isActive('/recent') ? "default" : "ghost"}>
+              <Clock className="h-5 w-5 mr-1" />
+              <span>Recent</span>
             </Button>
           </Link>
           
@@ -187,10 +186,10 @@ export function NavBar() {
             </Button>
           </Link>
           
-          <Link to="/stories">
-            <Button variant={isActive('/stories') ? "default" : "ghost"}>
-              <Sparkles className="h-5 w-5 mr-1" />
-              <span>Stories</span>
+          <Link to="/search">
+            <Button variant={isActive('/search') ? "default" : "ghost"}>
+              <Search className="h-5 w-5 mr-1" />
+              <span>Search</span>
             </Button>
           </Link>
         </div>
@@ -224,7 +223,7 @@ export function NavBar() {
                 size="sm"
                 aria-label="Create new post"
               >
-                <PlusSquare className="h-4 w-4 mr-1.5" />
+                <Plus className="h-4 w-4 mr-1.5" />
                 <span>New</span>
               </Button>
             </>

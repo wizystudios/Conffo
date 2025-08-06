@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Hash, TrendingUp, Sparkles, User, LogIn, Plus } from 'lucide-react';
+import { Home, MessageCircle, LogIn, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { MobileProfileDropdown } from '@/components/MobileProfileDropdown';
 
 export function BottomNavigation() {
   const { user, isAuthenticated } = useAuth();
@@ -25,9 +26,7 @@ export function BottomNavigation() {
   
   const links = [
     { to: '/', icon: Home, label: 'Home' },
-    { to: '/rooms', icon: Hash, label: 'Rooms' },
-    { to: '/trending', icon: TrendingUp, label: 'Trending' },
-    { to: '/stories', icon: Sparkles, label: 'Stories' },
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
   ];
   
   return (
@@ -54,18 +53,7 @@ export function BottomNavigation() {
         
         {/* Profile or Sign In */}
         {isAuthenticated && user ? (
-          <Link to="/profile" className="flex flex-col items-center py-2 px-4">
-            <div className="relative">
-              <img 
-                src={user.avatarUrl || '/placeholder.svg'} 
-                alt="Profile"
-                className={`h-6 w-6 rounded-full object-cover border-2 ${isActive('/profile') ? 'border-primary' : 'border-transparent'}`}
-              />
-              {isActive('/profile') && (
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></div>
-              )}
-            </div>
-          </Link>
+          <MobileProfileDropdown />
         ) : (
           <Link to="/auth" className="flex flex-col items-center py-2 px-4">
             <LogIn className="h-6 w-6 text-muted-foreground" />
