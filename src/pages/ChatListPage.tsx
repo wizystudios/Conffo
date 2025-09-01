@@ -6,43 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, MessageCircle, Phone, Video } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '@/services/chatService';
 
 export default function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock chat data
-  const chats = [
-    {
-      id: '1',
-      username: 'user123',
-      avatarUrl: null,
-      lastMessage: 'Hey, how are you?',
-      timestamp: '2 min ago',
-      unreadCount: 2,
-      isOnline: true,
-    },
-    {
-      id: '2',
-      username: 'anonymous_user',
-      avatarUrl: null,
-      lastMessage: 'Thanks for sharing your story',
-      timestamp: '1 hour ago',
-      unreadCount: 0,
-      isOnline: false,
-    },
-    {
-      id: '3',
-      username: 'secret_keeper',
-      avatarUrl: null,
-      lastMessage: 'Audio message',
-      timestamp: '3 hours ago',
-      unreadCount: 1,
-      isOnline: true,
-    },
-  ];
+  // Real-time chat data
+  const { data: conversations = [], isLoading } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: getConversations,
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
 
-  const filteredChats = chats.filter(chat =>
-    chat.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChats = conversations.filter(conversation =>
+    conversation.other_participant?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -68,57 +46,74 @@ export default function ChatListPage() {
 
         {/* Chat List */}
         <div className="space-y-2">
-          {filteredChats.length > 0 ? (
-            filteredChats.map((chat) => (
-              <Link key={chat.id} to={`/chat/${chat.id}`}>
-                <Card className="p-4 hover:bg-muted/50 transition-colors">
+          {isLoading ? (
+            <div className="space-y-4 p-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-4 animate-pulse">
                   <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={chat.avatarUrl || ""} />
-                        <AvatarFallback>
-                          {chat.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {chat.isOnline && (
-                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background"></div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold truncate">{chat.username}</h3>
-                        <span className="text-xs text-muted-foreground">{chat.timestamp}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
-                    </div>
-                    
-                    <div className="flex flex-col items-end space-y-2">
-                      {chat.unreadCount > 0 && (
-                        <div className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                          {chat.unreadCount}
-                        </div>
-                      )}
-                      
-                      <div className="flex space-x-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Video className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <div className="h-12 w-12 bg-muted rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-1/2"></div>
                     </div>
                   </div>
                 </Card>
-              </Link>
-            ))
+              ))}
+            </div>
+          ) : filteredChats.length > 0 ? (
+            filteredChats.map((conversation) => {
+              const otherParticipant = conversation.other_participant;
+              const lastMessage = conversation.last_message;
+              const timestamp = lastMessage ? new Date(lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+              
+              return (
+                <Link key={conversation.id} to={`/chat/${otherParticipant?.id}`}>
+                  <Card className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={otherParticipant?.avatar_url || ""} />
+                          <AvatarFallback>
+                            {otherParticipant?.username?.charAt(0)?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background"></div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold truncate">{otherParticipant?.username || 'Unknown User'}</h3>
+                          <span className="text-xs text-muted-foreground">{timestamp}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {lastMessage?.content || 'No messages yet'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col items-end space-y-2">
+                        <div className="flex space-x-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Phone className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Video className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })
           ) : (
             <Card className="p-8">
               <div className="text-center text-muted-foreground">
                 <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No conversations found</p>
+                <p>No conversations yet</p>
                 <p className="text-sm mt-1">Start a conversation by visiting someone's profile</p>
+                <Link to="/browse" className="text-primary text-sm hover:underline mt-2 block">
+                  Browse confessions to find people to chat with
+                </Link>
               </div>
             </Card>
           )}

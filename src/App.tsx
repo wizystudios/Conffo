@@ -71,9 +71,18 @@ const App = () => {
             <AuthProvider>
               <Suspense fallback={<LoadingFallback />}>
                 <Routes>
-                  <Route path="/" element={<HomePage />} />
+                  {/* Chat-first routing like Telegram */}
+                  <Route path="/" element={<ChatListPage />} />
+                  <Route path="/chat/:userId" element={<ChatPage />} />
+                  
+                  {/* Browse all posts from all rooms */}
+                  <Route path="/browse" element={<HomePage />} />
+                  
+                  {/* Room-based confessions */}
                   <Route path="/rooms" element={<RoomsPage />} />
                   <Route path="/room/:roomId" element={<RoomPage />} />
+                  
+                  {/* Other pages */}
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/user/:userId" element={<ProfilePage />} />
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
@@ -81,8 +90,6 @@ const App = () => {
                   <Route path="/stories" element={<StoriesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/chat" element={<ChatListPage />} />
-          <Route path="/chat/:userId" element={<ChatPage />} />
           <Route path="/recent" element={<RecentPage />} />
           <Route path="/create" element={<CreatePostPage />} />
                   <Route path="/admin" element={<AdminPage />} />

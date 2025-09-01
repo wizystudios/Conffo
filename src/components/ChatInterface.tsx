@@ -7,6 +7,10 @@ import { Send, Image, Video, Mic, Phone, VideoIcon, MoreVertical, ArrowLeft } fr
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { sendMessage, uploadChatMedia } from '@/services/chatService';
+import { useRealTimeChat } from '@/hooks/useRealTimeChat';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -33,38 +37,54 @@ export function ChatInterface({
   onCall
 }: ChatInterfaceProps) {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, isLoading } = useRealTimeChat(targetUserId);
   const [newMessage, setNewMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isSending, setIsSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Get target user profile
+  const { data: targetProfile } = useQuery({
+    queryKey: ['profile', targetUserId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', targetUserId)
+        .single();
+      return data;
+    },
+    enabled: !!targetUserId,
+  });
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async (content: string, type: 'text' | 'image' | 'video' | 'audio' = 'text', mediaUrl?: string) => {
-    if (!user || !content.trim()) return;
+  const handleSendMessage = async (content: string, type: 'text' | 'image' | 'video' | 'audio' = 'text', mediaUrl?: string, mediaDuration?: number) => {
+    if (!user || !content.trim() || isSending) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      senderId: user.id,
-      content,
-      timestamp: Date.now(),
-      type,
-      mediaUrl
-    };
-
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
-
-    // Here you would implement actual message sending to backend
-    toast({
-      description: "Message sent"
-    });
+    setIsSending(true);
+    try {
+      await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration);
+      setNewMessage('');
+      toast({
+        description: "Message sent"
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -89,7 +109,7 @@ export function ChatInterface({
       const video = document.createElement('video');
       video.preload = 'metadata';
       
-      video.onloadedmetadata = () => {
+      video.onloadedmetadata = async () => {
         if (video.duration > 30) {
           toast({
             title: "Video too long",
@@ -100,14 +120,30 @@ export function ChatInterface({
         }
         
         // Upload and send video
-        const url = URL.createObjectURL(file);
-        sendMessage(file.name, 'video', url);
+        try {
+          const url = await uploadChatMedia(file, 'video');
+          handleSendMessage(file.name, 'video', url, video.duration);
+        } catch (error) {
+          toast({
+            title: "Upload failed",
+            description: "Could not upload video",
+            variant: "destructive"
+          });
+        }
       };
       
       video.src = URL.createObjectURL(file);
     } else if (isImage) {
-      const url = URL.createObjectURL(file);
-      sendMessage(file.name, 'image', url);
+      try {
+        const url = await uploadChatMedia(file, 'image');
+        handleSendMessage(file.name, 'image', url);
+      } catch (error) {
+        toast({
+          title: "Upload failed",
+          description: "Could not upload image",
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
         title: "Unsupported file type",
@@ -128,10 +164,20 @@ export function ChatInterface({
         chunks.push(event.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-        sendMessage(`Audio message (${Math.floor(recordingTime)}s)`, 'audio', url);
+        const file = new File([blob], 'audio.wav', { type: 'audio/wav' });
+        
+        try {
+          const url = await uploadChatMedia(file, 'audio');
+          handleSendMessage(`Audio message (${Math.floor(recordingTime)}s)`, 'audio', url, Math.floor(recordingTime));
+        } catch (error) {
+          toast({
+            title: "Upload failed",
+            description: "Could not upload audio",
+            variant: "destructive"
+          });
+        }
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
@@ -188,12 +234,12 @@ export function ChatInterface({
           )}
           
           <Avatar className="h-10 w-10">
-            <AvatarImage src={targetAvatarUrl} />
-            <AvatarFallback>{targetUsername?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
+            <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
+            <AvatarFallback>{(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
           
           <div>
-            <h3 className="font-semibold">{targetUsername || 'Unknown User'}</h3>
+            <h3 className="font-semibold">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
             <p className="text-xs text-muted-foreground">Online</p>
           </div>
         </div>
@@ -236,57 +282,70 @@ export function ChatInterface({
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.senderId === user?.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
-              >
-                {message.type === 'text' ? (
-                  <p className="text-sm">{message.content}</p>
-                ) : message.type === 'image' ? (
-                  <div>
-                    <img
-                      src={message.mediaUrl}
-                      alt="Shared image"
-                      className="rounded max-w-full h-auto mb-1"
-                    />
-                    <p className="text-xs opacity-75">{message.content}</p>
-                  </div>
-                ) : message.type === 'video' ? (
-                  <div>
-                    <video
-                      src={message.mediaUrl}
-                      controls
-                      className="rounded max-w-full h-auto mb-1"
-                    />
-                    <p className="text-xs opacity-75">{message.content}</p>
-                  </div>
-                ) : message.type === 'audio' ? (
-                  <div>
-                    <audio
-                      src={message.mediaUrl}
-                      controls
-                      className="mb-1"
-                    />
-                    <p className="text-xs opacity-75">{message.content}</p>
-                  </div>
-                ) : null}
-                
-                <p className="text-xs opacity-60 mt-1">
-                  {formatTime(message.timestamp)}
-                </p>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex justify-start">
+                <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-muted animate-pulse">
+                  <div className="h-4 bg-muted-foreground/20 rounded mb-2"></div>
+                  <div className="h-3 bg-muted-foreground/20 rounded w-16"></div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.sender_id === user?.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  {message.message_type === 'text' ? (
+                    <p className="text-sm">{message.content}</p>
+                  ) : message.message_type === 'image' ? (
+                    <div>
+                      <img
+                        src={message.media_url}
+                        alt="Shared image"
+                        className="rounded max-w-full h-auto mb-1"
+                      />
+                      <p className="text-xs opacity-75">{message.content}</p>
+                    </div>
+                  ) : message.message_type === 'video' ? (
+                    <div>
+                      <video
+                        src={message.media_url}
+                        controls
+                        className="rounded max-w-full h-auto mb-1"
+                      />
+                      <p className="text-xs opacity-75">{message.content}</p>
+                    </div>
+                  ) : message.message_type === 'audio' ? (
+                    <div>
+                      <audio
+                        src={message.media_url}
+                        controls
+                        className="mb-1"
+                      />
+                      <p className="text-xs opacity-75">{message.content}</p>
+                    </div>
+                  ) : null}
+                  
+                  <p className="text-xs opacity-60 mt-1">
+                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </ScrollArea>
 
@@ -337,14 +396,14 @@ export function ChatInterface({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage(newMessage);
+                handleSendMessage(newMessage);
               }
             }}
           />
 
           <Button
-            onClick={() => sendMessage(newMessage)}
-            disabled={!newMessage.trim()}
+            onClick={() => handleSendMessage(newMessage)}
+            disabled={!newMessage.trim() || isSending}
             size="icon"
           >
             <Send className="h-5 w-5" />

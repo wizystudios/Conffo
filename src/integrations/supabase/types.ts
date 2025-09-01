@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -200,6 +200,33 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_activity: string
+          last_message_id: string | null
+          participant_1_id: string
+          participant_2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_activity?: string
+          last_message_id?: string | null
+          participant_1_id: string
+          participant_2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_activity?: string
+          last_message_id?: string | null
+          participant_1_id?: string
+          participant_2_id?: string
+        }
+        Relationships: []
+      }
       image_verification: {
         Row: {
           created_at: string
@@ -230,6 +257,45 @@ export type Database = {
           verification_data?: Json | null
           verification_type?: string
           verified_at?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          media_duration: number | null
+          media_url: string | null
+          message_type: string
+          receiver_id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          media_duration?: number | null
+          media_url?: string | null
+          message_type?: string
+          receiver_id: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          media_duration?: number | null
+          media_url?: string | null
+          message_type?: string
+          receiver_id?: string
+          sender_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -620,6 +686,10 @@ export type Database = {
         Args: { profile_user_id: string }
         Returns: boolean
       }
+      can_view_user_info: {
+        Args: { info_type: string; target_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
       check_if_following: {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: boolean
@@ -631,15 +701,15 @@ export type Database = {
       get_active_stories: {
         Args: { user_uuid: string }
         Returns: {
-          id: string
-          user_id: string
-          media_url: string
-          media_type: string
           caption: string
-          effects: Json
           created_at: string
+          effects: Json
           expires_at: string
+          id: string
           is_viewed: boolean
+          media_type: string
+          media_url: string
+          user_id: string
         }[]
       }
       get_comment_count: {
