@@ -318,6 +318,47 @@ export default function ProfilePage() {
                   <div className="space-y-4">
                     <SimpleProfileForm />
                     
+                    {/* App Information Section */}
+                    <div className="pt-4 border-t border-border">
+                      <h3 className="font-semibold mb-4">App Information</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center space-x-2 p-3 bg-muted/50 rounded-lg">
+                          <img 
+                            src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
+                            alt="Conffo" 
+                            className="h-8 w-8 object-contain"
+                          />
+                          <span className="font-medium">Conffo</span>
+                          <span className="text-sm text-muted-foreground">created by</span>
+                          <div className="flex items-center">
+                            <img 
+                              src="/lovable-uploads/5affd7c4-65bb-4b3a-af86-0cf0b47b138f.png" 
+                              alt="KN Technology" 
+                              className="h-6 w-6 rounded-full object-cover mr-1"
+                            />
+                            <span className="font-medium">KN Technology</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-center text-sm text-muted-foreground">
+                          © {new Date().getFullYear()} Conffo
+                        </div>
+                        
+                        <div className="flex flex-col space-y-2">
+                          <Button variant="outline" asChild className="justify-start">
+                            <a href="/terms" target="_blank" rel="noopener noreferrer">
+                              Terms & Conditions
+                            </a>
+                          </Button>
+                          <Button variant="outline" asChild className="justify-start">
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                              Privacy Policy
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div className="pt-4 border-t border-border">
                       <Button variant="destructive" onClick={logout} className="w-full">
                         <LogOut className="h-4 w-4 mr-2" />

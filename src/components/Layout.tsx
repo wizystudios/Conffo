@@ -54,7 +54,6 @@ export function Layout({ children }: LayoutProps) {
         <main className="container max-w-full px-2 sm:px-3 md:px-4 flex-grow pt-16 sm:pt-20 pb-16 md:pb-4">
           {children}
         </main>
-        <Footer />
         <BottomNavigation />
       </div>
     </ErrorBoundary>

@@ -82,6 +82,13 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
+        {/* Search Bar for logged in users - prominent placement */}
+        {isAuthenticated && (
+          <div className="px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border mb-4">
+            <EnhancedSearchBar />
+          </div>
+        )}
+        
         <div className={`sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-0 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-2 flex-1">
@@ -103,10 +110,6 @@ export default function HomePage() {
                 <TrendingUp className="h-4 w-4" />
                 Trending
               </Button>
-              
-              <div className="flex-1 max-w-xs ml-2">
-                <EnhancedSearchBar />
-              </div>
             </div>
             
             <div className="flex items-center space-x-2">
