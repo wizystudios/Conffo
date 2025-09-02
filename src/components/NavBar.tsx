@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2, ChevronDown, Plus, Clock, Search } from "lucide-react";
+import { Menu, X, Sun, Moon, Home, Hash, TrendingUp, Settings, LogIn, Sparkles, PlusSquare, Bell, BellDot, Check, Trash2, ChevronDown, Plus, Clock, Search, MessageCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { useTheme } from "@/context/ThemeContext";
@@ -166,32 +166,36 @@ export function NavBar() {
         
         <div className="hidden md:flex items-center space-x-1">
           <Link to="/">
-            <Button variant={isActive('/') ? "default" : "ghost"}>
-              <Home className="h-5 w-5 mr-1" />
-              <span>Home</span>
+            <Button variant={isActive('/') ? "default" : "ghost"} size="icon">
+              <Home className="h-5 w-5" />
             </Button>
           </Link>
           
           <Link to="/recent">
-            <Button variant={isActive('/recent') ? "default" : "ghost"}>
-              <Clock className="h-5 w-5 mr-1" />
-              <span>Recent</span>
+            <Button variant={isActive('/recent') ? "default" : "ghost"} size="icon">
+              <Clock className="h-5 w-5" />
             </Button>
           </Link>
           
           <Link to="/trending">
-            <Button variant={isActive('/trending') ? "default" : "ghost"}>
-              <TrendingUp className="h-5 w-5 mr-1" />
-              <span>Trending</span>
+            <Button variant={isActive('/trending') ? "default" : "ghost"} size="icon">
+              <TrendingUp className="h-5 w-5" />
             </Button>
           </Link>
           
           <Link to="/search">
-            <Button variant={isActive('/search') ? "default" : "ghost"}>
-              <Search className="h-5 w-5 mr-1" />
-              <span>Search</span>
+            <Button variant={isActive('/search') ? "default" : "ghost"} size="icon">
+              <Search className="h-5 w-5" />
             </Button>
           </Link>
+          
+          {isAuthenticated && (
+            <Link to="/chat">
+              <Button variant={isActive('/chat') ? "default" : "ghost"} size="icon">
+                <MessageCircle className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
         </div>
         
         <div className="hidden md:flex items-center gap-2">

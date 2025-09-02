@@ -310,9 +310,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   return (
     <div className="w-full bg-background mb-0 border-b border-border">
-      <div className="flex items-center justify-between px-2 py-3">
+      <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
-          <span className="text-blue-500 font-semibold text-sm">#{confession.room}</span>
+          <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+            #{confession.room}
+          </div>
           <UsernameDisplay 
             userId={confession.userId}
             showAvatar={true}
@@ -327,7 +329,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 variant="ghost"
                 size="sm"
                 onClick={handleFollow}
-                className="h-auto p-0 text-blue-500 font-semibold text-sm hover:bg-transparent"
+                className="h-auto p-0 text-primary font-semibold text-sm hover:bg-transparent"
               >
                 Follow
               </Button>
@@ -406,40 +408,44 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      <div className="px-2 pt-3">
-        <div className="mb-2 flex flex-wrap items-baseline">
-          <UsernameDisplay 
-            userId={confession.userId}
-            showAvatar={false}
-            size="sm"
-            linkToProfile={true}
-            showStoryIndicator={false}
-          />
-          <span className="text-sm leading-relaxed ml-2">{displayContent}</span>
+      <div className="px-4 pt-3">
+        <div className="mb-3">
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-sm">
+              <UsernameDisplay 
+                userId={confession.userId}
+                showAvatar={false}
+                size="sm"
+                linkToProfile={true}
+                showStoryIndicator={false}
+              />
+            </span>
+            <p className="text-sm leading-relaxed flex-1">{displayContent}</p>
+          </div>
           {shouldTruncate && !showFullContent && (
             <button 
               onClick={() => setShowFullContent(true)}
-              className="text-muted-foreground text-sm ml-1 hover:text-foreground"
+              className="text-muted-foreground text-sm mt-1 hover:text-foreground"
             >
-              more
+              Show more
             </button>
           )}
         </div>
       </div>
       
-      <div className="px-2 pt-2">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-4 pt-1 pb-3">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleReaction('heart')}
-                className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
-                disabled={isUpdating}
+                className="h-8 w-8 p-0 hover:bg-transparent hover:scale-110 transition-all"
+                disabled={isUpdating || !isAuthenticated}
               >
                 <Heart 
-                  className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground hover:text-muted-foreground'}`} 
+                  className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground hover:text-red-500'}`} 
                 />
               </Button>
               {confession.reactions.heart > 0 && (
@@ -447,14 +453,15 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               )}
             </div>
             
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
+                className="h-8 w-8 p-0 hover:bg-transparent hover:scale-110 transition-all"
                 onClick={handleCommentClick}
+                disabled={!isAuthenticated}
               >
-                <MessageCircle className="h-6 w-6 text-foreground hover:text-muted-foreground" />
+                <MessageCircle className="h-6 w-6 text-foreground hover:text-primary" />
               </Button>
               {currentCommentCount > 0 && (
                 <span className="text-sm font-medium">{currentCommentCount}</span>
@@ -465,30 +472,44 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
+              className="h-8 w-8 p-0 hover:bg-transparent hover:scale-110 transition-all"
             >
-              <Share className="h-6 w-6 text-foreground hover:text-muted-foreground" />
+              <Share className="h-6 w-6 text-foreground hover:text-primary" />
             </Button>
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            className="h-6 w-6 p-0 hover:bg-transparent hover:scale-110 transition-all"
-          >
-            {isSaved ? (
-              <BookmarkCheck className="h-6 w-6 text-green-500" />
-            ) : (
-              <Bookmark className="h-6 w-6 text-foreground hover:text-muted-foreground" />
-            )}
-          </Button>
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSave}
+              className="h-8 w-8 p-0 hover:bg-transparent hover:scale-110 transition-all"
+            >
+              {isSaved ? (
+                <BookmarkCheck className="h-6 w-6 text-primary" />
+              ) : (
+                <Bookmark className="h-6 w-6 text-foreground hover:text-primary" />
+              )}
+            </Button>
+          )}
         </div>
         
-        <div className="pb-2">
-          <span className="text-xs text-muted-foreground">
-            {formatTimeShort(new Date(confession.timestamp))}
-          </span>
+        {(confession.reactions.heart > 0 || currentCommentCount > 0) && (
+          <div className="text-sm space-y-1 mb-2">
+            {confession.reactions.heart > 0 && (
+              <p className="font-medium">{confession.reactions.heart} {confession.reactions.heart === 1 ? 'like' : 'likes'}</p>
+            )}
+            {lastComment && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium text-sm">{lastComment.username}</span>
+                <span className="text-sm text-muted-foreground">{lastComment.content.substring(0, 50)}{lastComment.content.length > 50 ? '...' : ''}</span>
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div className="text-xs text-muted-foreground">
+          {formatTimeShort(new Date(confession.timestamp))}
         </div>
       </div>
       
