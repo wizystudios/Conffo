@@ -143,7 +143,7 @@ export function EnhancedSearchBar({ onClose, onResultClick }: EnhancedSearchBarP
       </div>
 
       {showResults && (query.length >= 2) && (
-        <Card className="absolute top-full left-0 right-0 mt-2 z-50 max-h-96 overflow-y-auto bg-background border shadow-lg">
+        <Card className="absolute top-full left-0 right-0 mt-2 z-50 max-h-96 overflow-y-auto bg-background border shadow-lg w-full max-w-sm sm:max-w-none">
           {isLoading ? (
             <div className="p-4 text-center text-muted-foreground">
               Searching...

@@ -97,6 +97,27 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
 
   return (
     <div className="p-4 space-y-4">
+      {/* Chat Action Card - Only show for other users */}
+      {!isOwnProfile && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-foreground">Start Conversation</h3>
+                <p className="text-sm text-muted-foreground">Send a message to this user</p>
+              </div>
+              <a 
+                href={`/chat/${userId}`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                Chat
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Basic Information Card */}
       <Card className="border-border/60">
         <CardContent className="p-4">
