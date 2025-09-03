@@ -25,8 +25,8 @@ export function BottomNavigation() {
   };
   
   const links = [
-    { to: isAuthenticated ? '/' : '/browse', icon: Home, label: isAuthenticated ? 'Chat' : 'Home' },
-    ...(isAuthenticated ? [{ to: '/browse', icon: MessageCircle, label: 'Browse' }] : []),
+    { to: '/browse', icon: Home, label: 'Home' },
+    ...(isAuthenticated ? [{ to: '/', icon: MessageCircle, label: 'Chat' }] : []),
   ];
   
   return (

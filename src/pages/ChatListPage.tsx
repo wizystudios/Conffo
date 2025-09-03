@@ -7,20 +7,45 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, MessageCircle, Phone, Video } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
-import { getConversations } from '@/services/chatService';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useAuth();
 
-  // Real-time chat data
-  const { data: conversations = [], isLoading } = useQuery({
-    queryKey: ['conversations'],
-    queryFn: getConversations,
-    refetchInterval: 5000, // Refresh every 5 seconds
+  // Get followed users that you can chat with
+  const { data: followedUsers = [], isLoading } = useQuery({
+    queryKey: ['followed-users', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      // First get the user IDs that this user follows
+      const { data: follows, error: followsError } = await supabase
+        .from('user_follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+
+      if (followsError) throw followsError;
+      
+      if (!follows || follows.length === 0) return [];
+      
+      const followingIds = follows.map(f => f.following_id);
+      
+      // Then get the profile information for those users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', followingIds);
+
+      if (profilesError) throw profilesError;
+      return profiles || [];
+    },
+    enabled: !!user,
   });
 
-  const filteredChats = conversations.filter(conversation =>
-    conversation.other_participant?.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = followedUsers.filter(user =>
+    user?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -56,21 +81,17 @@ export default function ChatListPage() {
                 </Card>
               ))}
             </div>
-          ) : filteredChats.length > 0 ? (
-            filteredChats.map((conversation) => {
-              const otherParticipant = conversation.other_participant;
-              const lastMessage = conversation.last_message;
-              const timestamp = lastMessage ? new Date(lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              
+          ) : filteredUsers.length > 0 ? (
+            filteredUsers.map((followedUser) => {
               return (
-                <Link key={conversation.id} to={`/chat/${otherParticipant?.id}`}>
+                <Link key={followedUser.id} to={`/chat/${followedUser.id}`}>
                   <Card className="p-4 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={otherParticipant?.avatar_url || ""} />
+                          <AvatarImage src={followedUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${followedUser.id}`} />
                           <AvatarFallback>
-                            {otherParticipant?.username?.charAt(0)?.toUpperCase() || 'U'}
+                            {followedUser.username?.charAt(0)?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background"></div>
@@ -78,23 +99,17 @@ export default function ChatListPage() {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold truncate">{otherParticipant?.username || 'Unknown User'}</h3>
-                          <span className="text-xs text-muted-foreground">{timestamp}</span>
+                          <h3 className="font-semibold truncate">{followedUser.username || 'Unknown User'}</h3>
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {lastMessage?.content || 'No messages yet'}
+                        <p className="text-sm text-muted-foreground">
+                          Start a conversation
                         </p>
                       </div>
                       
-                      <div className="flex flex-col items-end space-y-2">
-                        <div className="flex space-x-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Phone className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Video className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </Card>
@@ -105,10 +120,10 @@ export default function ChatListPage() {
             <Card className="p-8">
               <div className="text-center text-muted-foreground">
                 <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No conversations yet</p>
-                <p className="text-sm mt-1">Start a conversation by visiting someone's profile</p>
+                <p>No people to chat with</p>
+                <p className="text-sm mt-1">Follow people to start chatting with them</p>
                 <Link to="/browse" className="text-primary text-sm hover:underline mt-2 block">
-                  Browse confessions to find people to chat with
+                  Browse and follow people to chat
                 </Link>
               </div>
             </Card>
