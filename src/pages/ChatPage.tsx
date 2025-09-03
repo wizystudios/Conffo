@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
-import { ChatInterface } from '@/components/ChatInterface';
+import { ModernChatInterface } from '@/components/ModernChatInterface';
 import { CallInterface } from '@/components/CallInterface';
 
 export default function ChatPage() {
@@ -25,15 +24,14 @@ export default function ChatPage() {
 
   return (
     <>
-      <Layout>
-        <div className="h-full">
-          <ChatInterface
-            targetUserId={userId}
-            onBack={handleBack}
-            onCall={handleCall}
-          />
-        </div>
-      </Layout>
+      {/* No Layout wrapper - removes top and bottom nav */}
+      <div className="h-screen">
+        <ModernChatInterface
+          targetUserId={userId}
+          onBack={handleBack}
+          onCall={handleCall}
+        />
+      </div>
 
       <CallInterface
         isOpen={showCall}
