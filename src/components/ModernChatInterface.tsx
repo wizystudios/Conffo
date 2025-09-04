@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Image, Video, Mic, Phone, VideoIcon, MoreVertical, ArrowLeft, Paperclip, Smile } from 'lucide-react';
+import { Send, Image, Video, Mic, Phone, VideoIcon, MoreVertical, ArrowLeft, Paperclip, Smile, Settings } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +12,7 @@ import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { MessageSettings } from '@/components/MessageSettings';
 
 
 interface ChatInterfaceProps {
@@ -50,6 +51,7 @@ export function ModernChatInterface({
   const [recordingTime, setRecordingTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -82,7 +84,14 @@ export function ModernChatInterface({
   }, [messages, user?.id]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll to bottom if user is near the bottom
+    const scrollContainer = messagesEndRef.current?.parentElement;
+    if (scrollContainer) {
+      const isNearBottom = scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 100;
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
     
     // Mark messages as read when viewing chat
     if (messages.length > 0 && user) {
@@ -329,6 +338,10 @@ export function ModernChatInterface({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setShowSettings(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Message Settings
+              </DropdownMenuItem>
               <DropdownMenuItem>View Profile</DropdownMenuItem>
               <DropdownMenuItem>Mute Notifications</DropdownMenuItem>
               <DropdownMenuItem>Block User</DropdownMenuItem>
@@ -340,7 +353,7 @@ export function ModernChatInterface({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <div className="flex-1 p-4 overflow-y-auto scrollbar-hide">
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -457,7 +470,7 @@ export function ModernChatInterface({
           </div>
         )}
         <div ref={messagesEndRef} />
-      </ScrollArea>
+      </div>
 
       {/* Input */}
       <div className="p-4 bg-card/80 backdrop-blur-lg border-t border-border/50">
@@ -509,6 +522,11 @@ export function ModernChatInterface({
               variant="ghost"
               size="icon"
               className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full h-8 w-8"
+              onClick={() => {
+                const emojis = ['😀', '😂', '😍', '🥰', '😎', '🤔', '👍', '❤️', '🎉', '🔥'];
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                setNewMessage(prev => prev + randomEmoji);
+              }}
             >
               <Smile className="h-4 w-4" />
             </Button>
@@ -545,6 +563,10 @@ export function ModernChatInterface({
           )}
         </div>
       </div>
+
+      {showSettings && (
+        <MessageSettings onClose={() => setShowSettings(false)} />
+      )}
     </div>
   );
 }
