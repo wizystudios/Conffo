@@ -27,7 +27,7 @@ export const useRealTimeChat = (targetUserId: string) => {
 
     // Set up real-time subscription
     channelRef.current = supabase
-      .channel('messages-changes')
+      .channel(`messages-${user.id}-${targetUserId}`)
       .on(
         'postgres_changes',
         {
@@ -38,7 +38,13 @@ export const useRealTimeChat = (targetUserId: string) => {
         },
         (payload) => {
           const newMessage = payload.new as Message;
-          setMessages(prev => [...prev, newMessage]);
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.find(msg => msg.id === newMessage.id)) {
+              return prev;
+            }
+            return [...prev, newMessage];
+          });
         }
       )
       .on(

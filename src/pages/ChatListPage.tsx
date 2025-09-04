@@ -9,10 +9,13 @@ import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { Badge } from '@/components/ui/badge';
 
 export default function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
+  const { unreadCounts } = useUnreadMessages();
 
   // Get followed users that you can chat with
   const { data: followedUsers = [], isLoading } = useQuery({
@@ -97,14 +100,19 @@ export default function ChatListPage() {
                         <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background"></div>
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold truncate">{followedUser.username || 'Unknown User'}</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Start a conversation
-                        </p>
-                      </div>
+                       <div className="flex-1 min-w-0">
+                         <div className="flex items-center justify-between">
+                           <h3 className="font-semibold truncate">{followedUser.username || 'Unknown User'}</h3>
+                           {unreadCounts[followedUser.id] && (
+                             <Badge variant="destructive" className="ml-2">
+                               {unreadCounts[followedUser.id]}
+                             </Badge>
+                           )}
+                         </div>
+                         <p className="text-sm text-muted-foreground">
+                           {unreadCounts[followedUser.id] ? `${unreadCounts[followedUser.id]} new message${unreadCounts[followedUser.id] > 1 ? 's' : ''}` : 'Start a conversation'}
+                         </p>
+                       </div>
                       
                       <div className="flex space-x-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8">

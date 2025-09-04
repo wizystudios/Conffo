@@ -11,6 +11,7 @@ import { sendMessage, uploadChatMedia, Message } from '@/services/chatService';
 import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 
 interface ChatInterfaceProps {
@@ -43,6 +44,7 @@ export function ModernChatInterface({
 }: ChatInterfaceProps) {
   const { user } = useAuth();
   const { messages, isLoading, setMessages } = useRealTimeChat(targetUserId);
+  const { markAsRead } = useUnreadMessages();
   const [newMessage, setNewMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -81,7 +83,12 @@ export function ModernChatInterface({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    
+    // Mark messages as read when viewing chat
+    if (messages.length > 0 && user) {
+      markAsRead(targetUserId);
+    }
+  }, [messages, user, targetUserId, markAsRead]);
 
   const handleSendMessage = async (content: string, type: 'text' | 'image' | 'video' | 'audio' | 'file' = 'text', mediaUrl?: string, mediaDuration?: number) => {
     if (!user || !content.trim() || isSending) return;
@@ -90,7 +97,14 @@ export function ModernChatInterface({
     try {
       const newMsg = await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration);
       
-      // Message will be added via real-time subscription
+      // Add message immediately to local state for instant UI update
+      setMessages(prev => {
+        // Avoid duplicates
+        if (prev.find(msg => msg.id === newMsg.id)) {
+          return prev;
+        }
+        return [...prev, newMsg];
+      });
       
       setNewMessage('');
       playSendSound();
@@ -359,64 +373,83 @@ export function ModernChatInterface({
                       </Avatar>
                     )}
                     
-                    <div
-                      className={`px-4 py-3 rounded-2xl ${
-                        isOwn
-                          ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
-                          : 'bg-muted rounded-bl-md'
-                      } shadow-sm`}
-                    >
-                      {message.message_type === 'text' ? (
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                      ) : message.message_type === 'image' ? (
-                        <div className="space-y-2">
-                          <img
-                            src={message.media_url}
-                            alt="Shared image"
-                            className="rounded-lg max-w-full h-auto"
-                          />
-                          {message.content !== 'image' && (
-                            <p className="text-xs opacity-75">{message.content}</p>
-                          )}
-                        </div>
-                      ) : message.message_type === 'video' ? (
-                        <div className="space-y-2">
-                          <video
-                            src={message.media_url}
-                            controls
-                            className="rounded-lg max-w-full h-auto"
-                          />
-                          {message.content !== 'video' && (
-                            <p className="text-xs opacity-75">{message.content}</p>
-                          )}
-                        </div>
-                      ) : message.message_type === 'audio' ? (
-                        <div className="space-y-2">
-                          <audio
-                            src={message.media_url}
-                            controls
-                            className="w-full"
-                          />
-                          <p className="text-xs opacity-75">{message.content}</p>
-                        </div>
-                      ) : message.message_type === 'file' ? (
-                        <div className="flex items-center space-x-2">
-                          <Paperclip className="h-4 w-4" />
-                          <a 
-                            href={message.media_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm hover:underline"
-                          >
-                            {message.content}
-                          </a>
-                        </div>
-                      ) : null}
-                      
-                      <p className={`text-xs mt-2 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
-                        {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
+                     {message.message_type === 'text' ? (
+                       <div
+                         className={`px-4 py-3 rounded-2xl ${
+                           isOwn
+                             ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
+                             : 'bg-muted rounded-bl-md'
+                         } shadow-sm`}
+                       >
+                         <p className="text-sm leading-relaxed">{message.content}</p>
+                         <p className={`text-xs mt-2 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
+                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                       </div>
+                     ) : message.message_type === 'image' ? (
+                       <div className="space-y-1">
+                         <img
+                           src={message.media_url}
+                           alt="Shared image"
+                           className="rounded-2xl max-w-full h-auto max-h-80 object-cover"
+                         />
+                         <p className={`text-xs opacity-60 px-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                       </div>
+                     ) : message.message_type === 'video' ? (
+                       <div className="space-y-1">
+                         <video
+                           src={message.media_url}
+                           controls
+                           className="rounded-2xl max-w-full h-auto max-h-80"
+                         />
+                         <p className={`text-xs opacity-60 px-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                       </div>
+                     ) : message.message_type === 'audio' ? (
+                       <div
+                         className={`px-4 py-3 rounded-2xl ${
+                           isOwn
+                             ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
+                             : 'bg-muted rounded-bl-md'
+                         } shadow-sm space-y-2`}
+                       >
+                         <audio
+                           src={message.media_url}
+                           controls
+                           className="w-full"
+                         />
+                         <p className="text-xs opacity-75">{message.content}</p>
+                         <p className={`text-xs opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
+                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                       </div>
+                     ) : message.message_type === 'file' ? (
+                       <div
+                         className={`px-4 py-3 rounded-2xl ${
+                           isOwn
+                             ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
+                             : 'bg-muted rounded-bl-md'
+                         } shadow-sm`}
+                       >
+                         <div className="flex items-center space-x-2">
+                           <Paperclip className="h-4 w-4" />
+                           <a 
+                             href={message.media_url} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="text-sm hover:underline"
+                           >
+                             {message.content}
+                           </a>
+                         </div>
+                         <p className={`text-xs mt-2 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
+                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                       </div>
+                     ) : null}
                   </div>
                 </div>
               );
