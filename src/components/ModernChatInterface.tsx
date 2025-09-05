@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { MessageSettings } from '@/components/MessageSettings';
+import { EmojiPicker } from '@/components/EmojiPicker';
 
 
 interface ChatInterfaceProps {
@@ -565,18 +566,9 @@ export function ModernChatInterface({
                 }
               }}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full h-8 w-8"
-              onClick={() => {
-                const emojis = ['😀', '😂', '😍', '🥰', '😎', '🤔', '👍', '❤️', '🎉', '🔥'];
-                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                setNewMessage(prev => prev + randomEmoji);
-              }}
-            >
-              <Smile className="h-4 w-4" />
-            </Button>
+            <EmojiPicker
+              onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
+            />
           </div>
 
           <div className="flex space-x-1">
