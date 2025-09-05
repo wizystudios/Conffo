@@ -27,7 +27,7 @@ export function EnhancedSearchBar({ onClose, onResultClick }: EnhancedSearchBarP
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const { data: searchResults = [], isLoading } = useQuery({
+  const { data: searchResults = [] } = useQuery({
     queryKey: ['search', query],
     queryFn: async () => {
       if (!query.trim() || query.length < 2) return [];
@@ -143,12 +143,11 @@ export function EnhancedSearchBar({ onClose, onResultClick }: EnhancedSearchBarP
       </div>
 
       {showResults && (query.length >= 2) && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998]" onClick={() => setShowResults(false)} />
+      )}
+      {showResults && (query.length >= 2) && (
         <Card className="fixed inset-x-4 top-20 z-[9999] max-h-[70vh] overflow-y-auto bg-card/95 backdrop-blur-xl border shadow-2xl animate-slide-in-right">
-          {isLoading ? (
-            <div className="p-4 text-center text-muted-foreground">
-              Searching...
-            </div>
-          ) : searchResults.length > 0 ? (
+          {searchResults.length > 0 ? (
             <div className="py-2">
               {searchResults.map((result) => (
                 <div key={`${result.type}-${result.id}`}>

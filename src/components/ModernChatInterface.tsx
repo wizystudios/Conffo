@@ -58,7 +58,7 @@ export function ModernChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
 
-  // Get target user profile
+  // Get target user profile and check follow status
   const { data: targetProfile } = useQuery({
     queryKey: ['profile', targetUserId],
     queryFn: async () => {
@@ -71,6 +71,122 @@ export function ModernChatInterface({
     },
     enabled: !!targetUserId,
   });
+
+  // Check if user follows the target user
+  const { data: followStatus } = useQuery({
+    queryKey: ['following', user?.id, targetUserId],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from('user_follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', targetUserId)
+        .single();
+      return !!data;
+    },
+    enabled: !!user?.id && !!targetUserId,
+  });
+
+  // Show restriction message if not following
+  if (!followStatus && user?.id && targetUserId && user.id !== targetUserId) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <div className="flex items-center justify-between p-4 bg-card border-b">
+          <div className="flex items-center space-x-3">
+            {onBack && (
+              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={targetProfile?.avatar_url} />
+              <AvatarFallback>
+                {targetProfile?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold">{targetProfile?.username || 'Unknown User'}</h3>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <div className="text-4xl">🔒</div>
+            <h2 className="text-xl font-semibold">Follow to Chat</h2>
+            <p className="text-muted-foreground max-w-sm">
+              You need to follow {targetProfile?.username || 'this user'} to start a conversation.
+            </p>
+            <Button 
+              onClick={() => window.history.back()}
+              variant="outline"
+            >
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user follows the target user
+  const { data: isFollowing } = useQuery({
+    queryKey: ['following', user?.id, targetUserId],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from('user_follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', targetUserId)
+        .single();
+      return !!data;
+    },
+    enabled: !!user?.id && !!targetUserId,
+  });
+
+  // Show restriction message if not following
+  if (!isFollowing && !isLoading) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <div className="flex items-center justify-between p-4 bg-card border-b">
+          <div className="flex items-center space-x-3">
+            {onBack && (
+              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={targetProfile?.avatar_url} />
+              <AvatarFallback>
+                {targetProfile?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold">{targetProfile?.username || 'Unknown User'}</h3>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <div className="text-4xl">🔒</div>
+            <h2 className="text-xl font-semibold">Follow to Chat</h2>
+            <p className="text-muted-foreground max-w-sm">
+              You need to follow {targetProfile?.username || 'this user'} to start a conversation.
+            </p>
+            <Button 
+              onClick={() => window.history.back()}
+              variant="outline"
+            >
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Play sound when new message received
   useEffect(() => {
@@ -354,18 +470,7 @@ export function ModernChatInterface({
 
       {/* Messages */}
       <div className="flex-1 p-4 overflow-y-auto scrollbar-hide">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl bg-muted animate-pulse">
-                  <div className="h-4 bg-muted-foreground/20 rounded mb-2"></div>
-                  <div className="h-3 bg-muted-foreground/20 rounded w-16"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
+        {(
           <div className="space-y-3">
             {messages.map((message, index) => {
               const isOwn = message.sender_id === user?.id;
@@ -566,7 +671,7 @@ export function ModernChatInterface({
 
       {showSettings && (
         <MessageSettings onClose={() => setShowSettings(false)} />
-      )}
-    </div>
+        )}
+      </div>
   );
 }

@@ -1,8 +1,12 @@
 
-import { ReactNode, Component } from 'react';
+import { ReactNode, Component, useState } from 'react';
 import { NavBar } from './NavBar';
 import { Footer } from './Footer';
 import { BottomNavigation } from './BottomNavigation';
+import { useIncomingCalls } from "@/hooks/useIncomingCalls";
+import { IncomingCallModal } from "@/components/IncomingCallModal";
+import { CallInterface } from "@/components/CallInterface";
+import { WebRTCService } from "@/services/webRTCService";
 
 interface LayoutProps {
   children: ReactNode;
@@ -47,6 +51,33 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { incomingCall, clearIncomingCall } = useIncomingCalls();
+  const [activeCall, setActiveCall] = useState<{
+    webRTCService: WebRTCService;
+    targetUserId: string;
+    targetUsername?: string;
+    callType: 'audio' | 'video';
+  } | null>(null);
+
+  const handleAcceptCall = (webRTCService: WebRTCService) => {
+    if (incomingCall) {
+      setActiveCall({
+        webRTCService,
+        targetUserId: incomingCall.from,
+        callType: 'video', // Default to video
+      });
+      clearIncomingCall();
+    }
+  };
+
+  const handleDeclineCall = () => {
+    clearIncomingCall();
+  };
+
+  const handleEndCall = () => {
+    setActiveCall(null);
+  };
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background flex flex-col">
@@ -55,6 +86,24 @@ export function Layout({ children }: LayoutProps) {
           {children}
         </main>
         <BottomNavigation />
+        
+        {/* Incoming Call Modal */}
+        <IncomingCallModal
+          callSignal={incomingCall}
+          onAccept={handleAcceptCall}
+          onDecline={handleDeclineCall}
+        />
+
+        {/* Active Call Interface */}
+        {activeCall && (
+          <CallInterface
+            isOpen={true}
+            onClose={handleEndCall}
+            callType={activeCall.callType}
+            targetUserId={activeCall.targetUserId}
+            targetUsername={activeCall.targetUsername}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

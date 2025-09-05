@@ -4,6 +4,9 @@ import { Phone, Video, PhoneOff, Mic, MicOff, VideoOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { WebRTCService } from '@/services/webRTCService';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface CallInterfaceProps {
   isOpen: boolean;
@@ -22,11 +25,12 @@ export function CallInterface({
   targetUsername, 
   targetAvatarUrl 
 }: CallInterfaceProps) {
+  const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [webRTCService, setWebRTCService] = useState<WebRTCService | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -49,30 +53,51 @@ export function CallInterface({
   };
 
   const startCall = async () => {
+    if (!user) return;
+    
     try {
-      const constraints = {
-        video: callType === 'video',
-        audio: true
-      };
+      const service = new WebRTCService(
+        user.id,
+        (remoteStream) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        },
+        () => {
+          setIsConnected(false);
+          setCallDuration(0);
+          onClose();
+        }
+      );
       
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setLocalStream(stream);
+      await service.initializeCall(targetUserId, callType);
+      setWebRTCService(service);
       
-      if (localVideoRef.current && callType === 'video') {
-        localVideoRef.current.srcObject = stream;
+      // Set local video
+      const localStream = service.getLocalStream();
+      if (localVideoRef.current && localStream) {
+        localVideoRef.current.srcObject = localStream;
       }
       
       setIsConnected(true);
-      console.log(`Call started with ${targetUsername}`);
+      toast({
+        title: "Call started",
+        description: `Calling ${targetUsername || 'User'}...`,
+      });
     } catch (error) {
-      console.error('Error accessing media devices:', error);
+      console.error('Error starting call:', error);
+      toast({
+        title: "Call failed",
+        description: "Could not start the call",
+        variant: "destructive"
+      });
     }
   };
 
   const endCall = () => {
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
+    if (webRTCService) {
+      webRTCService.endCall();
+      setWebRTCService(null);
     }
     setIsConnected(false);
     setCallDuration(0);
@@ -80,22 +105,16 @@ export function CallInterface({
   };
 
   const toggleMute = () => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = isMuted;
-        setIsMuted(!isMuted);
-      }
+    if (webRTCService) {
+      const muted = webRTCService.toggleMute();
+      setIsMuted(muted);
     }
   };
 
   const toggleVideo = () => {
-    if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = isVideoOff;
-        setIsVideoOff(!isVideoOff);
-      }
+    if (webRTCService) {
+      const videoOff = webRTCService.toggleVideo();
+      setIsVideoOff(videoOff);
     }
   };
 
