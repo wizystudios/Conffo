@@ -88,48 +88,6 @@ export function ModernChatInterface({
     enabled: !!user?.id && !!targetUserId,
   });
 
-  // Show restriction message if not following
-  if (!isFollowing && user?.id && targetUserId && user.id !== targetUserId && !isLoading) {
-    return (
-      <div className="flex flex-col h-screen bg-background">
-        <div className="flex items-center justify-between p-4 bg-card border-b">
-          <div className="flex items-center space-x-3">
-            {onBack && (
-              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={targetProfile?.avatar_url} />
-              <AvatarFallback>
-                {targetProfile?.username?.charAt(0)?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold">{targetProfile?.username || 'Unknown User'}</h3>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4">
-            <div className="text-4xl">🔒</div>
-            <h2 className="text-xl font-semibold">Follow to Chat</h2>
-            <p className="text-muted-foreground max-w-sm">
-              You need to follow {targetProfile?.username || 'this user'} to start a conversation.
-            </p>
-            <Button 
-              onClick={() => window.history.back()}
-              variant="outline"
-            >
-              Go Back
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Play sound when new message received
   useEffect(() => {
     if (messages.length > lastMessageCountRef.current) {
@@ -338,6 +296,48 @@ export function ModernChatInterface({
       }
     }
   };
+
+  // Show restriction message if not following
+  if (!isFollowing && user?.id && targetUserId && user.id !== targetUserId && !isLoading) {
+    return (
+      <div className="flex flex-col h-screen bg-background">
+        <div className="flex items-center justify-between p-4 bg-card border-b">
+          <div className="flex items-center space-x-3">
+            {onBack && (
+              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={targetProfile?.avatar_url} />
+              <AvatarFallback>
+                {targetProfile?.username?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold">{targetProfile?.username || 'Unknown User'}</h3>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4">
+            <div className="text-4xl">🔒</div>
+            <h2 className="text-xl font-semibold">Follow to Chat</h2>
+            <p className="text-muted-foreground max-w-sm">
+              You need to follow {targetProfile?.username || 'this user'} to start a conversation.
+            </p>
+            <Button 
+              onClick={() => window.history.back()}
+              variant="outline"
+            >
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-background to-background/95">
