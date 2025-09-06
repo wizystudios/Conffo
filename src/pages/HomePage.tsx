@@ -11,7 +11,8 @@ import { getConfessions, getTrendingConfessions } from '@/services/supabaseDataS
 import { useQuery } from '@tanstack/react-query';
 import { Plus, TrendingUp, Clock, PlusCircle } from 'lucide-react';
 import { PeopleYouMayKnow } from '@/components/PeopleYouMayKnow';
-import { EnhancedSearchBar } from '@/components/EnhancedSearchBar';
+import { Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useScrollNavbar } from '@/hooks/useScrollNavbar';
 
 export default function HomePage() {
@@ -19,6 +20,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<string>('recent');
   const [showConfessionForm, setShowConfessionForm] = useState(false);
   const isNavbarVisible = useScrollNavbar();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleCreateConfession = () => setShowConfessionForm(true);
@@ -82,10 +84,18 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        {/* Search Bar for logged in users - prominent placement */}
+        {/* Search Icon for logged in users */}
         {isAuthenticated && (
           <div className="px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border mb-4">
-            <EnhancedSearchBar />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/search')}
+              className="w-full flex items-center justify-center gap-2 rounded-full bg-muted/50 hover:bg-muted"
+            >
+              <Search className="h-4 w-4" />
+              <span className="text-muted-foreground">Search</span>
+            </Button>
           </div>
         )}
         
