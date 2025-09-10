@@ -199,9 +199,9 @@ export function FullPageSearchModal({ isOpen, onClose, initialQuery = '' }: Full
                           key={`${result.type}-${result.id}`}
                           to={
                             result.type === 'user' 
-                              ? `/profile?userId=${result.id}` 
+                              ? `/user/${result.id}` 
                               : result.type === 'room'
-                              ? `/rooms?room=${result.id}`
+                              ? `/room/${result.id}`
                               : `/confession/${result.id}`
                           }
                           onClick={handleResultClick}
