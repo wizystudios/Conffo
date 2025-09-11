@@ -48,6 +48,7 @@ export function FullPageSearchModal({ isOpen, onClose, initialQuery = '' }: Full
           type: 'user' as const,
           id: user.id,
           title: user.username || 'Anonymous',
+          subtitle: '@' + (user.username || 'anonymous'),
           avatar: user.avatar_url
         })));
       }

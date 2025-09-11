@@ -147,16 +147,16 @@ export default function SearchPage() {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.users.map((user: any) => (
-                        <div key={user.id} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <a key={user.id} href={`/profile?userId=${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
                             {user.avatar_url ? (
                               <img src={user.avatar_url} alt={user.username} className="h-8 w-8 rounded-full object-cover" />
                             ) : (
                               <Users className="h-4 w-4" />
                             )}
                           </div>
-                          <span className="font-medium">@{user.username}</span>
-                        </div>
+                          <span className="font-medium">{user.username || 'Anonymous'}</span>
+                        </a>
                       ))}
                     </div>
                   </Card>
@@ -171,7 +171,7 @@ export default function SearchPage() {
                     </h3>
                      <div className="space-y-2">
                        {searchResults.rooms.map((room: any) => (
-                         <div key={room.id} className="p-2 hover:bg-muted/50 rounded cursor-pointer">
+                         <a key={room.id} href={`/room/${room.id}`} className="block p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
                            <div className="flex items-center justify-between">
                              <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
                                #{room.name}
@@ -180,7 +180,7 @@ export default function SearchPage() {
                            {room.description && (
                              <p className="text-xs text-muted-foreground mt-1">{room.description}</p>
                            )}
-                         </div>
+                         </a>
                        ))}
                      </div>
                   </Card>
@@ -193,20 +193,20 @@ export default function SearchPage() {
                       <TrendingUp className="h-4 w-4" />
                       Posts ({searchResults.posts.length})
                     </h3>
-                    <div className="space-y-3">
-                      {searchResults.posts.map((post: any) => (
-                        <div key={post.id} className="p-3 border border-border rounded hover:bg-muted/50 cursor-pointer">
-                           <div className="flex items-center gap-2 mb-2">
-                             <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                               #{post.rooms?.name || 'Unknown'}
-                             </div>
-                             <span className="text-xs text-muted-foreground">
-                               {new Date(post.created_at).toLocaleDateString()}
-                             </span>
-                           </div>
-                          <p className="text-sm line-clamp-2">{post.content}</p>
-                        </div>
-                      ))}
+                     <div className="space-y-3">
+                       {searchResults.posts.map((post: any) => (
+                         <a key={post.id} href={`/confession/${post.id}`} className="block p-3 border border-border rounded hover:bg-muted/50 cursor-pointer transition-colors">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                                #{post.rooms?.name || 'Unknown'}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(post.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                           <p className="text-sm line-clamp-2">{post.content}</p>
+                         </a>
+                       ))}
                     </div>
                   </Card>
                 )}
@@ -236,9 +236,9 @@ export default function SearchPage() {
               </h2>
               <div className="grid grid-cols-2 gap-2">
                 {['general', 'love', 'work', 'family', 'friends', 'school'].map((room) => (
-                  <div key={room} className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium text-center hover:bg-primary/20 cursor-pointer transition-colors">
+                  <a key={room} href={`/room/${room}`} className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium text-center hover:bg-primary/20 cursor-pointer transition-colors">
                     #{room}
-                  </div>
+                  </a>
                 ))}
               </div>
             </Card>
