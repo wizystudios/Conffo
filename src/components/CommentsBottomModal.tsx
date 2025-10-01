@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageCircle, Send, Heart, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { BottomSlideModal } from '@/components/BottomSlideModal';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { Card, CardContent } from '@/components/ui/card';
+import { RoomBadge } from './RoomBadge';
+import { UsernameDisplay } from './UsernameDisplay';
+import { Confession } from '@/types';
 
 interface CommentsBottomModalProps {
   isOpen: boolean;
   onClose: () => void;
   confessionId: string;
+  confession: Confession;
+  onCommentCountChange?: (count: number) => void;
 }
 
 interface Comment {
@@ -30,7 +36,7 @@ interface Comment {
   };
 }
 
-export function CommentsBottomModal({ isOpen, onClose, confessionId }: CommentsBottomModalProps) {
+export function CommentsBottomModal({ isOpen, onClose, confessionId, confession, onCommentCountChange }: CommentsBottomModalProps) {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +57,6 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId }: CommentsB
 
       if (error) throw error;
 
-      // Get user profiles separately
       const userIds = data?.map(c => c.user_id) || [];
       const { data: profiles } = await supabase
         .from('profiles')
@@ -73,6 +78,11 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId }: CommentsB
     },
     enabled: !!confessionId && isOpen
   });
+
+  // Update comment count when comments change
+  if (onCommentCountChange && comments) {
+    onCommentCountChange(comments.length);
+  }
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,9 +169,56 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId }: CommentsB
     }
   };
 
+  const totalLikes = confession.reactions.like + confession.reactions.heart + confession.reactions.laugh + confession.reactions.shock;
+
   return (
-    <BottomSlideModal isOpen={isOpen} onClose={onClose} title="Comments">
+    <BottomSlideModal isOpen={isOpen} onClose={onClose} title="">
       <div className="flex flex-col h-[80vh]">
+        {/* Minimized Confession at Top */}
+        <Card className="mx-4 mt-2 mb-4 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex justify-between items-center mb-2">
+              <UsernameDisplay userId={confession.userId} size="sm" />
+              <span className="text-xs text-muted-foreground">
+                {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
+              </span>
+            </div>
+            
+            <div className="text-sm line-clamp-3 mb-2">
+              {confession.content}
+            </div>
+            
+            {confession.mediaUrl && (
+              <div className="rounded-md overflow-hidden mb-2 border max-h-32">
+                {confession.mediaType === 'image' ? (
+                  <img 
+                    src={confession.mediaUrl} 
+                    alt="Confession media" 
+                    className="w-full h-auto max-h-32 object-cover"
+                  />
+                ) : confession.mediaType === 'video' ? (
+                  <video 
+                    src={confession.mediaUrl} 
+                    className="w-full h-auto max-h-32 object-cover"
+                  />
+                ) : null}
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between text-xs">
+              <RoomBadge room={confession.room} />
+              <div className="flex gap-3 text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Heart className="h-3 w-3" /> {totalLikes}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageCircle className="h-3 w-3" /> {comments?.length || 0}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Comments List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {comments.length === 0 ? (

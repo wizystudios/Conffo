@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ThumbsUp, MessageCircle, Heart, Bookmark, BookmarkCheck, Share, Download } from 'lucide-react';
-import { ImprovedCommentModal } from './ImprovedCommentModal';
+import { CommentsBottomModal } from './CommentsBottomModal';
 import { LikesList } from './LikesList';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -284,13 +284,12 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
         </CardFooter>
       </Card>
 
-      {/* Modals */}
-      <ImprovedCommentModal
+      {/* Comments Bottom Modal */}
+      <CommentsBottomModal
         isOpen={showCommentModal}
         onClose={() => setShowCommentModal(false)}
         confessionId={confession.id}
-        confessionContent={confession.content}
-        confessionAuthor="Anonymous"
+        confession={confession}
         onCommentCountChange={setCommentCount}
       />
 

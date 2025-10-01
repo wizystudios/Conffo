@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, TrendingUp, Hash, Users, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -147,16 +149,15 @@ export default function SearchPage() {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.users.map((user: any) => (
-                        <a key={user.id} href={`/profile?userId=${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                            {user.avatar_url ? (
-                              <img src={user.avatar_url} alt={user.username} className="h-8 w-8 rounded-full object-cover" />
-                            ) : (
-                              <Users className="h-4 w-4" />
-                            )}
-                          </div>
+                        <Link key={user.id} to={`/profile?userId=${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} />
+                            <AvatarFallback>
+                              {user.username?.charAt(0)?.toUpperCase() || 'A'}
+                            </AvatarFallback>
+                          </Avatar>
                           <span className="font-medium">{user.username || 'Anonymous'}</span>
-                        </a>
+                        </Link>
                       ))}
                     </div>
                   </Card>
@@ -171,7 +172,7 @@ export default function SearchPage() {
                     </h3>
                      <div className="space-y-2">
                        {searchResults.rooms.map((room: any) => (
-                         <a key={room.id} href={`/room/${room.id}`} className="block p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
+                         <Link key={room.id} to={`/room/${room.id}`} className="block p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
                            <div className="flex items-center justify-between">
                              <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
                                #{room.name}
@@ -180,7 +181,7 @@ export default function SearchPage() {
                            {room.description && (
                              <p className="text-xs text-muted-foreground mt-1">{room.description}</p>
                            )}
-                         </a>
+                         </Link>
                        ))}
                      </div>
                   </Card>
@@ -195,7 +196,7 @@ export default function SearchPage() {
                     </h3>
                      <div className="space-y-3">
                        {searchResults.posts.map((post: any) => (
-                         <a key={post.id} href={`/confession/${post.id}`} className="block p-3 border border-border rounded hover:bg-muted/50 cursor-pointer transition-colors">
+                         <Link key={post.id} to={`/confession/${post.id}`} className="block p-3 border border-border rounded hover:bg-muted/50 cursor-pointer transition-colors">
                             <div className="flex items-center gap-2 mb-2">
                               <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
                                 #{post.rooms?.name || 'Unknown'}
@@ -205,7 +206,7 @@ export default function SearchPage() {
                               </span>
                             </div>
                            <p className="text-sm line-clamp-2">{post.content}</p>
-                         </a>
+                         </Link>
                        ))}
                     </div>
                   </Card>
@@ -236,9 +237,9 @@ export default function SearchPage() {
               </h2>
               <div className="grid grid-cols-2 gap-2">
                 {['general', 'love', 'work', 'family', 'friends', 'school'].map((room) => (
-                  <a key={room} href={`/room/${room}`} className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium text-center hover:bg-primary/20 cursor-pointer transition-colors">
+                  <Link key={room} to={`/room/${room}`} className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium text-center hover:bg-primary/20 cursor-pointer transition-colors">
                     #{room}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </Card>

@@ -436,14 +436,14 @@ export function ModernChatInterface({
                     
                      {message.message_type === 'text' ? (
                        <div
-                         className={`px-4 py-3 rounded-2xl ${
+                         className={`px-3 py-2 rounded-2xl ${
                            isOwn
                              ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
                              : 'bg-muted rounded-bl-md'
                          } shadow-sm`}
                        >
-                         <p className="text-sm leading-relaxed">{message.content}</p>
-                         <p className={`text-xs mt-2 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
+                         <p className="text-xs leading-relaxed">{message.content}</p>
+                         <p className={`text-[10px] mt-1 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
                            {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                          </p>
                        </div>

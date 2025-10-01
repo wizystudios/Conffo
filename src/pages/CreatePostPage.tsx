@@ -1,41 +1,31 @@
 import { useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
-import { EnhancedConfessionForm } from '@/components/EnhancedConfessionForm';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { EnhancedCreatePostModal } from '@/components/EnhancedCreatePostModal';
 
 export default function CreatePostPage() {
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    // Open modal when page loads
+    setIsOpen(true);
+  }, []);
 
   const handleSuccess = () => {
+    setIsOpen(false);
     navigate('/', { replace: true });
   };
 
-  const handleCancel = () => {
+  const handleClose = () => {
+    setIsOpen(false);
     navigate(-1);
   };
 
   return (
-    <Layout>
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCancel}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Create New Post</h1>
-        </div>
-        
-        <div className="bg-card rounded-lg p-6 border">
-          <EnhancedConfessionForm 
-            onSuccess={handleSuccess}
-            onCancel={handleCancel}
-          />
-        </div>
-      </div>
-    </Layout>
+    <EnhancedCreatePostModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      onSuccess={handleSuccess}
+    />
   );
 }
