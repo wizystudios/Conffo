@@ -236,7 +236,7 @@ export function MultimediaPostCreator({ onSuccess, onCancel }: MultimediaPostCre
         .insert({
           content: content.trim() || 'Multimedia post',
           user_id: user.id,
-          room_id: 'general', // Default room
+          room_id: 'random', // Default room
           media_url: uploadedMedia.length > 0 ? uploadedMedia[0].url : null,
           media_type: uploadedMedia.length > 0 ? uploadedMedia[0].type : null
         })

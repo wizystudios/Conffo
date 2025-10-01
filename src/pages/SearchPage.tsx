@@ -63,7 +63,7 @@ export default function SearchPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
+      <div className="w-full max-w-full p-4 space-y-6">
         {/* Search Header */}
         <div className="space-y-4">
           <h1 className="text-2xl font-bold">Search</h1>
@@ -149,8 +149,8 @@ export default function SearchPage() {
                     </h3>
                     <div className="space-y-2">
                       {searchResults.users.map((user: any) => (
-                        <Link key={user.id} to={`/profile?userId=${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
-                          <Avatar className="h-8 w-8">
+                        <Link key={user.id} to={`/profile/${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors active:bg-muted">
+                          <Avatar className="h-10 w-10">
                             <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} />
                             <AvatarFallback>
                               {user.username?.charAt(0)?.toUpperCase() || 'A'}
@@ -172,14 +172,14 @@ export default function SearchPage() {
                     </h3>
                      <div className="space-y-2">
                        {searchResults.rooms.map((room: any) => (
-                         <Link key={room.id} to={`/room/${room.id}`} className="block p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors">
+                         <Link key={room.id} to={`/room/${room.id}`} className="block p-3 hover:bg-muted/50 rounded cursor-pointer transition-colors active:bg-muted">
                            <div className="flex items-center justify-between">
-                             <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                             <div className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-medium">
                                #{room.name}
                              </div>
                            </div>
                            {room.description && (
-                             <p className="text-xs text-muted-foreground mt-1">{room.description}</p>
+                             <p className="text-sm text-muted-foreground mt-2">{room.description}</p>
                            )}
                          </Link>
                        ))}
@@ -236,8 +236,8 @@ export default function SearchPage() {
                 Popular Rooms
               </h2>
               <div className="grid grid-cols-2 gap-2">
-                {['general', 'love', 'work', 'family', 'friends', 'school'].map((room) => (
-                  <Link key={room} to={`/room/${room}`} className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium text-center hover:bg-primary/20 cursor-pointer transition-colors">
+                 {['random', 'relationships', 'work', 'family', 'friends', 'school'].map((room) => (
+                  <Link key={room} to={`/room/${room}`} className="bg-primary/10 text-primary px-3 py-2 rounded-full text-sm font-medium text-center hover:bg-primary/20 cursor-pointer transition-colors active:bg-primary/30">
                     #{room}
                   </Link>
                 ))}

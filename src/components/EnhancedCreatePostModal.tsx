@@ -122,11 +122,12 @@ export function EnhancedCreatePostModal({ isOpen, onClose, onSuccess, initialRoo
     setUploadProgress(0);
     
     try {
-      // Upload first media file (primary media)
+      // Upload first media file only (primary media)
       let mediaUrl = null;
       let mediaType = undefined;
       
       if (mediaFiles.length > 0) {
+        const progressStep = 50 / mediaFiles.length;
         const media = await uploadMedia(mediaFiles[0].file);
         mediaUrl = media.mediaUrl;
         mediaType = media.mediaType;
@@ -161,8 +162,8 @@ export function EnhancedCreatePostModal({ isOpen, onClose, onSuccess, initialRoo
     } catch (error) {
       console.error('Error submitting confession:', error);
       toast({
-        title: "Post failed",
-        description: "An error occurred while posting.",
+        title: "Failed to post",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -183,9 +184,9 @@ export function EnhancedCreatePostModal({ isOpen, onClose, onSuccess, initialRoo
         
         {/* Tags */}
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {tags.map(tag => (
-              <Badge key={tag} variant="secondary" className="gap-1">
+              <Badge key={tag} variant="secondary" className="gap-1 text-xs px-2 py-0.5">
                 #{tag}
                 <button type="button" onClick={() => removeTag(tag)}>
                   <X className="h-3 w-3" />
@@ -197,18 +198,22 @@ export function EnhancedCreatePostModal({ isOpen, onClose, onSuccess, initialRoo
         
         {/* Media Type Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="text">
-              <FileText className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-4 h-12">
+            <TabsTrigger value="text" className="flex-col gap-1 h-full text-xs">
+              <FileText className="h-5 w-5" />
+              <span>Text</span>
             </TabsTrigger>
-            <TabsTrigger value="image">
-              <Image className="h-4 w-4" />
+            <TabsTrigger value="image" className="flex-col gap-1 h-full text-xs">
+              <Image className="h-5 w-5" />
+              <span>Photo</span>
             </TabsTrigger>
-            <TabsTrigger value="video">
-              <Video className="h-4 w-4" />
+            <TabsTrigger value="video" className="flex-col gap-1 h-full text-xs">
+              <Video className="h-5 w-5" />
+              <span>Video</span>
             </TabsTrigger>
-            <TabsTrigger value="audio">
-              <Music className="h-4 w-4" />
+            <TabsTrigger value="audio" className="flex-col gap-1 h-full text-xs">
+              <Music className="h-5 w-5" />
+              <span>Audio</span>
             </TabsTrigger>
           </TabsList>
           

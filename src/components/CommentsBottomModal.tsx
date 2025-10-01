@@ -173,7 +173,7 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
 
   return (
     <BottomSlideModal isOpen={isOpen} onClose={onClose} title="">
-      <div className="flex flex-col h-[80vh]">
+      <div className="flex flex-col h-[85vh] max-h-[calc(100vh-64px)]">
         {/* Minimized Confession at Top */}
         <Card className="mx-4 mt-2 mb-4 shadow-sm">
           <CardContent className="p-3">

@@ -404,6 +404,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 {Math.floor(Math.random() * 10000) + 100} views
               </div>
             </div>
+          ) : confession.mediaType === 'audio' ? (
+            <div className="w-full bg-gradient-to-br from-primary/20 to-primary/5 p-6 flex items-center justify-center">
+              <div className="max-w-md w-full">
+                <audio controls className="w-full" src={confession.mediaUrl}>
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            </div>
           ) : null}
         </div>
       )}

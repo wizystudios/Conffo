@@ -76,7 +76,7 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
       };
       
       // Fix the type issue by ensuring mediaType is correctly typed
-      const mediaType = row.media_type as 'image' | 'video' | undefined;
+      const mediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
       
       return {
         id: row.id,
@@ -163,7 +163,7 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
     };
     
     // Fix: Cast media_type to the correct union type
-    const mediaType = data.media_type as 'image' | 'video' | undefined;
+    const mediaType = data.media_type as 'image' | 'video' | 'audio' | undefined;
     
     return {
       id: data.id,
@@ -248,7 +248,7 @@ export const addConfessionWithMedia = async (
   mediaFile?: File | null,
   tags?: string[],
   mediaUrl?: string | null,
-  mediaType?: 'image' | 'video'
+  mediaType?: 'image' | 'video' | 'audio'
 ): Promise<void> => {
   try {
     const { error } = await supabase
@@ -663,7 +663,7 @@ export const getUserConfessions = async (userId: string): Promise<Confession[]> 
       };
       
       // Fix: Cast media_type to the correct union type
-      const mediaType = row.media_type as 'image' | 'video' | undefined;
+      const mediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
       
       return {
         id: row.id,

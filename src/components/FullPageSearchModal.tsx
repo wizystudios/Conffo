@@ -48,7 +48,7 @@ export function FullPageSearchModal({ isOpen, onClose, initialQuery = '' }: Full
           type: 'user' as const,
           id: user.id,
           title: user.username || 'Anonymous',
-          subtitle: '@' + (user.username || 'anonymous'),
+          subtitle: user.username || 'anonymous',
           avatar: user.avatar_url
         })));
       }
@@ -70,7 +70,7 @@ export function FullPageSearchModal({ isOpen, onClose, initialQuery = '' }: Full
       }
       
       // Create some sample rooms for search
-      const sampleRooms = ['general', 'relationships', 'work', 'family', 'friends', 'health', 'education', 'travel', 'gaming', 'music'];
+      const sampleRooms = ['random', 'relationships', 'work', 'family', 'friends', 'school'];
       const matchingRooms = sampleRooms.filter(room => 
         room.toLowerCase().includes(query.toLowerCase())
       );
@@ -200,7 +200,7 @@ export function FullPageSearchModal({ isOpen, onClose, initialQuery = '' }: Full
                           key={`${result.type}-${result.id}`}
                           to={
                             result.type === 'user' 
-                              ? `/user/${result.id}` 
+                              ? `/profile/${result.id}` 
                               : result.type === 'room'
                               ? `/room/${result.id}`
                               : `/confession/${result.id}`
