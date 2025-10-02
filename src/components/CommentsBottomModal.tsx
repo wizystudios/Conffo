@@ -184,24 +184,18 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
               </span>
             </div>
             
-            {confession.content && (
-              <div className="text-sm line-clamp-2 mb-2">
-                {confession.content}
-              </div>
-            )}
-            
             {confession.mediaUrl && (
-              <div className="rounded-md overflow-hidden mb-2 border max-h-40">
+              <div className="rounded-lg overflow-hidden mb-2 border">
                 {confession.mediaType === 'image' ? (
                   <img 
                     src={confession.mediaUrl} 
                     alt="Confession media" 
-                    className="w-full h-auto max-h-40 object-cover"
+                    className="w-full h-32 object-cover"
                   />
                 ) : confession.mediaType === 'video' ? (
                   <video 
                     src={confession.mediaUrl} 
-                    className="w-full h-auto max-h-40 object-cover"
+                    className="w-full h-32 object-cover"
                     controls
                     playsInline
                   />
@@ -212,6 +206,12 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
                     className="w-full"
                   />
                 ) : null}
+              </div>
+            )}
+            
+            {confession.content && (
+              <div className="text-sm line-clamp-2 mb-2">
+                {confession.content}
               </div>
             )}
             

@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, MessageCircle, LogIn, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -12,15 +12,14 @@ export function BottomNavigation() {
     return location.pathname === path;
   };
   
+  const navigate = useNavigate();
+  
   const handleCreateNew = () => {
     if (location.pathname === '/stories') {
-      // Trigger story creation dialog using a custom event
       const event = new CustomEvent('create-story');
       window.dispatchEvent(event);
     } else {
-      // Default to confession
-      const event = new CustomEvent('create-confession');
-      window.dispatchEvent(event);
+      navigate('/create-post');
     }
   };
   

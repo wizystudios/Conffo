@@ -90,6 +90,7 @@ const App = () => {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/recent" element={<RecentPage />} />
           <Route path="/create" element={<CreatePostPage />} />
+          <Route path="/create-post" element={<CreatePostPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />

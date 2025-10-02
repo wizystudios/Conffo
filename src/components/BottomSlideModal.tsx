@@ -101,7 +101,7 @@ export function BottomSlideModal({ isOpen, onClose, children, title }: BottomSli
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end">
       {/* Backdrop */}
       <div 
         className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
@@ -113,12 +113,14 @@ export function BottomSlideModal({ isOpen, onClose, children, title }: BottomSli
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative w-full max-w-lg max-h-[85vh] bg-background shadow-2xl transition-transform duration-300 overflow-hidden rounded-3xl ${
+        className={`relative w-full max-h-[90vh] bg-background shadow-2xl transition-transform duration-300 overflow-hidden ${
           isVisible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{
           transform: `translateY(${currentY}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease'
+          transition: isDragging ? 'none' : 'transform 0.3s ease',
+          borderTopLeftRadius: '24px',
+          borderTopRightRadius: '24px'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -146,7 +148,7 @@ export function BottomSlideModal({ isOpen, onClose, children, title }: BottomSli
         )}
         
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(85vh-120px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           {children}
         </div>
       </div>
