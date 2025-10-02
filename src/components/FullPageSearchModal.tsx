@@ -198,13 +198,13 @@ export function FullPageSearchModal({ isOpen, onClose, initialQuery = '' }: Full
                       {typeResults.map((result) => (
                         <Link
                           key={`${result.type}-${result.id}`}
-                          to={
-                            result.type === 'user' 
-                              ? `/profile/${result.id}` 
-                              : result.type === 'room'
-                              ? `/room/${result.id}`
-                              : `/confession/${result.id}`
-                          }
+                           to={
+                             result.type === 'user' 
+                               ? `/user/${result.id}` 
+                               : result.type === 'room'
+                               ? `/room/${result.id}`
+                               : `/confession/${result.id}`
+                           }
                           onClick={handleResultClick}
                         >
                           <Card className="p-4 hover:bg-accent/50 transition-colors cursor-pointer border-0 shadow-sm">

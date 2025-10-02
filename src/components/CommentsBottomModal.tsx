@@ -200,6 +200,14 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
                   <video 
                     src={confession.mediaUrl} 
                     className="w-full h-auto max-h-32 object-cover"
+                    controls
+                    playsInline
+                  />
+                ) : confession.mediaType === 'audio' ? (
+                  <audio 
+                    src={confession.mediaUrl} 
+                    controls
+                    className="w-full"
                   />
                 ) : null}
               </div>

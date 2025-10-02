@@ -7,8 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, lazy, Suspense, useEffect } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { WelcomeScreen } from "./components/WelcomeScreen";
-import { ConffoLoader } from "./components/ConffoLoader";
 import { FishSuccessAnimation } from "./components/FishSuccessAnimation";
 import { useSuccessAnimation } from "./hooks/useSuccessAnimation";
 import HomePage from "./pages/HomePage";

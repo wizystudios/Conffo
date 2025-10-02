@@ -64,12 +64,6 @@ export default function RoomPage() {
           </div>
         </div>
         
-        {user && (
-          <div className="m-4 p-4 bg-white shadow-md">
-            <h2 className="font-medium mb-4">Share Your Confession in {roomInfo.name}</h2>
-            <ConfessionForm onSuccess={handleConfessionSuccess} initialRoom={roomId as Room} />
-          </div>
-        )}
         
         {isLoading ? (
           <p className="text-center py-8 text-muted-foreground">Loading confessions...</p>

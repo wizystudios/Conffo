@@ -113,12 +113,14 @@ export function BottomSlideModal({ isOpen, onClose, children, title }: BottomSli
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative w-full max-h-[90vh] bg-background rounded-t-3xl shadow-2xl transition-transform duration-300 ${
+        className={`relative w-full max-h-[90vh] bg-background shadow-2xl transition-transform duration-300 overflow-hidden ${
           isVisible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{
           transform: `translateY(${currentY}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease'
+          transition: isDragging ? 'none' : 'transform 0.3s ease',
+          borderTopLeftRadius: '24px',
+          borderTopRightRadius: '24px'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

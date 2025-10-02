@@ -148,17 +148,17 @@ export default function SearchPage() {
                       Users ({searchResults.users.length})
                     </h3>
                     <div className="space-y-2">
-                      {searchResults.users.map((user: any) => (
-                        <Link key={user.id} to={`/profile/${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors active:bg-muted">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} />
-                            <AvatarFallback>
-                              {user.username?.charAt(0)?.toUpperCase() || 'A'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{user.username || 'Anonymous'}</span>
-                        </Link>
-                      ))}
+                       {searchResults.users.map((user: any) => (
+                         <Link key={user.id} to={`/user/${user.id}`} className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded cursor-pointer transition-colors active:bg-muted">
+                           <Avatar className="h-10 w-10">
+                             <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} />
+                             <AvatarFallback>
+                               {user.username?.charAt(0)?.toUpperCase() || 'A'}
+                             </AvatarFallback>
+                           </Avatar>
+                           <span className="font-medium">{user.username || 'Anonymous'}</span>
+                         </Link>
+                       ))}
                     </div>
                   </Card>
                 )}
