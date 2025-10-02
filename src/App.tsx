@@ -67,7 +67,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <AuthProvider>
-              <Suspense fallback={<LoadingFallback />}>
+              <Suspense fallback={null}>
                 <Routes>
                   {/* Chat-first routing like Telegram */}
                   <Route path="/" element={<ChatListPage />} />

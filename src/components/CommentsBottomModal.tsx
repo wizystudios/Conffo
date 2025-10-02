@@ -173,7 +173,7 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
 
   return (
     <BottomSlideModal isOpen={isOpen} onClose={onClose} title="">
-      <div className="flex flex-col h-[85vh] max-h-[calc(100vh-64px)]">
+      <div className="flex flex-col h-[75vh]">
         {/* Minimized Confession at Top */}
         <Card className="mx-4 mt-2 mb-4 shadow-sm">
           <CardContent className="p-3">
@@ -184,22 +184,24 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
               </span>
             </div>
             
-            <div className="text-sm line-clamp-3 mb-2">
-              {confession.content}
-            </div>
+            {confession.content && (
+              <div className="text-sm line-clamp-2 mb-2">
+                {confession.content}
+              </div>
+            )}
             
             {confession.mediaUrl && (
-              <div className="rounded-md overflow-hidden mb-2 border max-h-32">
+              <div className="rounded-md overflow-hidden mb-2 border max-h-40">
                 {confession.mediaType === 'image' ? (
                   <img 
                     src={confession.mediaUrl} 
                     alt="Confession media" 
-                    className="w-full h-auto max-h-32 object-cover"
+                    className="w-full h-auto max-h-40 object-cover"
                   />
                 ) : confession.mediaType === 'video' ? (
                   <video 
                     src={confession.mediaUrl} 
-                    className="w-full h-auto max-h-32 object-cover"
+                    className="w-full h-auto max-h-40 object-cover"
                     controls
                     playsInline
                   />

@@ -59,8 +59,8 @@ export default function RoomPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">{roomInfo.name}</h1>
-            <p className="text-muted-foreground">{roomInfo.description}</p>
+            <h1 className="text-xl font-semibold">{roomInfo.name}</h1>
+            <p className="text-xs text-muted-foreground truncate">{roomInfo.description}</p>
           </div>
         </div>
         
