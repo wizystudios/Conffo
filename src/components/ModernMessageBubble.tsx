@@ -25,26 +25,26 @@ export function ModernMessageBubble({
   };
 
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
-      <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%]`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}>
+      <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-1 max-w-[70%]`}>
         {showAvatar && !isOwn ? (
-          <Avatar className="h-8 w-8 flex-shrink-0">
+          <Avatar className="h-7 w-7 flex-shrink-0">
             <AvatarImage src={senderAvatar} />
             <AvatarFallback className="text-xs">
               {senderName?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
         ) : (
-          !isOwn && <div className="h-8 w-8 flex-shrink-0" />
+          !isOwn && <div className="h-7 w-7 flex-shrink-0" />
         )}
 
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           {message.message_type === 'text' ? (
             <div
-              className={`px-4 py-2 rounded-2xl ${
+              className={`px-4 py-2.5 ${
                 isOwn
-                  ? 'bg-primary text-primary-foreground rounded-br-sm'
-                  : 'bg-muted text-foreground rounded-bl-sm'
+                  ? 'bg-[#007AFF] text-white rounded-[20px] rounded-br-[4px]'
+                  : 'bg-[#E5E5EA] text-gray-900 rounded-[20px] rounded-bl-[4px]'
               }`}
             >
               <p className="text-sm leading-relaxed break-words">{message.content}</p>
@@ -68,13 +68,13 @@ export function ModernMessageBubble({
             </div>
           ) : message.message_type === 'audio' ? (
             <div className={`px-4 py-2 rounded-2xl ${
-              isOwn ? 'bg-primary' : 'bg-muted'
+              isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
             }`}>
               <audio src={message.media_url} controls className="max-w-full" />
             </div>
           ) : null}
           
-          <span className={`text-[10px] text-muted-foreground mt-1 ${isOwn ? 'text-right' : 'text-left'} px-1`}>
+          <span className={`text-[10px] text-muted-foreground ${isOwn ? 'text-right pr-1' : 'text-left pl-1'}`}>
             {formatTime(message.created_at)}
           </span>
         </div>

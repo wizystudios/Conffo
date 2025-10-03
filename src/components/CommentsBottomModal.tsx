@@ -173,7 +173,35 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
 
   return (
     <BottomSlideModal isOpen={isOpen} onClose={onClose} title="">
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+        {/* Post Media - Full Width at Top */}
+        {confession.mediaUrl && (
+          <div className="w-full bg-black">
+            {confession.mediaType === 'image' ? (
+              <img 
+                src={confession.mediaUrl} 
+                alt="Post" 
+                className="w-full h-auto max-h-[50vh] object-contain"
+              />
+            ) : confession.mediaType === 'video' ? (
+              <video 
+                src={confession.mediaUrl} 
+                className="w-full h-auto max-h-[50vh] object-contain"
+                controls
+                playsInline
+              />
+            ) : confession.mediaType === 'audio' ? (
+              <div className="p-4">
+                <audio 
+                  src={confession.mediaUrl} 
+                  controls
+                  className="w-full"
+                />
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {/* Header with comment count */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="font-semibold text-base">{comments.length} comments</h2>
@@ -182,142 +210,101 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
           </Button>
         </div>
 
-        {/* Post Preview - Media First, Then Text */}
-        <div className="px-4 py-3 border-b bg-muted/20">
-          {confession.mediaUrl && (
-            <div className="rounded-lg overflow-hidden mb-2">
-              {confession.mediaType === 'image' ? (
-                <img 
-                  src={confession.mediaUrl} 
-                  alt="Post media" 
-                  className="w-full max-h-64 object-cover"
-                />
-              ) : confession.mediaType === 'video' ? (
-                <video 
-                  src={confession.mediaUrl} 
-                  className="w-full max-h-64 object-cover"
-                  controls
-                  playsInline
-                />
-              ) : confession.mediaType === 'audio' ? (
-                <audio 
-                  src={confession.mediaUrl} 
-                  controls
-                  className="w-full"
-                />
-              ) : null}
-            </div>
-          )}
-          
-          <div className="flex items-start gap-2">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage
-                src={`https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`}
-                alt="User"
-              />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <UsernameDisplay userId={confession.userId} size="sm" />
-                <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-                </span>
-              </div>
-              {confession.content && (
-                <p className="text-sm text-foreground line-clamp-2">
-                  {confession.content}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Comments List */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 py-3 bg-white dark:bg-gray-900">
           {comments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No comments yet</p>
-              <p className="text-sm">Be the first to share your thoughts!</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No comments yet.</p>
+              <p className="text-xs mt-1">Start the conversation.</p>
             </div>
           ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="flex gap-2 items-start">
-                <Avatar className="h-9 w-9 flex-shrink-0">
-                  <AvatarImage
-                    src={comment.profiles.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${comment.profiles.id}`}
-                    alt={comment.profiles.username}
-                  />
-                  <AvatarFallback className="text-xs">
-                    {comment.profiles.username?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="bg-muted/40 rounded-2xl rounded-tl-sm px-3 py-2">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-semibold text-sm">{comment.profiles.username}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-sm leading-relaxed">{comment.content}</p>
-                  </div>
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3 items-start">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage
+                      src={comment.profiles.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${comment.profiles.id}`}
+                      alt={comment.profiles.username}
+                    />
+                    <AvatarFallback className="text-xs bg-gray-200">
+                      {comment.profiles.username?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   
-                  <div className="flex items-center gap-4 mt-1 px-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLikeComment(comment.id, comment.user_liked)}
-                      className="h-auto p-0 text-xs font-medium text-muted-foreground hover:text-foreground"
-                    >
-                      {comment.user_liked ? (
-                        <Heart className="h-3 w-3 mr-1 fill-red-500 text-red-500" />
-                      ) : (
-                        <Heart className="h-3 w-3 mr-1" />
-                      )}
-                      {comment.likes_count > 0 && comment.likes_count}
-                    </Button>
-                    
-                    <button className="text-xs font-medium text-muted-foreground hover:text-foreground">
-                      Reply
-                    </button>
-                    
-                    {user?.id === comment.profiles.id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-auto p-0 ml-auto">
-                            <MoreVertical className="h-3 w-3 text-muted-foreground" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="text-destructive text-xs"
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-sm">
+                          <span className="font-semibold mr-2">{comment.profiles.username}</span>
+                          <span className="text-gray-900 dark:text-gray-100">{comment.content}</span>
+                        </p>
+                        
+                        <div className="flex items-center gap-4 mt-1.5">
+                          <span className="text-xs text-gray-500">
+                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true }).replace('about ', '')}
+                          </span>
+                          
+                          {comment.likes_count > 0 && (
+                            <span className="text-xs text-gray-500 font-semibold">
+                              {comment.likes_count} {comment.likes_count === 1 ? 'like' : 'likes'}
+                            </span>
+                          )}
+                          
+                          <button className="text-xs text-gray-500 font-semibold hover:text-gray-700">
+                            Reply
+                          </button>
+                          
+                          {user?.id === comment.profiles.id && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-auto p-0">
+                                  <MoreVertical className="h-3.5 w-3.5 text-gray-400" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                  className="text-red-600 text-xs"
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLikeComment(comment.id, comment.user_liked)}
+                        className="h-auto p-0 mt-1"
+                      >
+                        {comment.user_liked ? (
+                          <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" />
+                        ) : (
+                          <Heart className="h-3.5 w-3.5 text-gray-400" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
         {/* Comment Input - Fixed at Bottom */}
         {user && (
-          <div className="border-t bg-background px-4 py-3">
-            <form onSubmit={handleSubmitComment} className="flex items-center gap-2">
+          <div className="border-t bg-white dark:bg-gray-900 px-4 py-3">
+            <form onSubmit={handleSubmitComment} className="flex items-center gap-3">
               <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage
                   src={user.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`}
                   alt={user.username || 'User'}
                 />
-                <AvatarFallback>
+                <AvatarFallback className="bg-gray-200">
                   {(user.username || 'U').charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -325,16 +312,16 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
                 placeholder="Add comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 rounded-full bg-muted border-0"
+                className="flex-1 border-0 bg-transparent text-sm focus-visible:ring-0 px-0"
               />
               <Button 
                 type="submit" 
-                size="icon"
                 variant="ghost"
+                size="sm"
                 disabled={!newComment.trim() || isSubmitting}
-                className="flex-shrink-0"
+                className="text-[#0095F6] hover:text-[#0095F6]/80 font-semibold text-sm h-auto p-0 hover:bg-transparent"
               >
-                <Send className="h-5 w-5" />
+                Post
               </Button>
             </form>
           </div>

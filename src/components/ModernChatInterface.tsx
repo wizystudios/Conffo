@@ -340,28 +340,27 @@ export function ModernChatInterface({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-background to-background/95">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-card/80 backdrop-blur-lg border-b border-border/50">
+      <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center space-x-3">
           {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full hover:bg-muted/50">
+            <Button variant="ghost" size="icon" onClick={onBack} className="h-9 w-9">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
           
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+          <Avatar className="h-11 w-11">
             <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
-            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
+            <AvatarFallback>
               {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           
           <div>
-            <h3 className="font-semibold">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
-            <p className="text-xs text-muted-foreground flex items-center">
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              {isTyping ? 'Typing...' : 'Online'}
+            <h3 className="font-semibold text-sm">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
+            <p className="text-xs text-muted-foreground">
+              {isTyping ? 'Typing...' : 'Team Leader'}
             </p>
           </div>
         </div>
@@ -373,7 +372,7 @@ export function ModernChatInterface({
                 variant="ghost"
                 size="icon"
                 onClick={() => onCall('audio')}
-                className="rounded-full hover:bg-muted/50"
+                className="h-9 w-9"
               >
                 <Phone className="h-5 w-5" />
               </Button>
@@ -382,7 +381,7 @@ export function ModernChatInterface({
                 variant="ghost"
                 size="icon"
                 onClick={() => onCall('video')}
-                className="rounded-full hover:bg-muted/50"
+                className="h-9 w-9"
               >
                 <VideoIcon className="h-5 w-5" />
               </Button>
@@ -391,7 +390,7 @@ export function ModernChatInterface({
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-muted/50">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
                 <MoreVertical className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -407,117 +406,30 @@ export function ModernChatInterface({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto scrollbar-hide">
-        {(
-          <div className="space-y-3">
-            {messages.map((message, index) => {
-              const isOwn = message.sender_id === user?.id;
-              const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
-              
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
-                >
-                  <div className={`flex max-w-[75%] ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2`}>
-                    {showAvatar && !isOwn && (
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={targetProfile?.avatar_url} />
-                        <AvatarFallback className="text-xs">
-                          {targetProfile?.username?.charAt(0)?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    
-                     {message.message_type === 'text' ? (
-                       <div
-                         className={`px-3 py-2 rounded-2xl ${
-                           isOwn
-                             ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
-                             : 'bg-muted rounded-bl-md'
-                         } shadow-sm`}
-                       >
-                         <p className="text-xs leading-relaxed">{message.content}</p>
-                         <p className={`text-[10px] mt-1 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
-                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </p>
-                       </div>
-                     ) : message.message_type === 'image' ? (
-                       <div className="space-y-1">
-                         <img
-                           src={message.media_url}
-                           alt="Shared image"
-                           className="rounded-2xl max-w-full h-auto max-h-80 object-cover"
-                         />
-                         <p className={`text-xs opacity-60 px-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </p>
-                       </div>
-                     ) : message.message_type === 'video' ? (
-                       <div className="space-y-1">
-                         <video
-                           src={message.media_url}
-                           controls
-                           className="rounded-2xl max-w-full h-auto max-h-80"
-                         />
-                         <p className={`text-xs opacity-60 px-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </p>
-                       </div>
-                     ) : message.message_type === 'audio' ? (
-                       <div
-                         className={`px-4 py-3 rounded-2xl ${
-                           isOwn
-                             ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
-                             : 'bg-muted rounded-bl-md'
-                         } shadow-sm space-y-2`}
-                       >
-                         <audio
-                           src={message.media_url}
-                           controls
-                           className="w-full"
-                         />
-                         <p className="text-xs opacity-75">{message.content}</p>
-                         <p className={`text-xs opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
-                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </p>
-                       </div>
-                     ) : message.message_type === 'file' ? (
-                       <div
-                         className={`px-4 py-3 rounded-2xl ${
-                           isOwn
-                             ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-br-md'
-                             : 'bg-muted rounded-bl-md'
-                         } shadow-sm`}
-                       >
-                         <div className="flex items-center space-x-2">
-                           <Paperclip className="h-4 w-4" />
-                           <a 
-                             href={message.media_url} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="text-sm hover:underline"
-                           >
-                             {message.content}
-                           </a>
-                         </div>
-                         <p className={`text-xs mt-2 opacity-60 ${isOwn ? 'text-right' : 'text-left'}`}>
-                           {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </p>
-                       </div>
-                     ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      <div className="flex-1 p-4 overflow-y-auto bg-background">
+        <div className="space-y-2">
+          {messages.map((message, index) => {
+            const isOwn = message.sender_id === user?.id;
+            const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
+            
+            return (
+              <ModernMessageBubble
+                key={message.id}
+                message={message}
+                isOwn={isOwn}
+                showAvatar={showAvatar}
+                senderAvatar={targetProfile?.avatar_url || targetAvatarUrl}
+                senderName={targetProfile?.username || targetUsername}
+              />
+            );
+          })}
+        </div>
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-card/80 backdrop-blur-lg border-t border-border/50">
-        <div className="flex items-end space-x-3">
+      <div className="p-3 bg-background border-t">
+        <div className="flex items-center gap-2">
           <input
             type="file"
             ref={fileInputRef}
@@ -529,75 +441,35 @@ export function ModernChatInterface({
             className="hidden"
           />
           
-          <div className="flex space-x-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => fileInputRef.current?.click()}
-              className="rounded-full hover:bg-muted/50 h-10 w-10"
-            >
-              <Paperclip className="h-5 w-5" />
-            </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-green-600 hover:text-green-700 hover:bg-green-50"
+          >
+            <Smile className="h-5 w-5" />
+          </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full hover:bg-muted/50 h-10 w-10"
-            >
-              <Image className="h-5 w-5" />
-            </Button>
-          </div>
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message here"
+            className="flex-1 rounded-full bg-gray-100 border-0 text-sm px-4 focus-visible:ring-0"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(newMessage);
+              }
+            }}
+          />
 
-          <div className="flex-1 relative">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="pr-12 rounded-full bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary/50"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(newMessage);
-                }
-              }}
-            />
-            <EmojiPicker
-              onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
-            />
-          </div>
-
-          <div className="flex space-x-1">
-            {newMessage.trim() ? (
-              <Button
-                onClick={() => handleSendMessage(newMessage)}
-                disabled={isSending}
-                size="icon"
-                className="rounded-full h-10 w-10 bg-primary hover:bg-primary/90"
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="rounded-full h-10 w-10 hover:bg-muted/50"
-              >
-                <Smile className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
-
-          {showEmojiPicker && (
-            <div className="absolute bottom-16 right-4">
-              <EmojiPicker 
-                onEmojiSelect={(emoji) => {
-                  setNewMessage(prev => prev + emoji);
-                  setShowEmojiPicker(false);
-                }}
-              />
-            </div>
-          )}
+          <Button
+            onClick={() => handleSendMessage(newMessage)}
+            disabled={isSending || !newMessage.trim()}
+            size="icon"
+            className="h-9 w-9 rounded-full bg-transparent hover:bg-transparent text-blue-600 disabled:opacity-50"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </div>
