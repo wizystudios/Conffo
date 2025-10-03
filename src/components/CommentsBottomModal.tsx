@@ -243,54 +243,64 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
             </div>
           ) : (
             comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <Avatar className="h-8 w-8 flex-shrink-0">
+              <div key={comment.id} className="flex gap-2 items-start">
+                <Avatar className="h-9 w-9 flex-shrink-0">
                   <AvatarImage
                     src={comment.profiles.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${comment.profiles.id}`}
                     alt={comment.profiles.username}
                   />
-                  <AvatarFallback>
+                  <AvatarFallback className="text-xs">
                     {comment.profiles.username?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{comment.profiles.username}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="bg-muted/40 rounded-2xl rounded-tl-sm px-3 py-2">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="font-semibold text-sm">{comment.profiles.username}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed">{comment.content}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mt-1 px-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleLikeComment(comment.id, comment.user_liked)}
+                      className="h-auto p-0 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      {comment.user_liked ? (
+                        <Heart className="h-3 w-3 mr-1 fill-red-500 text-red-500" />
+                      ) : (
+                        <Heart className="h-3 w-3 mr-1" />
+                      )}
+                      {comment.likes_count > 0 && comment.likes_count}
+                    </Button>
+                    
+                    <button className="text-xs font-medium text-muted-foreground hover:text-foreground">
+                      Reply
+                    </button>
+                    
                     {user?.id === comment.profiles.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <MoreVertical className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-auto p-0 ml-auto">
+                            <MoreVertical className="h-3 w-3 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="text-destructive"
+                            className="text-destructive text-xs"
                           >
-                            Delete comment
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
-                  </div>
-                  
-                  <p className="text-sm">{comment.content}</p>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLikeComment(comment.id, comment.user_liked)}
-                      className="h-6 px-2 text-xs"
-                    >
-                      <Heart className={`h-3 w-3 mr-1 ${comment.user_liked ? 'fill-current text-red-500' : ''}`} />
-                      {comment.likes_count || 0}
-                    </Button>
                   </div>
                 </div>
               </div>

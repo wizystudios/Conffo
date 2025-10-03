@@ -3,14 +3,13 @@ import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, MessageCircle, Phone, Video } from 'lucide-react';
+import { Search, MessageCircle, Menu } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { Badge } from '@/components/ui/badge';
+import { ModernChatList } from '@/components/ModernChatList';
 
 export default function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,88 +52,68 @@ export default function ChatListPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
+      <div className="max-w-2xl mx-auto h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm">
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-bold">Contacts</h1>
+          <Button variant="ghost" size="icon">
+            <Search className="h-5 w-5" />
+          </Button>
+        </div>
+
         {/* Search */}
-        <div className="space-y-4">
-          
+        <div className="p-4 border-b">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search conversations..."
-              className="pl-10"
+              placeholder="Search..."
+              className="pl-10 rounded-full bg-muted border-0"
             />
           </div>
         </div>
 
         {/* Chat List */}
-        <div className="space-y-2">
+        <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="space-y-4 p-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="p-4 animate-pulse">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 bg-muted rounded-full"></div>
+            <div className="space-y-1 p-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="p-3 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-14 bg-muted rounded-full"></div>
                     <div className="flex-1">
-                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                      <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-2/3"></div>
                     </div>
                   </div>
-                </Card>
+                </div>
               ))}
             </div>
           ) : filteredUsers.length > 0 ? (
-            filteredUsers.map((followedUser) => {
-              return (
-                <Link key={followedUser.id} to={`/chat/${followedUser.id}`}>
-                  <Card className="p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={followedUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${followedUser.id}`} />
-                          <AvatarFallback>
-                            {followedUser.username?.charAt(0)?.toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background"></div>
-                      </div>
-                      
-                       <div className="flex-1 min-w-0">
-                         <div className="flex items-center justify-between">
-                           <h3 className="font-semibold truncate">{followedUser.username || 'Unknown User'}</h3>
-                           {unreadCounts[followedUser.id] && (
-                             <Badge variant="destructive" className="ml-2">
-                               {unreadCounts[followedUser.id]}
-                             </Badge>
-                           )}
-                         </div>
-                         <p className="text-sm text-muted-foreground">
-                           {unreadCounts[followedUser.id] ? `${unreadCounts[followedUser.id]} new message${unreadCounts[followedUser.id] > 1 ? 's' : ''}` : 'Start a conversation'}
-                         </p>
-                       </div>
-                      
-                      <div className="flex space-x-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })
+            <ModernChatList 
+              users={filteredUsers.map(u => ({
+                ...u,
+                unreadCount: unreadCounts[u.id],
+                isOnline: true
+              }))}
+            />
           ) : (
-            <Card className="p-8">
+            <div className="flex items-center justify-center h-full p-8">
               <div className="text-center text-muted-foreground">
-                <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No people to chat with</p>
-                <p className="text-sm mt-1">Follow people to start chatting with them</p>
-                <Link to="/browse" className="text-primary text-sm hover:underline mt-2 block">
-                  Browse and follow people to chat
+                <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                <p className="font-medium mb-1">No conversations yet</p>
+                <p className="text-sm">Follow people to start chatting</p>
+                <Link to="/browse">
+                  <Button variant="outline" size="sm" className="mt-4">
+                    Browse People
+                  </Button>
                 </Link>
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>

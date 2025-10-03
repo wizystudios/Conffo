@@ -2,17 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Image, Video, Mic, Phone, VideoIcon, MoreVertical, ArrowLeft, Paperclip, Smile, Settings } from 'lucide-react';
+import { Send, Image, Paperclip, Smile, Phone, VideoIcon, MoreVertical, ArrowLeft } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { sendMessage, uploadChatMedia, Message } from '@/services/chatService';
+import { sendMessage, uploadChatMedia } from '@/services/chatService';
 import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { MessageSettings } from '@/components/MessageSettings';
+import { ModernMessageBubble } from '@/components/ModernMessageBubble';
 import { EmojiPicker } from '@/components/EmojiPicker';
 
 
@@ -52,7 +51,7 @@ export function ModernChatInterface({
   const [recordingTime, setRecordingTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -397,10 +396,6 @@ export function ModernChatInterface({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => setShowSettings(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Message Settings
-              </DropdownMenuItem>
               <DropdownMenuItem>View Profile</DropdownMenuItem>
               <DropdownMenuItem>Mute Notifications</DropdownMenuItem>
               <DropdownMenuItem>Block User</DropdownMenuItem>
@@ -585,27 +580,26 @@ export function ModernChatInterface({
               <Button
                 variant="ghost"
                 size="icon"
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-                onMouseLeave={stopRecording}
-                className={`rounded-full h-10 w-10 ${isRecording ? 'bg-red-500 text-white hover:bg-red-600' : 'hover:bg-muted/50'}`}
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="rounded-full h-10 w-10 hover:bg-muted/50"
               >
-                <Mic className="h-5 w-5" />
+                <Smile className="h-5 w-5" />
               </Button>
             )}
           </div>
 
-          {isRecording && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-mono">
-              {Math.floor(recordingTime)}s / 60s
+          {showEmojiPicker && (
+            <div className="absolute bottom-16 right-4">
+              <EmojiPicker 
+                onEmojiSelect={(emoji) => {
+                  setNewMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                }}
+              />
             </div>
           )}
         </div>
       </div>
-
-      {showSettings && (
-        <MessageSettings onClose={() => setShowSettings(false)} />
-        )}
-      </div>
+    </div>
   );
 }
