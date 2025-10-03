@@ -122,17 +122,6 @@ export default function HomePage() {
               </Button>
             </div>
             
-            <div className="flex items-center space-x-2">
-              {isAuthenticated && (
-                <Button 
-                  onClick={() => setShowConfessionForm(!showConfessionForm)} 
-                  size="sm" 
-                  className="rounded-full shadow-md hover:shadow-lg transition-all"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
           </div>
         </div>
 

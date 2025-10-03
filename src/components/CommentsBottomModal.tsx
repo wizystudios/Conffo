@@ -173,64 +173,68 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
 
   return (
     <BottomSlideModal isOpen={isOpen} onClose={onClose} title="">
-      <div className="flex flex-col h-[75vh]">
-        {/* Minimized Confession at Top */}
-        <Card className="mx-4 mt-2 mb-4 shadow-sm">
-          <CardContent className="p-3">
-            <div className="flex justify-between items-center mb-2">
-              <UsernameDisplay userId={confession.userId} size="sm" />
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
-              </span>
+      <div className="flex flex-col h-full">
+        {/* Header with comment count */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h2 className="font-semibold text-base">{comments.length} comments</h2>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            ✕
+          </Button>
+        </div>
+
+        {/* Post Preview - Media First, Then Text */}
+        <div className="px-4 py-3 border-b bg-muted/20">
+          {confession.mediaUrl && (
+            <div className="rounded-lg overflow-hidden mb-2">
+              {confession.mediaType === 'image' ? (
+                <img 
+                  src={confession.mediaUrl} 
+                  alt="Post media" 
+                  className="w-full max-h-64 object-cover"
+                />
+              ) : confession.mediaType === 'video' ? (
+                <video 
+                  src={confession.mediaUrl} 
+                  className="w-full max-h-64 object-cover"
+                  controls
+                  playsInline
+                />
+              ) : confession.mediaType === 'audio' ? (
+                <audio 
+                  src={confession.mediaUrl} 
+                  controls
+                  className="w-full"
+                />
+              ) : null}
             </div>
-            
-            {confession.mediaUrl && (
-              <div className="rounded-lg overflow-hidden mb-2 border">
-                {confession.mediaType === 'image' ? (
-                  <img 
-                    src={confession.mediaUrl} 
-                    alt="Confession media" 
-                    className="w-full h-32 object-cover"
-                  />
-                ) : confession.mediaType === 'video' ? (
-                  <video 
-                    src={confession.mediaUrl} 
-                    className="w-full h-32 object-cover"
-                    controls
-                    playsInline
-                  />
-                ) : confession.mediaType === 'audio' ? (
-                  <audio 
-                    src={confession.mediaUrl} 
-                    controls
-                    className="w-full"
-                  />
-                ) : null}
-              </div>
-            )}
-            
-            {confession.content && (
-              <div className="text-sm line-clamp-2 mb-2">
-                {confession.content}
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between text-xs">
-              <RoomBadge room={confession.room} />
-              <div className="flex gap-3 text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Heart className="h-3 w-3" /> {totalLikes}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageCircle className="h-3 w-3" /> {comments?.length || 0}
+          )}
+          
+          <div className="flex items-start gap-2">
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage
+                src={`https://api.dicebear.com/7.x/micah/svg?seed=${confession.userId}`}
+                alt="User"
+              />
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <UsernameDisplay userId={confession.userId} size="sm" />
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(confession.timestamp, { addSuffix: true })}
                 </span>
               </div>
+              {confession.content && (
+                <p className="text-sm text-foreground line-clamp-2">
+                  {confession.content}
+                </p>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Comments List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
           {comments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -294,10 +298,10 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
           )}
         </div>
 
-        {/* Comment Input */}
+        {/* Comment Input - Fixed at Bottom */}
         {user && (
-          <div className="border-t p-4">
-            <form onSubmit={handleSubmitComment} className="flex gap-2">
+          <div className="border-t bg-background px-4 py-3">
+            <form onSubmit={handleSubmitComment} className="flex items-center gap-2">
               <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarImage
                   src={user.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`}
@@ -307,21 +311,21 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
                   {(user.username || 'U').charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 flex gap-2">
-                <Input
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  type="submit" 
-                  size="sm" 
-                  disabled={!newComment.trim() || isSubmitting}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+              <Input
+                placeholder="Add comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 rounded-full bg-muted border-0"
+              />
+              <Button 
+                type="submit" 
+                size="icon"
+                variant="ghost"
+                disabled={!newComment.trim() || isSubmitting}
+                className="flex-shrink-0"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
             </form>
           </div>
         )}
