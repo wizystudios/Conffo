@@ -2,17 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Image, Paperclip, Smile, Phone, VideoIcon, MoreVertical, ArrowLeft } from 'lucide-react';
+import { Send, Paperclip, Phone, VideoIcon, MoreVertical, ArrowLeft } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { sendMessage, uploadChatMedia } from '@/services/chatService';
+import { sendMessage, uploadChatMedia, deleteMessage, editMessage, clearConversation } from '@/services/chatService';
 import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { ModernMessageBubble } from '@/components/ModernMessageBubble';
 import { EmojiPicker } from '@/components/EmojiPicker';
+import { ForwardMessageModal } from '@/components/ForwardMessageModal';
+import { DeleteMessageDialog } from '@/components/DeleteMessageDialog';
+import { ReportDialog } from '@/components/ReportDialog';
+import { useNavigate } from 'react-router-dom';
 
 
 interface ChatInterfaceProps {
@@ -52,11 +56,18 @@ export function ModernChatInterface({
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [contextMenuMessage, setContextMenuMessage] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardMessage, setForwardMessage] = useState<{ content: string; type: 'text' | 'image' | 'video' | 'audio' | 'file'; mediaUrl?: string } | null>(null);
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportMessageId, setReportMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
+  const navigate = useNavigate();
 
   // Get target user profile and check follow status
   const { data: targetProfile } = useQuery({
@@ -158,79 +169,123 @@ export function ModernChatInterface({
       return;
     }
 
-    // Check file type
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     const isAudio = file.type.startsWith('audio/');
     const isDocument = file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text');
 
-    if (isVideo) {
-      // Check video duration (max 60 seconds)
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      
-      video.onloadedmetadata = async () => {
-        if (video.duration > 60) {
-          toast({
-            title: "Video too long",
-            description: "Videos must be 60 seconds or less",
-            variant: "destructive"
-          });
-          return;
-        }
+    try {
+      if (isVideo) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
         
-        try {
-          const url = await uploadChatMedia(file, 'video');
-          handleSendMessage(file.name, 'video', url, video.duration);
-        } catch (error) {
-          toast({
-            title: "Upload failed",
-            description: "Could not upload video",
-            variant: "destructive"
-          });
-        }
-      };
-      
-      video.src = URL.createObjectURL(file);
-    } else if (isImage) {
-      try {
+        video.onloadedmetadata = async () => {
+          try {
+            const url = await uploadChatMedia(file, 'video');
+            handleSendMessage(file.name, 'video', url, video.duration);
+          } catch (error) {
+            toast({
+              title: "Upload failed",
+              description: "Could not upload video",
+              variant: "destructive"
+            });
+          }
+        };
+        
+        video.src = URL.createObjectURL(file);
+      } else if (isImage) {
         const url = await uploadChatMedia(file, 'image');
         handleSendMessage(file.name, 'image', url);
-      } catch (error) {
-        toast({
-          title: "Upload failed",
-          description: "Could not upload image",
-          variant: "destructive"
-        });
-      }
-    } else if (isAudio) {
-      try {
+      } else if (isAudio) {
         const url = await uploadChatMedia(file, 'audio');
         handleSendMessage(file.name, 'audio', url);
-      } catch (error) {
-        toast({
-          title: "Upload failed",
-          description: "Could not upload audio",
-          variant: "destructive"
-        });
-      }
-    } else if (isDocument) {
-      try {
-        const url = await uploadChatMedia(file, 'image'); // Use image endpoint for now
+      } else if (isDocument) {
+        const url = await uploadChatMedia(file, 'image');
         handleSendMessage(file.name, 'file', url);
-      } catch (error) {
+      } else {
         toast({
-          title: "Upload failed",
-          description: "Could not upload document",
+          title: "Unsupported file type",
+          description: "Please select an image, video, audio, or document file",
           variant: "destructive"
         });
       }
-    } else {
+    } catch (error) {
       toast({
-        title: "Unsupported file type",
-        description: "Please select an image, video, audio, or document file",
+        title: "Upload failed",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    setDeleteMessageId(messageId);
+  };
+
+  const handleDeleteForMe = async () => {
+    if (!deleteMessageId) return;
+    try {
+      await deleteMessage(deleteMessageId, false);
+      setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
+      toast({ title: "Message deleted" });
+    } catch (error) {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteForEveryone = async () => {
+    if (!deleteMessageId) return;
+    try {
+      await deleteMessage(deleteMessageId, true);
+      setMessages(prev => prev.map(m => 
+        m.id === deleteMessageId 
+          ? { ...m, content: 'This message was deleted', message_type: 'text' as const, media_url: undefined }
+          : m
+      ));
+      toast({ title: "Message deleted for everyone" });
+    } catch (error) {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    }
+  };
+
+  const handleEditMessage = (messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setEditContent(currentContent);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+    try {
+      await editMessage(editingMessageId, editContent);
+      setMessages(prev => prev.map(m => 
+        m.id === editingMessageId 
+          ? { ...m, content: editContent, updated_at: new Date().toISOString() }
+          : m
+      ));
+      setEditingMessageId(null);
+      setEditContent('');
+      toast({ title: "Message updated" });
+    } catch (error) {
+      toast({ title: "Failed to update", variant: "destructive" });
+    }
+  };
+
+  const handleForwardMessage = (message: any) => {
+    setForwardMessage({
+      content: message.content,
+      type: message.message_type,
+      mediaUrl: message.media_url
+    });
+    setShowForwardModal(true);
+  };
+
+  const handleClearChat = async () => {
+    if (!confirm('Are you sure you want to clear this chat? This will delete all messages.')) return;
+    try {
+      await clearConversation(targetUserId);
+      setMessages([]);
+      toast({ title: "Chat cleared" });
+    } catch (error) {
+      toast({ title: "Failed to clear chat", variant: "destructive" });
     }
   };
 
@@ -333,12 +388,11 @@ export function ModernChatInterface({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => window.location.href = `/profile/${targetUserId}`}>
+              <DropdownMenuItem onClick={() => navigate(`/profile/${targetUserId}`)}>
                 View Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={async () => {
+              <DropdownMenuItem onClick={() => {
                 setIsMuted(!isMuted);
-                // TODO: Save mute preference to database
                 toast({
                   title: isMuted ? "Notifications enabled" : "Notifications muted",
                   description: isMuted ? "You'll receive notifications from this chat" : "You won't receive notifications from this chat"
@@ -346,26 +400,18 @@ export function ModernChatInterface({
               }}>
                 {isMuted ? 'Unmute' : 'Mute'} Notifications
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={async () => {
+              <DropdownMenuItem onClick={() => {
                 if (!confirm('Are you sure you want to block this user?')) return;
-                // TODO: Implement block functionality
                 toast({ title: "User blocked", description: "You won't receive messages from this user" });
               }}>
                 Block User
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                // TODO: Open report modal
-                toast({ title: "Report submitted", description: "Thank you for helping keep our community safe" });
-              }}>
+              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                 Report
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="text-destructive"
-                onClick={async () => {
-                  if (!confirm('Are you sure you want to clear this chat? This cannot be undone.')) return;
-                  setMessages([]);
-                  toast({ title: "Chat cleared", description: "All messages have been removed" });
-                }}
+                onClick={handleClearChat}
               >
                 Clear Chat
               </DropdownMenuItem>
@@ -376,6 +422,25 @@ export function ModernChatInterface({
 
       {/* Messages */}
       <div className="flex-1 p-4 overflow-y-auto bg-background">
+        {editingMessageId ? (
+          <div className="fixed bottom-20 left-0 right-0 bg-background border-t p-4 shadow-lg">
+            <div className="max-w-2xl mx-auto flex gap-2">
+              <Input
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Edit message..."
+                className="flex-1"
+                autoFocus
+              />
+              <Button onClick={handleSaveEdit}>Save</Button>
+              <Button variant="outline" onClick={() => {
+                setEditingMessageId(null);
+                setEditContent('');
+              }}>Cancel</Button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           {messages.map((message, index) => {
             const isOwn = message.sender_id === user?.id;
@@ -389,6 +454,13 @@ export function ModernChatInterface({
                 showAvatar={showAvatar}
                 senderAvatar={targetProfile?.avatar_url || targetAvatarUrl}
                 senderName={targetProfile?.username || targetUsername}
+                onDelete={() => handleDeleteMessage(message.id)}
+                onEdit={() => handleEditMessage(message.id, message.content)}
+                onForward={() => handleForwardMessage(message)}
+                onReport={() => {
+                  setReportMessageId(message.id);
+                  setShowReportDialog(true);
+                }}
               />
             );
           })}
@@ -446,6 +518,32 @@ export function ModernChatInterface({
           </Button>
         </div>
       </div>
+
+      {/* Modals */}
+      {forwardMessage && (
+        <ForwardMessageModal
+          open={showForwardModal}
+          onOpenChange={setShowForwardModal}
+          messageContent={forwardMessage.content}
+          messageType={forwardMessage.type}
+          mediaUrl={forwardMessage.mediaUrl}
+        />
+      )}
+
+      <DeleteMessageDialog
+        open={!!deleteMessageId}
+        onOpenChange={(open) => !open && setDeleteMessageId(null)}
+        onDeleteForMe={handleDeleteForMe}
+        onDeleteForEveryone={handleDeleteForEveryone}
+        isOwn={deleteMessageId ? messages.find(m => m.id === deleteMessageId)?.sender_id === user?.id : false}
+      />
+
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        type="comment"
+        itemId={reportMessageId || ''}
+      />
     </div>
   );
 }

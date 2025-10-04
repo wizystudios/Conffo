@@ -371,7 +371,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       </div>
       
       {confession.mediaUrl && (
-        <div className="w-full bg-black aspect-square">
+        <div className="w-full bg-background aspect-square flex items-center justify-center">
           {confession.mediaType === 'image' ? (
             <img 
               src={confession.mediaUrl} 

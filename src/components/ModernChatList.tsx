@@ -53,7 +53,11 @@ export function ModernChatList({ users }: ModernChatListProps) {
               </div>
               
               <p className="text-xs text-gray-500 truncate">
-                {user.lastMessage || 'No messages yet'}
+                {user.lastMessage 
+                  ? user.lastMessage.length > 40 
+                    ? `${user.lastMessage.slice(0, 40)}...`
+                    : user.lastMessage
+                  : 'No messages yet'}
               </p>
             </div>
 

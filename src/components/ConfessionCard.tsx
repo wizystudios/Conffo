@@ -158,7 +158,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
           </div>
           
           {confession.mediaUrl && (
-            <div className="rounded-md overflow-hidden mb-3 border aspect-square bg-black">
+            <div className="rounded-md overflow-hidden mb-3 border aspect-square bg-background flex items-center justify-center">
               {confession.mediaType === 'image' ? (
                 <img 
                   src={confession.mediaUrl} 

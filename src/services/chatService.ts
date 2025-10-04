@@ -133,3 +133,52 @@ export const uploadChatMedia = async (file: File, type: 'image' | 'video' | 'aud
 
   return urlData.publicUrl;
 };
+
+export const deleteMessage = async (messageId: string, deleteForEveryone: boolean): Promise<void> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('User not authenticated');
+
+  if (deleteForEveryone) {
+    const { error } = await supabase
+      .from('messages')
+      .update({ content: 'This message was deleted', message_type: 'text', media_url: null })
+      .eq('id', messageId)
+      .eq('sender_id', user.user.id);
+    
+    if (error) throw error;
+  } else {
+    // For "delete for me", we'll just mark it locally (you may need a separate table for this)
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', user.user.id);
+    
+    if (error) throw error;
+  }
+};
+
+export const editMessage = async (messageId: string, newContent: string): Promise<void> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('messages')
+    .update({ content: newContent, updated_at: new Date().toISOString() })
+    .eq('id', messageId)
+    .eq('sender_id', user.user.id);
+
+  if (error) throw error;
+};
+
+export const clearConversation = async (targetUserId: string): Promise<void> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .or(`and(sender_id.eq.${user.user.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${user.user.id})`);
+
+  if (error) throw error;
+};

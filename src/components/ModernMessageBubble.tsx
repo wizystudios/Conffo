@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
 import { MessageContextMenu } from '@/components/MessageContextMenu';
+import { FileText } from 'lucide-react';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -8,6 +9,10 @@ interface ModernMessageBubbleProps {
   showAvatar: boolean;
   senderAvatar?: string;
   senderName?: string;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  onForward?: () => void;
+  onReport?: () => void;
 }
 
 export function ModernMessageBubble({ 
@@ -15,7 +20,11 @@ export function ModernMessageBubble({
   isOwn, 
   showAvatar,
   senderAvatar,
-  senderName 
+  senderName,
+  onDelete,
+  onEdit,
+  onForward,
+  onReport
 }: ModernMessageBubbleProps) {
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString([], { 
@@ -27,7 +36,14 @@ export function ModernMessageBubble({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 group`}>
-      <MessageContextMenu message={message} isOwn={isOwn}>
+      <MessageContextMenu 
+        message={message} 
+        isOwn={isOwn}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        onForward={onForward}
+        onReport={onReport}
+      >
         <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-1 max-w-[70%] cursor-pointer`}>
         {showAvatar && !isOwn ? (
           <Avatar className="h-7 w-7 flex-shrink-0">
@@ -52,20 +68,20 @@ export function ModernMessageBubble({
               <p className="text-sm leading-relaxed break-words">{message.content}</p>
             </div>
           ) : message.message_type === 'image' ? (
-            <div className="rounded-2xl overflow-hidden">
+            <div className="rounded-2xl overflow-hidden aspect-square max-w-[250px]">
               <img
                 src={message.media_url}
                 alt="Shared"
-                className="max-w-full h-auto max-h-80 object-cover"
+                className="w-full h-full object-contain bg-muted"
               />
             </div>
           ) : message.message_type === 'video' ? (
-            <div className="rounded-2xl overflow-hidden">
+            <div className="rounded-2xl overflow-hidden aspect-square max-w-[250px]">
               <video
                 src={message.media_url}
                 controls
                 playsInline
-                className="max-w-full h-auto max-h-80"
+                className="w-full h-full object-contain bg-muted"
               />
             </div>
           ) : message.message_type === 'audio' ? (
@@ -74,10 +90,23 @@ export function ModernMessageBubble({
             }`}>
               <audio src={message.media_url} controls className="max-w-full" />
             </div>
+          ) : message.message_type === 'file' ? (
+            <a 
+              href={message.media_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl ${
+                isOwn ? 'bg-[#007AFF] text-white' : 'bg-[#E5E5EA] text-gray-900'
+              }`}
+            >
+              <FileText className="h-5 w-5" />
+              <span className="text-sm">{message.content}</span>
+            </a>
           ) : null}
           
           <span className={`text-[10px] text-muted-foreground ${isOwn ? 'text-right pr-1' : 'text-left pl-1'}`}>
             {formatTime(message.created_at)}
+            {message.updated_at !== message.created_at && ' (edited)'}
           </span>
         </div>
         </div>

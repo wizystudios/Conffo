@@ -41,7 +41,43 @@ export default function ChatListPage() {
         .in('id', followingIds);
 
       if (profilesError) throw profilesError;
-      return profiles || [];
+
+      // Get last messages for each user
+      const usersWithMessages = await Promise.all(
+        (profiles || []).map(async (profile) => {
+          const { data: messages } = await supabase
+            .from('messages')
+            .select('content, message_type, created_at')
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${profile.id}),and(sender_id.eq.${profile.id},receiver_id.eq.${user.id})`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          const lastMsg = messages?.[0];
+          let lastMessage = '';
+          
+          if (lastMsg) {
+            if (lastMsg.message_type === 'text') {
+              lastMessage = lastMsg.content;
+            } else if (lastMsg.message_type === 'image') {
+              lastMessage = '📷 Photo';
+            } else if (lastMsg.message_type === 'video') {
+              lastMessage = '🎥 Video';
+            } else if (lastMsg.message_type === 'audio') {
+              lastMessage = '🎵 Audio';
+            } else if (lastMsg.message_type === 'file') {
+              lastMessage = '📄 Document';
+            }
+          }
+
+          return {
+            ...profile,
+            lastMessage,
+            lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : undefined
+          };
+        })
+      );
+
+      return usersWithMessages;
     },
     enabled: !!user,
   });
