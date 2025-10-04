@@ -53,7 +53,7 @@ export function ModernChatList({ users }: ModernChatListProps) {
               </div>
               
               <p className="text-xs text-gray-500 truncate">
-                {user.lastMessage || 'The prerequisites are endless...'}
+                {user.lastMessage || 'No messages yet'}
               </p>
             </div>
 

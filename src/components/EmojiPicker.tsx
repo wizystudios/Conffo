@@ -27,9 +27,9 @@ export function EmojiPicker({ onEmojiSelect }: EmojiPickerProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full h-8 w-8"
+          className="h-9 w-9 text-gray-600 hover:text-gray-700 hover:bg-gray-100"
         >
-          <Smile className="h-4 w-4" />
+          <Smile className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">

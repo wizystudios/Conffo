@@ -55,13 +55,7 @@ export default function ChatListPage() {
       <div className="max-w-2xl mx-auto h-screen flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm">
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-bold">Contacts</h1>
-          <Button variant="ghost" size="icon">
-            <Search className="h-5 w-5" />
-          </Button>
+          <h1 className="text-lg font-bold">Messages</h1>
         </div>
 
         {/* Search */}

@@ -158,12 +158,12 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
           </div>
           
           {confession.mediaUrl && (
-            <div className="rounded-md overflow-hidden mb-3 border">
+            <div className="rounded-md overflow-hidden mb-3 border aspect-square bg-black">
               {confession.mediaType === 'image' ? (
                 <img 
                   src={confession.mediaUrl} 
                   alt="Confession media" 
-                  className="w-full h-auto max-h-[400px] object-contain"
+                  className="w-full h-full object-contain"
                   loading="lazy"
                 />
               ) : confession.mediaType === 'video' ? (
@@ -172,7 +172,7 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
                   controls 
                   preload="metadata"
                   playsInline
-                  className="w-full h-auto max-h-[400px]"
+                  className="w-full h-full object-contain"
                 />
               ) : null}
             </div>

@@ -1,0 +1,107 @@
+import { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface MediaItem {
+  url: string;
+  type: 'image' | 'video';
+}
+
+interface MediaCarouselProps {
+  media: MediaItem[];
+  className?: string;
+}
+
+export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  if (!media || media.length === 0) return null;
+
+  if (media.length === 1) {
+    const item = media[0];
+    return (
+      <div className={`relative w-full aspect-square bg-black ${className}`}>
+        {item.type === 'image' ? (
+          <img
+            src={item.url}
+            alt="Post media"
+            className="w-full h-full object-contain"
+            loading="lazy"
+          />
+        ) : (
+          <video
+            src={item.url}
+            controls
+            playsInline
+            className="w-full h-full object-contain"
+          />
+        )}
+      </div>
+    );
+  }
+
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const scrollLeft = containerRef.current.scrollLeft;
+    const itemWidth = containerRef.current.offsetWidth;
+    const newIndex = Math.round(scrollLeft / itemWidth);
+    setCurrentIndex(newIndex);
+  };
+
+  return (
+    <div className={`relative w-full aspect-square bg-black ${className}`}>
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide flex"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        {media.map((item, index) => (
+          <div
+            key={index}
+            className="w-full h-full flex-shrink-0 snap-center snap-always"
+          >
+            {item.type === 'image' ? (
+              <img
+                src={item.url}
+                alt={`Media ${index + 1}`}
+                className="w-full h-full object-contain"
+                loading="lazy"
+              />
+            ) : (
+              <video
+                src={item.url}
+                controls
+                playsInline
+                className="w-full h-full object-contain"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Page indicators */}
+      {media.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+          {media.map((_, index) => (
+            <div
+              key={index}
+              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                index === currentIndex
+                  ? 'bg-white w-2'
+                  : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Optional: Count indicator */}
+      {media.length > 1 && (
+        <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium">
+          {currentIndex + 1}/{media.length}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -371,23 +371,23 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       </div>
       
       {confession.mediaUrl && (
-        <div className="w-full bg-black">
+        <div className="w-full bg-black aspect-square">
           {confession.mediaType === 'image' ? (
             <img 
               src={confession.mediaUrl} 
               alt="Post media" 
-              className="w-full max-h-[600px] object-cover"
+              className="w-full h-full object-contain"
               loading="lazy"
             />
           ) : confession.mediaType === 'video' ? (
-            <div className="relative w-full">
+            <div className="relative w-full h-full">
               <video 
                 ref={videoRef}
                 src={confession.mediaUrl} 
                 muted={isMuted}
                 loop
                 playsInline
-                className="w-full max-h-[600px] object-cover"
+                className="w-full h-full object-contain"
               />
               <Button
                 variant="secondary"

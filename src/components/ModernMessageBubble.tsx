@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
+import { MessageContextMenu } from '@/components/MessageContextMenu';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -25,8 +26,9 @@ export function ModernMessageBubble({
   };
 
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}>
-      <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-1 max-w-[70%]`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 group`}>
+      <MessageContextMenu message={message} isOwn={isOwn}>
+        <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-1 max-w-[70%] cursor-pointer`}>
         {showAvatar && !isOwn ? (
           <Avatar className="h-7 w-7 flex-shrink-0">
             <AvatarImage src={senderAvatar} />
@@ -78,7 +80,8 @@ export function ModernMessageBubble({
             {formatTime(message.created_at)}
           </span>
         </div>
-      </div>
+        </div>
+      </MessageContextMenu>
     </div>
   );
 }

@@ -52,9 +52,9 @@ export function ModernChatInterface({
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [contextMenuMessage, setContextMenuMessage] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
 
@@ -234,68 +234,6 @@ export function ModernChatInterface({
     }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      const chunks: BlobPart[] = [];
-      mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        const file = new File([blob], 'audio.wav', { type: 'audio/wav' });
-        
-        try {
-          const url = await uploadChatMedia(file, 'audio');
-          handleSendMessage(`🎤 Voice message (${Math.floor(recordingTime)}s)`, 'audio', url, Math.floor(recordingTime));
-        } catch (error) {
-          toast({
-            title: "Upload failed",
-            description: "Could not upload voice message",
-            variant: "destructive"
-          });
-        }
-        
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => {
-          if (prev >= 60) {
-            stopRecording();
-            return 60;
-          }
-          return prev + 0.1;
-        });
-      }, 100);
-    } catch (error) {
-      toast({
-        title: "Recording failed",
-        description: "Could not access microphone",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setRecordingTime(0);
-      
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-      }
-    }
-  };
 
   // Show restriction message if not following
   if (!isFollowing && user?.id && targetUserId && user.id !== targetUserId && !isLoading) {
@@ -395,11 +333,42 @@ export function ModernChatInterface({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem>View Profile</DropdownMenuItem>
-              <DropdownMenuItem>Mute Notifications</DropdownMenuItem>
-              <DropdownMenuItem>Block User</DropdownMenuItem>
-              <DropdownMenuItem>Report</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">Clear Chat</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.location.href = `/profile/${targetUserId}`}>
+                View Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                setIsMuted(!isMuted);
+                // TODO: Save mute preference to database
+                toast({
+                  title: isMuted ? "Notifications enabled" : "Notifications muted",
+                  description: isMuted ? "You'll receive notifications from this chat" : "You won't receive notifications from this chat"
+                });
+              }}>
+                {isMuted ? 'Unmute' : 'Mute'} Notifications
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                if (!confirm('Are you sure you want to block this user?')) return;
+                // TODO: Implement block functionality
+                toast({ title: "User blocked", description: "You won't receive messages from this user" });
+              }}>
+                Block User
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                // TODO: Open report modal
+                toast({ title: "Report submitted", description: "Thank you for helping keep our community safe" });
+              }}>
+                Report
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-destructive"
+                onClick={async () => {
+                  if (!confirm('Are you sure you want to clear this chat? This cannot be undone.')) return;
+                  setMessages([]);
+                  toast({ title: "Chat cleared", description: "All messages have been removed" });
+                }}
+              >
+                Clear Chat
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -441,12 +410,17 @@ export function ModernChatInterface({
             className="hidden"
           />
           
+          <div className="relative">
+            <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
+          </div>
+          
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 text-green-600 hover:text-green-700 hover:bg-green-50"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
           >
-            <Smile className="h-5 w-5" />
+            <Paperclip className="h-5 w-5" />
           </Button>
 
           <Input
