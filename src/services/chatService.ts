@@ -141,18 +141,17 @@ export const deleteMessage = async (messageId: string, deleteForEveryone: boolea
   if (deleteForEveryone) {
     const { error } = await supabase
       .from('messages')
-      .update({ content: 'This message was deleted', message_type: 'text', media_url: null })
+      .delete()
       .eq('id', messageId)
       .eq('sender_id', user.user.id);
     
     if (error) throw error;
   } else {
-    // For "delete for me", we'll just mark it locally (you may need a separate table for this)
+    // For "delete for me", delete the message entirely
     const { error } = await supabase
       .from('messages')
       .delete()
-      .eq('id', messageId)
-      .eq('sender_id', user.user.id);
+      .eq('id', messageId);
     
     if (error) throw error;
   }

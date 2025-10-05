@@ -313,7 +313,7 @@ export function EnhancedCommentModal({
   return (
     <div className="fixed inset-0 z-50 bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border rounded-b-3xl">
         <div className="flex items-center justify-between px-4 py-3">
           <Button
             variant="ghost"

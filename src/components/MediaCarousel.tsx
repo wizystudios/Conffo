@@ -49,7 +49,7 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
   };
 
   return (
-    <div className={`relative w-full aspect-square bg-background ${className}`}>
+    <div className={`relative w-full aspect-square ${className}`}>
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -88,7 +88,7 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
 
       {/* Page indicators */}
       {media.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none z-10">
           {media.map((_, index) => (
             <div
               key={index}
@@ -102,9 +102,9 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
         </div>
       )}
 
-      {/* Optional: Count indicator */}
+      {/* Count indicator */}
       {media.length > 1 && (
-        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium">
+        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium z-10">
           {currentIndex + 1}/{media.length}
         </div>
       )}

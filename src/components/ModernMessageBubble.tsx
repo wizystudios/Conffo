@@ -78,7 +78,7 @@ export function ModernMessageBubble({
               <img
                 src={message.media_url}
                 alt="Shared"
-                className="w-full h-full object-contain bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
               />
             </a>
           ) : message.message_type === 'video' ? (
@@ -88,13 +88,11 @@ export function ModernMessageBubble({
                 controls
                 playsInline
                 controlsList="download"
-                className="w-full h-full object-contain bg-muted"
+                className="w-full h-full object-contain"
               />
             </div>
           ) : message.message_type === 'audio' ? (
-            <div className={`px-4 py-2 rounded-2xl ${
-              isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
-            }`}>
+            <div className="rounded-2xl">
               <audio src={message.media_url} controls controlsList="download" className="max-w-full" />
             </div>
           ) : message.message_type === 'file' ? (
