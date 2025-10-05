@@ -62,6 +62,19 @@ export const useRealTimeChat = (targetUserId: string) => {
           ));
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `or(and(sender_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${user.id}))`
+        },
+        (payload) => {
+          const deletedMessage = payload.old as Message;
+          setMessages(prev => prev.filter(msg => msg.id !== deletedMessage.id));
+        }
+      )
       .subscribe();
 
     return () => {

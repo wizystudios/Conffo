@@ -34,6 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { CallInterface } from '@/components/CallInterface';
 import { EnhancedCommentModal } from '@/components/EnhancedCommentModal';
+import { MediaCarousel } from '@/components/MediaCarousel';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -370,7 +371,15 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {confession.mediaUrl && (
+      {/* Multiple media carousel or single media */}
+      {confession.mediaUrls && confession.mediaUrls.length > 1 ? (
+        <MediaCarousel 
+          media={confession.mediaUrls.map((url, index) => ({
+            url,
+            type: confession.mediaTypes?.[index] || 'image'
+          }))}
+        />
+      ) : confession.mediaUrl && (
         <div className="w-full bg-background aspect-square flex items-center justify-center">
           {confession.mediaType === 'image' ? (
             <img 

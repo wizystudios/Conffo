@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { MediaCarousel } from './MediaCarousel';
 
 interface ReactionButtonProps {
   icon: React.ReactNode;
@@ -157,7 +158,16 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
             {confession.content}
           </div>
           
-          {confession.mediaUrl && (
+          {/* Multiple media carousel or single media */}
+          {confession.mediaUrls && confession.mediaUrls.length > 1 ? (
+            <MediaCarousel 
+              media={confession.mediaUrls.map((url, index) => ({
+                url,
+                type: confession.mediaTypes?.[index] || 'image'
+              }))}
+              className="mb-3"
+            />
+          ) : confession.mediaUrl && (
             <div className="rounded-md overflow-hidden mb-3 border aspect-square bg-background flex items-center justify-center">
               {confession.mediaType === 'image' ? (
                 <img 

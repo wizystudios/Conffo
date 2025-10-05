@@ -39,7 +39,9 @@ export interface Confession {
   commentCount: number;
   userReactions?: Reaction[];
   mediaUrl?: string | null;
+  mediaUrls?: string[];
   mediaType?: 'image' | 'video' | 'audio';
+  mediaTypes?: ('image' | 'video' | 'audio')[];
   tags?: string[];
 }
 

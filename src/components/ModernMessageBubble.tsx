@@ -68,19 +68,26 @@ export function ModernMessageBubble({
               <p className="text-sm leading-relaxed break-words">{message.content}</p>
             </div>
           ) : message.message_type === 'image' ? (
-            <div className="rounded-2xl overflow-hidden aspect-square max-w-[250px]">
+            <a 
+              href={message.media_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              download
+              className="rounded-2xl overflow-hidden aspect-square max-w-[250px] block"
+            >
               <img
                 src={message.media_url}
                 alt="Shared"
-                className="w-full h-full object-contain bg-muted"
+                className="w-full h-full object-contain bg-muted cursor-pointer hover:opacity-90 transition-opacity"
               />
-            </div>
+            </a>
           ) : message.message_type === 'video' ? (
             <div className="rounded-2xl overflow-hidden aspect-square max-w-[250px]">
               <video
                 src={message.media_url}
                 controls
                 playsInline
+                controlsList="download"
                 className="w-full h-full object-contain bg-muted"
               />
             </div>
@@ -88,19 +95,20 @@ export function ModernMessageBubble({
             <div className={`px-4 py-2 rounded-2xl ${
               isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
             }`}>
-              <audio src={message.media_url} controls className="max-w-full" />
+              <audio src={message.media_url} controls controlsList="download" className="max-w-full" />
             </div>
           ) : message.message_type === 'file' ? (
             <a 
               href={message.media_url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className={`flex items-center gap-2 px-4 py-3 rounded-2xl ${
+              download
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl hover:opacity-90 transition-opacity ${
                 isOwn ? 'bg-[#007AFF] text-white' : 'bg-[#E5E5EA] text-gray-900'
               }`}
             >
               <FileText className="h-5 w-5" />
-              <span className="text-sm">{message.content}</span>
+              <span className="text-sm">{message.content || 'Download file'}</span>
             </a>
           ) : null}
           

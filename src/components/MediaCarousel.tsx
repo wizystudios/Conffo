@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MediaItem {
   url: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'audio';
 }
 
 interface MediaCarouselProps {
@@ -68,14 +68,20 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
                 className="w-full h-full object-contain"
                 loading="lazy"
               />
-            ) : (
+            ) : item.type === 'video' ? (
               <video
                 src={item.url}
                 controls
                 playsInline
                 className="w-full h-full object-contain"
               />
-            )}
+            ) : item.type === 'audio' ? (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 p-6">
+                <audio controls className="w-full max-w-md" src={item.url}>
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
