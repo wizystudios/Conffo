@@ -311,7 +311,7 @@ export function EnhancedCommentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border rounded-b-3xl">
         <div className="flex items-center justify-between px-4 py-3">
@@ -328,24 +328,26 @@ export function EnhancedCommentModal({
         </div>
       </div>
 
-      {/* Original Post */}
-      <div className="border-b border-border p-4">
-        <div className="flex gap-3">
-          <UsernameDisplay 
-            userId=""
-            showAvatar={true}
-            size="sm"
-            linkToProfile={false}
-            showStoryIndicator={false}
-          />
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-sm">{confessionAuthor}</span>
+      {/* Post Preview - Compact */}
+      {confessionAuthor && confessionContent && (
+        <div className="border-b border-border p-4 bg-muted/20">
+          <div className="flex gap-3">
+            <UsernameDisplay 
+              userId=""
+              showAvatar={true}
+              size="sm"
+              linkToProfile={false}
+              showStoryIndicator={false}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold text-sm">{confessionAuthor}</span>
+              </div>
+              <p className="text-sm text-muted-foreground line-clamp-2">{confessionContent}</p>
             </div>
-            <p className="text-sm">{confessionContent}</p>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Comments List */}
       <div className="flex-1 overflow-y-auto pb-20 scrollbar-hide" style={{ height: 'calc(100vh - 240px)' }}>

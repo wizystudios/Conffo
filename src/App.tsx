@@ -18,7 +18,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ConfessionPage = lazy(() => import("./pages/ConfessionPage"));
 const TrendingPage = lazy(() => import("./pages/TrendingPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
-const AuthPage = lazy(() => import("./pages/AuthPage"));
+const MultiStepAuthPage = lazy(() => import("./pages/MultiStepAuthPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const StoriesPage = lazy(() => import("./pages/StoriesPage"));
@@ -92,7 +92,7 @@ const App = () => {
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/create-post" element={<CreatePostPage />} />
                   <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />

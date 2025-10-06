@@ -174,10 +174,22 @@ export const clearConversation = async (targetUserId: string): Promise<void> => 
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('User not authenticated');
 
+  // Delete all messages in this conversation
   const { error } = await supabase
     .from('messages')
     .delete()
     .or(`and(sender_id.eq.${user.user.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${user.user.id})`);
 
   if (error) throw error;
+
+  // Also delete the conversation record
+  const { error: convError } = await supabase
+    .from('conversations')
+    .delete()
+    .or(
+      `and(participant_1_id.eq.${user.user.id},participant_2_id.eq.${targetUserId}),` +
+      `and(participant_1_id.eq.${targetUserId},participant_2_id.eq.${user.user.id})`
+    );
+
+  if (convError) console.error('Error deleting conversation:', convError);
 };
