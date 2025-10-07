@@ -35,7 +35,7 @@ export function ModernMessageBubble({
   };
 
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 group`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group`}>
       <MessageContextMenu 
         message={message} 
         isOwn={isOwn}
@@ -44,28 +44,28 @@ export function ModernMessageBubble({
         onForward={onForward}
         onReport={onReport}
       >
-        <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-1 max-w-[70%] cursor-pointer`}>
+        <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%] cursor-pointer`}>
         {showAvatar && !isOwn ? (
-          <Avatar className="h-7 w-7 flex-shrink-0">
+          <Avatar className="h-9 w-9 flex-shrink-0">
             <AvatarImage src={senderAvatar} />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="text-sm">
               {senderName?.charAt(0)?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
         ) : (
-          !isOwn && <div className="h-7 w-7 flex-shrink-0" />
+          !isOwn && <div className="h-9 w-9 flex-shrink-0" />
         )}
 
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
           {message.message_type === 'text' ? (
             <div
-              className={`px-4 py-2.5 ${
+              className={`px-4 py-3 ${
                 isOwn
                   ? 'bg-[#007AFF] text-white rounded-[20px] rounded-br-[4px]'
                   : 'bg-[#E5E5EA] text-gray-900 rounded-[20px] rounded-bl-[4px]'
               }`}
             >
-              <p className="text-sm leading-relaxed break-words">{message.content}</p>
+              <p className="text-base leading-relaxed break-words">{message.content}</p>
             </div>
           ) : message.message_type === 'image' ? (
             <a 
@@ -73,7 +73,7 @@ export function ModernMessageBubble({
               target="_blank" 
               rel="noopener noreferrer"
               download
-              className="rounded-2xl overflow-hidden aspect-square max-w-[250px] block"
+              className="rounded-2xl overflow-hidden aspect-square max-w-[280px] block"
             >
               <img
                 src={message.media_url}
@@ -82,7 +82,7 @@ export function ModernMessageBubble({
               />
             </a>
           ) : message.message_type === 'video' ? (
-            <div className="rounded-2xl overflow-hidden aspect-square max-w-[250px]">
+            <div className="rounded-2xl overflow-hidden aspect-square max-w-[280px]">
               <video
                 src={message.media_url}
                 controls
@@ -110,7 +110,7 @@ export function ModernMessageBubble({
             </a>
           ) : null}
           
-          <span className={`text-[10px] text-muted-foreground ${isOwn ? 'text-right pr-1' : 'text-left pl-1'}`}>
+          <span className={`text-xs text-muted-foreground ${isOwn ? 'text-right pr-1' : 'text-left pl-1'}`}>
             {formatTime(message.created_at)}
             {message.updated_at !== message.created_at && ' (edited)'}
           </span>

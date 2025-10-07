@@ -538,6 +538,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         confessionAuthor={confessionAuthor?.username || 'Anonymous User'}
         onCommentCountChange={setCurrentCommentCount}
         onCommentSuccess={handleCommentSuccess}
+        confessionMediaUrl={confession.mediaUrl}
+        confessionMediaType={confession.mediaType as 'image' | 'video'}
+        confessionMediaUrls={confession.mediaUrls}
+        confessionMediaTypes={confession.mediaTypes}
       />
       
       <CallInterface

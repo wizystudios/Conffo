@@ -138,23 +138,14 @@ export const deleteMessage = async (messageId: string, deleteForEveryone: boolea
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('User not authenticated');
 
-  if (deleteForEveryone) {
-    const { error } = await supabase
-      .from('messages')
-      .delete()
-      .eq('id', messageId)
-      .eq('sender_id', user.user.id);
-    
-    if (error) throw error;
-  } else {
-    // For "delete for me", delete the message entirely
-    const { error } = await supabase
-      .from('messages')
-      .delete()
-      .eq('id', messageId);
-    
-    if (error) throw error;
-  }
+  // Always delete from database - both "delete for me" and "delete for everyone" remove the message
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('id', messageId)
+    .eq('sender_id', user.user.id);
+  
+  if (error) throw error;
 };
 
 export const editMessage = async (messageId: string, newContent: string): Promise<void> => {

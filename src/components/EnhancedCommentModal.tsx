@@ -29,6 +29,10 @@ interface EnhancedCommentModalProps {
   confessionAuthor: string;
   onCommentCountChange?: (count: number) => void;
   onCommentSuccess?: () => void;
+  confessionMediaUrl?: string;
+  confessionMediaType?: 'image' | 'video';
+  confessionMediaUrls?: string[];
+  confessionMediaTypes?: ('image' | 'video' | 'audio')[];
 }
 
 export function EnhancedCommentModal({ 
@@ -38,7 +42,11 @@ export function EnhancedCommentModal({
   confessionContent, 
   confessionAuthor,
   onCommentCountChange,
-  onCommentSuccess 
+  onCommentSuccess,
+  confessionMediaUrl,
+  confessionMediaType,
+  confessionMediaUrls,
+  confessionMediaTypes
 }: EnhancedCommentModalProps) {
   const { user, isAuthenticated } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -344,6 +352,41 @@ export function EnhancedCommentModal({
                 <span className="font-semibold text-sm">{confessionAuthor}</span>
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{confessionContent}</p>
+              
+              {/* Show media if available */}
+              {confessionMediaUrls && confessionMediaUrls.length > 0 ? (
+                <div className="mt-2 rounded-lg overflow-hidden max-w-xs">
+                  {confessionMediaUrls.length > 1 ? (
+                    <div className="flex gap-1 overflow-x-auto">
+                      {confessionMediaUrls.map((url, index) => (
+                        <div key={index} className="flex-shrink-0 w-24 h-24">
+                          {confessionMediaTypes?.[index] === 'video' ? (
+                            <video src={url} className="w-full h-full object-cover rounded" />
+                          ) : (
+                            <img src={url} alt="" className="w-full h-full object-cover rounded" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="w-32 h-32">
+                      {confessionMediaTypes?.[0] === 'video' ? (
+                        <video src={confessionMediaUrls[0]} className="w-full h-full object-cover rounded" />
+                      ) : (
+                        <img src={confessionMediaUrls[0]} alt="" className="w-full h-full object-cover rounded" />
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : confessionMediaUrl && (
+                <div className="mt-2 rounded-lg overflow-hidden w-32 h-32">
+                  {confessionMediaType === 'video' ? (
+                    <video src={confessionMediaUrl} className="w-full h-full object-cover rounded" />
+                  ) : (
+                    <img src={confessionMediaUrl} alt="" className="w-full h-full object-cover rounded" />
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
