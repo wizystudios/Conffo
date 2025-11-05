@@ -97,7 +97,8 @@ export interface Comment {
   confessionId: string;
   userId: string;
   content: string;
-  timestamp: number;
+  timestamp: Date | number;
+  parentCommentId?: string;
 }
 
 export interface Report {

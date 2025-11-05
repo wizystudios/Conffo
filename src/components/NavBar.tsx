@@ -287,12 +287,55 @@ export function NavBar() {
               </Button>
             </Link>
           ) : (
-            <Link to="/auth">
-              <Button variant="default">
-                <LogIn className="h-5 w-5 mr-1" />
-                <span>Sign In</span>
-              </Button>
-            </Link>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-primary">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64 p-0">
+                <div className="flex flex-col h-full p-4 gap-4">
+                  <div className="flex items-center justify-between border-b pb-4">
+                    <h3 className="font-semibold text-sm">Welcome to Conffo</h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Link to="/" className="block">
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                        <Home className="h-4 w-4" />
+                        Home
+                      </Button>
+                    </Link>
+                    
+                    <Link to="/trending" className="block">
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Trending
+                      </Button>
+                    </Link>
+                    
+                    <Link to="/search" className="block">
+                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                        <Search className="h-4 w-4" />
+                        Search
+                      </Button>
+                    </Link>
+                  </div>
+                  
+                  <div className="mt-auto space-y-2 pt-4 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Sign in to unlock all features
+                    </p>
+                    <Link to="/auth" className="block">
+                      <Button variant="default" className="w-full" size="sm">
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign In
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           )}
           
           <Button

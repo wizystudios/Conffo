@@ -2,8 +2,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { Star, Users, MessageCircle } from 'lucide-react';
 
 interface UsernameDisplayProps {
   userId: string;
@@ -11,6 +13,7 @@ interface UsernameDisplayProps {
   size?: 'sm' | 'md' | 'lg';
   linkToProfile?: boolean;
   showStoryIndicator?: boolean;
+  showRelationshipBadge?: boolean;
 }
 
 export function UsernameDisplay({ 
@@ -18,12 +21,16 @@ export function UsernameDisplay({
   showAvatar = true, 
   size = 'sm',
   linkToProfile = true,
-  showStoryIndicator = true
+  showStoryIndicator = true,
+  showRelationshipBadge = true
 }: UsernameDisplayProps) {
   const { user, isAuthenticated } = useAuth();
   const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFan, setIsFan] = useState(false); // They follow you
+  const [isCrew, setIsCrew] = useState(false); // You follow them
+  const [hasInteracted, setHasInteracted] = useState(false);
   
   useEffect(() => {
     const fetchUserData = async () => {
@@ -74,7 +81,50 @@ export function UsernameDisplay({
     };
     
     fetchUserData();
-  }, [userId, user]);
+    
+    // Fetch relationship status
+    const fetchRelationship = async () => {
+      if (!user?.id || !userId || userId === user.id) return;
+      
+      try {
+        // Check if they follow you (Fan)
+        const { data: fanData } = await supabase
+          .from('user_follows')
+          .select('id')
+          .eq('follower_id', userId)
+          .eq('following_id', user.id)
+          .maybeSingle();
+        
+        setIsFan(!!fanData);
+        
+        // Check if you follow them (Crew)
+        const { data: crewData } = await supabase
+          .from('user_follows')
+          .select('id')
+          .eq('follower_id', user.id)
+          .eq('following_id', userId)
+          .maybeSingle();
+        
+        setIsCrew(!!crewData);
+        
+        // Check for recent interactions (comments, likes)
+        const { data: interactions } = await supabase
+          .from('comments')
+          .select('id')
+          .eq('user_id', userId)
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+          .limit(1);
+        
+        setHasInteracted(!!interactions && interactions.length > 0);
+      } catch (error) {
+        console.error('Error fetching relationship:', error);
+      }
+    };
+    
+    if (showRelationshipBadge) {
+      fetchRelationship();
+    }
+  }, [userId, user, showRelationshipBadge]);
 
   const avatarSizeClass = {
     sm: 'h-6 w-6',
@@ -110,6 +160,28 @@ export function UsernameDisplay({
       <span className={`${textSizeClass[size]} font-medium`}>
         {username}
       </span>
+      {showRelationshipBadge && user && userId !== user.id && (
+        <div className="flex items-center gap-1">
+          {isFan && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] gap-0.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">
+              <Star className="h-2.5 w-2.5 fill-current" />
+              <span>Fan</span>
+            </Badge>
+          )}
+          {isCrew && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] gap-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">
+              <Users className="h-2.5 w-2.5" />
+              <span>Crew</span>
+            </Badge>
+          )}
+          {hasInteracted && !isFan && !isCrew && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] gap-0.5 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+              <MessageCircle className="h-2.5 w-2.5" />
+              <span>Active</span>
+            </Badge>
+          )}
+        </div>
+      )}
     </div>
   );
   

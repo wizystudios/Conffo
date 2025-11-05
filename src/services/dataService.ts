@@ -217,7 +217,11 @@ export const deleteConfession = (id: string) => {
 export const getCommentsByConfessionId = (confessionId: string) => {
   return comments
     .filter(c => c.confessionId === confessionId)
-    .sort((a, b) => b.timestamp - a.timestamp);
+    .sort((a, b) => {
+      const timeA = typeof a.timestamp === 'number' ? a.timestamp : a.timestamp.getTime();
+      const timeB = typeof b.timestamp === 'number' ? b.timestamp : b.timestamp.getTime();
+      return timeB - timeA;
+    });
 };
 
 export const addComment = (content: string, confessionId: string, userId: string) => {

@@ -142,7 +142,10 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
                 size="sm"
               />
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
+                {formatDistanceToNow(
+                  typeof comment.timestamp === 'number' ? comment.timestamp : comment.timestamp,
+                  { addSuffix: true }
+                )}
               </span>
             </div>
             
