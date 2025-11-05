@@ -92,11 +92,18 @@
 
   body {
     @apply bg-background text-foreground p-0 m-0;
+    font-size: 14px; /* Optimized base font size for mobile */
   }
   
   #root {
     @apply p-0 m-0 w-full min-h-screen bg-background;
   }
+  
+  /* Global optimization for mobile */
+  h1 { @apply text-xl sm:text-2xl; }
+  h2 { @apply text-lg sm:text-xl; }
+  h3 { @apply text-base sm:text-lg; }
+  p { @apply text-sm; }
 }
 
 /* Hide scrollbar but allow scrolling */

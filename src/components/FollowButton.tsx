@@ -85,12 +85,12 @@ export function FollowButton({ userId, onFollowChange }: FollowButtonProps) {
       ) : isFollowing ? (
         <>
           <UserMinus className="h-4 w-4 mr-1" />
-          Unfollow
+          Remove from Crew
         </>
       ) : (
         <>
           <UserPlus className="h-4 w-4 mr-1" />
-          Follow
+          Add to Crew
         </>
       )}
     </Button>
