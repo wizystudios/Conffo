@@ -90,19 +90,19 @@ export default function ChatListPage() {
     <Layout>
       <div className="max-w-2xl mx-auto h-screen flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm">
-          <h1 className="text-lg font-bold">Messages</h1>
+        <div className="flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm">
+          <h1 className="text-base font-bold">Messages</h1>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b">
+        <div className="p-3 border-b">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="pl-10 rounded-full bg-muted border-0"
+              className="pl-9 h-9 text-sm rounded-full bg-muted border-0"
             />
           </div>
         </div>

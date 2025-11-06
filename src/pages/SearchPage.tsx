@@ -63,27 +63,27 @@ export default function SearchPage() {
 
   return (
     <Layout>
-      <div className="w-full max-w-full p-4 space-y-6">
+      <div className="w-full max-w-full p-3 space-y-4">
         {/* Search Header */}
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold">Search</h1>
+        <div className="space-y-3">
+          <h1 className="text-lg font-bold">Search</h1>
           
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search confessions, rooms, or users..."
-              className="pl-10 pr-10 h-12 text-base"
+              className="pl-9 pr-9 h-10 text-sm"
             />
             {searchQuery && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

@@ -13,17 +13,17 @@ export default function RoomsPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 p-3">
         <div>
-          <h1 className="text-2xl font-bold mb-2">Confession Rooms</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-lg font-bold mb-1">Confession Rooms</h1>
+          <p className="text-xs text-muted-foreground">
             Choose a room to browse or share confessions
           </p>
         </div>
         
         {isLoading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading rooms...</p>
+          <div className="text-center py-6">
+            <p className="text-xs text-muted-foreground">Loading rooms...</p>
           </div>
         ) : (
           <RoomsList rooms={rooms} />

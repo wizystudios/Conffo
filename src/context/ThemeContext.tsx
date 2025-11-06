@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark" | "system" | "adaptive";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -34,14 +34,29 @@ export function ThemeProvider({
     // Remove previous class
     root.classList.remove("light", "dark");
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
+    const applyTheme = () => {
+      if (theme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+          .matches
+          ? "dark"
+          : "light";
+        root.classList.add(systemTheme);
+      } else if (theme === "adaptive") {
+        // Adaptive mode: warm at night, bright during day
+        const hour = new Date().getHours();
+        const isNight = hour >= 18 || hour < 6;
+        root.classList.add(isNight ? "dark" : "light");
+      } else {
+        root.classList.add(theme);
+      }
+    };
+
+    applyTheme();
+
+    // For adaptive mode, check every hour
+    if (theme === "adaptive") {
+      const interval = setInterval(applyTheme, 60000); // Check every minute
+      return () => clearInterval(interval);
     }
   }, [theme]);
 

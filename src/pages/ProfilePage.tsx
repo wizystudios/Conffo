@@ -230,10 +230,10 @@ export default function ProfilePage() {
       <div className="w-full">
         {/* Profile Header */}
         <div className="w-full bg-background border-b border-border">
-          <div className="max-w-lg mx-auto px-4 py-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20 border-2 border-border">
+          <div className="max-w-lg mx-auto px-3 py-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-16 w-16 border-2 border-border">
                   <AvatarImage src={avatarUrl} alt={username} />
                   <AvatarFallback className="text-xl">
                     {username.charAt(0).toUpperCase()}
@@ -241,15 +241,15 @@ export default function ProfilePage() {
                 </Avatar>
                 
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold">{username}</h2>
+                  <h2 className="text-lg font-bold">{username}</h2>
                   
-                  <div className="flex items-center gap-6 mt-2">
+                  <div className="flex items-center gap-4 mt-1">
                     <button 
                       className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
                       onClick={handleFollowersClick}
                     >
                       <span className="font-semibold">{followersCount}</span>
-                      <span className="text-sm text-muted-foreground">Followers</span>
+                      <span className="text-sm text-muted-foreground">Fans</span>
                     </button>
                     
                     <button 
@@ -257,7 +257,7 @@ export default function ProfilePage() {
                       onClick={handleFollowingClick}
                     >
                       <span className="font-semibold">{followingCount}</span>
-                      <span className="text-sm text-muted-foreground">Following</span>
+                      <span className="text-sm text-muted-foreground">Crew</span>
                     </button>
                   </div>
                 </div>

@@ -92,7 +92,7 @@
 
   body {
     @apply bg-background text-foreground p-0 m-0;
-    font-size: 14px; /* Optimized base font size for mobile */
+    font-size: 13px; /* Optimized base font size for mobile */
   }
   
   #root {
@@ -100,10 +100,10 @@
   }
   
   /* Global optimization for mobile */
-  h1 { @apply text-xl sm:text-2xl; }
-  h2 { @apply text-lg sm:text-xl; }
-  h3 { @apply text-base sm:text-lg; }
-  p { @apply text-sm; }
+  h1 { @apply text-lg sm:text-xl; }
+  h2 { @apply text-base sm:text-lg; }
+  h3 { @apply text-sm sm:text-base; }
+  p { @apply text-xs sm:text-sm; }
 }
 
 /* Hide scrollbar but allow scrolling */

@@ -23,15 +23,12 @@ export default function ChatPage() {
   };
 
   return (
-    <>
-      {/* No Layout wrapper - removes top and bottom nav */}
-      <div className="h-screen">
-        <ModernChatInterface
-          targetUserId={userId}
-          onBack={handleBack}
-          onCall={handleCall}
-        />
-      </div>
+    <div className="h-screen flex flex-col">
+      <ModernChatInterface
+        targetUserId={userId}
+        onBack={handleBack}
+        onCall={handleCall}
+      />
 
       <CallInterface
         isOpen={showCall}
@@ -39,6 +36,6 @@ export default function ChatPage() {
         callType={callType}
         targetUserId={userId}
       />
-    </>
+    </div>
   );
 }

@@ -30,6 +30,10 @@ export function ThemeToggle({ className }: { className?: string }) {
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("adaptive")}>
+          <span className="mr-2">🌓</span>
+          <span>Adaptive</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <span className="mr-2">💻</span>
           <span>System</span>

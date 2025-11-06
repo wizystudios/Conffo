@@ -172,7 +172,7 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
                 >
                   <Users className="h-4 w-4" />
                   <span className="font-medium">{followers.length}</span>
-                  <span className="text-sm text-muted-foreground">Followers</span>
+                  <span className="text-sm text-muted-foreground">Fans</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
@@ -180,7 +180,7 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
                 >
                   <UserPlus className="h-4 w-4" />
                   <span className="font-medium">{following.length}</span>
-                  <span className="text-sm text-muted-foreground">Following</span>
+                  <span className="text-sm text-muted-foreground">Crew</span>
                 </TabsTrigger>
               </TabsList>
               
@@ -188,13 +188,13 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
               <div className="h-full overflow-auto">
                 <TabsContent value="followers" className="mt-0 h-full">
                   <div className="px-2 py-2">
-                    {renderUserList(followers, "No followers yet")}
+                    {renderUserList(followers, "No fans yet")}
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="following" className="mt-0 h-full">
                   <div className="px-2 py-2">
-                    {renderUserList(following, "Not following anyone yet")}
+                    {renderUserList(following, "No crew members yet")}
                   </div>
                 </TabsContent>
               </div>
