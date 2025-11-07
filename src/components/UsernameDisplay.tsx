@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Star, Users, MessageCircle } from 'lucide-react';
+import { ProfileHoverCard } from '@/components/ProfileHoverCard';
 
 interface UsernameDisplayProps {
   userId: string;
@@ -185,14 +186,21 @@ export function UsernameDisplay({
     </div>
   );
   
+  // Wrap in ProfileHoverCard if authenticated
+  const wrappedContent = isAuthenticated ? (
+    <ProfileHoverCard userId={userId}>
+      {content}
+    </ProfileHoverCard>
+  ) : content;
+  
   // Only show profile links if user is authenticated
   if (linkToProfile && userId && isAuthenticated) {
     return (
       <Link to={`/user/${userId}`} className="hover:opacity-80">
-        {content}
+        {wrappedContent}
       </Link>
     );
   }
   
-  return content;
+  return wrappedContent;
 }

@@ -40,6 +40,18 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
     );
   }
 
+  const handlePrev = () => {
+    if (!containerRef.current) return;
+    const itemWidth = containerRef.current.offsetWidth;
+    containerRef.current.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+  };
+
+  const handleNext = () => {
+    if (!containerRef.current) return;
+    const itemWidth = containerRef.current.offsetWidth;
+    containerRef.current.scrollBy({ left: itemWidth, behavior: 'smooth' });
+  };
+
   const handleScroll = () => {
     if (!containerRef.current) return;
     const scrollLeft = containerRef.current.scrollLeft;
@@ -86,16 +98,36 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
         ))}
       </div>
 
+      {/* Navigation Arrows */}
+      {media.length > 1 && (
+        <>
+          {currentIndex > 0 && (
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+            >
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
+          )}
+          {currentIndex < media.length - 1 && (
+            <button
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+            >
+              <ChevronRight className="h-5 w-5 text-white" />
+            </button>
+          )}
+        </>
+      )}
+
       {/* Page indicators */}
       {media.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 pointer-events-none z-10">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none z-10">
           {media.map((_, index) => (
             <div
               key={index}
               className={`w-1.5 h-1.5 rounded-full transition-all ${
-                index === currentIndex
-                  ? 'bg-white w-2'
-                  : 'bg-white/50'
+                index === currentIndex ? 'bg-white w-2' : 'bg-white/50'
               }`}
             />
           ))}
@@ -104,7 +136,7 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
 
       {/* Count indicator */}
       {media.length > 1 && (
-        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium z-10">
+        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs font-medium z-10">
           {currentIndex + 1}/{media.length}
         </div>
       )}

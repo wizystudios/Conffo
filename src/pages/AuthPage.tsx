@@ -149,42 +149,42 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-3">
+      <div className="w-full max-w-sm space-y-4">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center mb-6">
+        <div className="text-center space-y-1">
+          <div className="flex items-center justify-center mb-3">
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => navigate('/')}
-              className="absolute left-4 top-4 p-2"
+              className="absolute left-3 top-3 p-1.5 h-auto"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="text-muted-foreground">
-            Share your thoughts anonymously with the world
+          <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
+          <p className="text-muted-foreground text-sm">
+            Share your thoughts anonymously
           </p>
         </div>
 
         {/* Auth Form */}
-        <div className="bg-background/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-border/50">
+        <div className="bg-background/80 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-border/50">
           {authError && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive">{authError}</p>
+            <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-xs text-destructive">{authError}</p>
             </div>
           )}
           
           <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
+            <TabsList className="grid w-full grid-cols-2 mb-4 h-8">
+              <TabsTrigger value="login" className="flex items-center gap-1.5 text-xs">
+                <User className="h-3 w-3" />
                 Login
               </TabsTrigger>
-              <TabsTrigger value="register" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
+              <TabsTrigger value="register" className="flex items-center gap-1.5 text-xs">
+                <Mail className="h-3 w-3" />
                 Register
               </TabsTrigger>
             </TabsList>

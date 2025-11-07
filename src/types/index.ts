@@ -99,6 +99,7 @@ export interface Comment {
   content: string;
   timestamp: Date | number;
   parentCommentId?: string;
+  replies?: Comment[];
 }
 
 export interface Report {

@@ -69,12 +69,9 @@ const App = () => {
             <AuthProvider>
               <Suspense fallback={null}>
                 <Routes>
-                  {/* Chat-first routing like Telegram */}
-                  <Route path="/" element={<ChatListPage />} />
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/chat" element={<ChatListPage />} />
                   <Route path="/chat/:userId" element={<ChatPage />} />
-                  
-                  {/* Browse all posts from all rooms */}
-                  <Route path="/browse" element={<HomePage />} />
                   
                   {/* Room-based confessions */}
                   <Route path="/rooms" element={<RoomsPage />} />
