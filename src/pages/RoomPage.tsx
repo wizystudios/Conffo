@@ -52,14 +52,14 @@ export default function RoomPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        <div className="flex items-center p-4">
-          <Link to="/rooms" className="mr-4">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
+        <div className="flex items-center p-2">
+          <Link to="/rooms" className="mr-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <ArrowLeft className="h-3 w-3" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-semibold">{roomInfo.name}</h1>
+            <h1 className="text-sm font-semibold">{roomInfo.name}</h1>
             <p className="text-xs text-muted-foreground truncate">{roomInfo.description}</p>
           </div>
         </div>

@@ -1,11 +1,48 @@
 
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare } from 'lucide-react';
+import { WifiOff, Upload } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { offlineQueue } from '@/utils/offlineQueue';
 
 export function Footer() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const interval = setInterval(() => {
+      setPendingCount(offlineQueue.getPendingCount());
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <footer className="border-t bg-background/95 backdrop-blur mt-auto pb-16 md:pb-0">
+      {!isOnline && (
+        <div className="bg-destructive/10 border-b border-destructive/20 py-1 px-3">
+          <div className="flex items-center justify-center gap-2 text-xs text-destructive">
+            <WifiOff className="h-3 w-3" />
+            <span>Offline</span>
+            {pendingCount > 0 && (
+              <>
+                <Upload className="h-3 w-3 ml-2" />
+                <span>{pendingCount} pending</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       <div className="container max-w-screen-lg py-3 sm:py-4 px-2 sm:px-4">
         <div className="flex flex-col items-center gap-2 sm:gap-3">
           <div className="flex flex-col sm:flex-row items-center sm:space-x-4 mb-2 gap-2">

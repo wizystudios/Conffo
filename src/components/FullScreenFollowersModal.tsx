@@ -39,56 +39,54 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
     
     setIsLoading(true);
     try {
-      // Fetch followers
+      // Fetch followers with profile data
       const { data: followersData, error: followersError } = await supabase
         .from('user_follows')
         .select(`
           follower_id,
-          profiles!user_follows_follower_id_fkey (
+          follower:follower_id (
             id,
             username,
-            avatar_url
+            avatar_url,
+            bio
           )
         `)
         .eq('following_id', userId);
 
       if (followersError) {
-        console.error('Error fetching followers:', followersError);
+        console.error('Followers error:', followersError);
       }
 
-      // Fetch following
+      // Fetch following with profile data
       const { data: followingData, error: followingError } = await supabase
         .from('user_follows')
         .select(`
           following_id,
-          profiles!user_follows_following_id_fkey (
+          following:following_id (
             id,
             username,
-            avatar_url
+            avatar_url,
+            bio
           )
         `)
         .eq('follower_id', userId);
 
       if (followingError) {
-        console.error('Error fetching following:', followingError);
+        console.error('Following error:', followingError);
       }
 
-      // Process followers data
-      const processedFollowers = followersData?.map(item => ({
-        id: item.follower_id,
-        username: (item.profiles as any)?.username || `user_${item.follower_id.slice(0, 8)}`,
-        avatar_url: (item.profiles as any)?.avatar_url || null
-      })) || [];
+      // Process followers
+      const followersList = (followersData || [])
+        .map((item: any) => item.follower || { id: item.follower_id, username: `user_${item.follower_id.slice(0, 8)}`, avatar_url: null })
+        .filter((profile: any) => profile && profile.id);
 
-      // Process following data
-      const processedFollowing = followingData?.map(item => ({
-        id: item.following_id,
-        username: (item.profiles as any)?.username || `user_${item.following_id.slice(0, 8)}`,
-        avatar_url: (item.profiles as any)?.avatar_url || null
-      })) || [];
+      // Process following
+      const followingList = (followingData || [])
+        .map((item: any) => item.following || { id: item.following_id, username: `user_${item.following_id.slice(0, 8)}`, avatar_url: null })
+        .filter((profile: any) => profile && profile.id);
 
-      setFollowers(processedFollowers);
-      setFollowing(processedFollowing);
+      setFollowers(followersList);
+      setFollowing(followingList);
     } catch (error) {
       console.error('Error fetching follow data:', error);
     } finally {

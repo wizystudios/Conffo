@@ -116,30 +116,29 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
   };
   
   return (
-    <div className="relative">
-      {/* Connector line for replies */}
+    <div className={`${depth > 0 ? 'ml-4 border-l-2 border-primary/30 pl-2 relative' : ''} py-1.5`}>
       {depth > 0 && (
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-px bg-border"
-          style={{ left: `${indent - 6}px` }}
-        />
+        <div className="absolute -left-[2px] top-0 h-4 flex items-center">
+          <div className="text-primary/50 text-[10px] leading-none">↳</div>
+        </div>
       )}
-      
-      <div 
-        className="py-2 px-2 hover:bg-muted/30 rounded-lg transition-colors"
-        style={{ marginLeft: `${indent}px` }}
-      >
-        <div className="flex items-start gap-2">
-          {depth > 0 && (
-            <CornerDownRight className="h-3 w-3 text-muted-foreground mt-1 flex-shrink-0" />
-          )}
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+      <div className="flex gap-2">
+        <UsernameDisplay 
+          userId={comment.userId} 
+          showAvatar={true} 
+          size="sm"
+          linkToProfile={true}
+          showStoryIndicator={false}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="bg-muted/30 rounded-lg px-2 py-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
               <UsernameDisplay 
                 userId={comment.userId} 
-                showAvatar={true}
+                showAvatar={false} 
                 size="sm"
+                linkToProfile={true}
+                showStoryIndicator={false}
               />
               <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(
@@ -148,91 +147,91 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
                 )}
               </span>
             </div>
+            <p className="text-xs whitespace-pre-wrap break-words">{comment.content}</p>
+          </div>
             
-            <p className="text-sm break-words mb-2">{comment.content}</p>
+          <div className="flex items-center gap-2 mt-1 text-xs">
+            <button
+              onClick={handleLike}
+              className={`flex items-center gap-0.5 ${isLiked ? 'text-primary font-medium' : 'text-muted-foreground'} hover:text-primary transition-colors`}
+            >
+              <Heart className={`h-3 w-3 ${isLiked ? 'fill-current animate-heart-pop' : ''}`} />
+              <span>{likesCount}</span>
+              {likesCount > 0 && <span className="text-[10px]">❤️</span>}
+            </button>
             
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                className={`h-7 px-2 gap-1 ${isLiked ? 'text-red-500' : 'text-muted-foreground'}`}
+            {onReply && depth < 3 && (
+              <button
+                onClick={() => onReply(comment.id)}
+                className="flex items-center gap-0.5 text-muted-foreground hover:text-primary transition-colors"
               >
-                <Heart className={`h-3 w-3 ${isLiked ? 'fill-current' : ''}`} />
-                {likesCount > 0 && <span className="text-xs">{likesCount}</span>}
-              </Button>
-              
-              {onReply && depth < 3 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onReply(comment.id)}
-                  className="h-7 px-2 gap-1 text-muted-foreground"
-                >
-                  <Reply className="h-3 w-3" />
-                  <span className="text-xs">Reply</span>
-                </Button>
-              )}
-              
-              {canDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={isDeleting}
-                      className="h-7 px-2 text-muted-foreground"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this comment?
-                        This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete}>
-                        {isDeleting ? 'Deleting...' : 'Delete'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
+                <Reply className="h-3 w-3" />
+                <span className="text-[10px]">Reply</span>
+              </button>
+            )}
+
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    disabled={isDeleting}
+                    className="flex items-center gap-0.5 text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span className="text-[10px]">{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this comment?
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Render replies recursively */}
-      {replies.length > 0 && showReplies && (
-        <div className="mt-1">
-          {replies.map((reply) => (
-            <TreeComment
-              key={reply.id}
-              comment={reply}
-              onUpdate={onUpdate}
-              depth={depth + 1}
-              onReply={onReply}
-            />
-          ))}
-        </div>
-      )}
-      
       {replies.length > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowReplies(!showReplies)}
-          className="ml-2 h-6 px-2 text-xs text-muted-foreground"
-          style={{ marginLeft: `${indent + 8}px` }}
-        >
-          {showReplies ? 'Hide' : 'Show'} {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
-        </Button>
+        <div className="mt-1">
+          {showReplies ? (
+            <>
+              <button 
+                onClick={() => setShowReplies(false)}
+                className="text-[10px] text-muted-foreground hover:text-primary mb-1 flex items-center gap-1 ml-6"
+              >
+                <span>↓</span> Hide {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+              </button>
+              {replies.map((reply) => (
+                <TreeComment
+                  key={reply.id}
+                  comment={reply}
+                  onUpdate={onUpdate}
+                  depth={depth + 1}
+                  onReply={onReply}
+                  replies={reply.replies || []}
+                />
+              ))}
+            </>
+          ) : (
+            <button 
+              onClick={() => setShowReplies(true)}
+              className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 ml-6"
+            >
+              <span>→</span> Show {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
