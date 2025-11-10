@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MessageCircle, Menu } from 'lucide-react';
+import { Search, MessageCircle, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { ModernChatList } from '@/components/ModernChatList';
+import { useNavigate } from 'react-router-dom';
 
 export default function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { user } = useAuth();
   const { unreadCounts } = useUnreadMessages();
+  const navigate = useNavigate();
 
   // Get followed users that you can chat with
   const { data: followedUsers = [], isLoading } = useQuery({
@@ -87,66 +88,67 @@ export default function ChatListPage() {
   );
 
   return (
-    <Layout>
-      <div className="max-w-2xl mx-auto h-screen flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm">
-          <h1 className="text-base font-bold">Messages</h1>
-        </div>
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <div className="flex items-center gap-2 p-2 border-b bg-background/95 backdrop-blur-sm">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-7 w-7">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-sm font-bold">Messages</h1>
+      </div>
 
-        {/* Search */}
-        <div className="p-3 border-b">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="pl-9 h-9 text-sm rounded-full bg-muted border-0"
-            />
-          </div>
-        </div>
-
-        {/* Chat List */}
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="space-y-1 p-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="p-3 animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="h-14 w-14 bg-muted rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-muted rounded w-1/3 mb-2"></div>
-                      <div className="h-3 bg-muted rounded w-2/3"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredUsers.length > 0 ? (
-            <ModernChatList 
-              users={filteredUsers.map(u => ({
-                ...u,
-                unreadCount: unreadCounts[u.id],
-                isOnline: true
-              }))}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full p-8">
-              <div className="text-center text-muted-foreground">
-                <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                <p className="font-medium mb-1">No conversations yet</p>
-                <p className="text-sm">Follow people to start chatting</p>
-                <Link to="/browse">
-                  <Button variant="outline" size="sm" className="mt-4">
-                    Browse People
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+      {/* Search */}
+      <div className="p-2 border-b">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="pl-7 h-7 text-xs rounded-full bg-muted border-0"
+          />
         </div>
       </div>
-    </Layout>
+
+      {/* Chat List */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="space-y-0.5 p-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="p-2 animate-pulse">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 bg-muted rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-3 bg-muted rounded w-1/3 mb-1"></div>
+                    <div className="h-2 bg-muted rounded w-2/3"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredUsers.length > 0 ? (
+          <ModernChatList 
+            users={filteredUsers.map(u => ({
+              ...u,
+              unreadCount: unreadCounts[u.id],
+              isOnline: true
+            }))}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full p-6">
+            <div className="text-center text-muted-foreground">
+              <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium mb-0.5 text-xs">No conversations yet</p>
+              <p className="text-xs">Follow people to start chatting</p>
+              <Link to="/browse">
+                <Button variant="outline" size="sm" className="mt-3 text-xs h-7">
+                  Browse People
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

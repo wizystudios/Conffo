@@ -18,53 +18,53 @@ interface ModernChatListProps {
 
 export function ModernChatList({ users }: ModernChatListProps) {
   return (
-    <div className="divide-y">
+    <div className="divide-y divide-border/50">
       {users.map((user) => (
         <Link 
           key={user.id} 
           to={`/chat/${user.id}`}
-          className="block hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="block hover:bg-muted/30 transition-colors"
         >
-          <div className="flex items-center gap-4 p-4">
+          <div className="flex items-center gap-2 p-2">
             <div className="relative">
-              <Avatar className="h-16 w-16 border-2 border-white dark:border-gray-900">
+              <Avatar className="h-10 w-10 border border-border">
                 <AvatarImage 
                   src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} 
                 />
-                <AvatarFallback className="text-base font-medium bg-gray-200">
+                <AvatarFallback className="text-xs font-medium">
                   {user.username?.charAt(0)?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               {user.isOnline && (
-                <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
+                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border border-background" />
               )}
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="font-semibold text-base truncate">
+              <div className="flex items-baseline justify-between mb-0.5">
+                <span className="font-semibold text-xs truncate">
                   {user.username || 'Unknown User'}
                 </span>
                 {user.lastMessageTime && (
-                  <span className="text-sm text-gray-500 flex-shrink-0 ml-2">
+                  <span className="text-xs text-muted-foreground flex-shrink-0 ml-1">
                     {formatDistanceToNow(user.lastMessageTime, { addSuffix: false })}
                   </span>
                 )}
               </div>
               
-              <p className="text-sm text-gray-500 truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 {user.lastMessage 
-                  ? user.lastMessage.length > 50 
-                    ? `${user.lastMessage.slice(0, 50)}...`
+                  ? user.lastMessage.length > 40 
+                    ? `${user.lastMessage.slice(0, 40)}...`
                     : user.lastMessage
                   : 'No messages yet'}
               </p>
             </div>
 
             {user.unreadCount && user.unreadCount > 0 && (
-              <div className="flex-shrink-0 ml-2">
-                <div className="h-6 w-6 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">
+              <div className="flex-shrink-0 ml-1">
+                <div className="h-4 w-4 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary-foreground">
                     {user.unreadCount > 9 ? '9+' : user.unreadCount}
                   </span>
                 </div>
