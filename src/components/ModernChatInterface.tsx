@@ -334,90 +334,41 @@ export function ModernChatInterface({
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center space-x-3">
-          {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} className="h-9 w-9">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          
-          <Avatar className="h-11 w-11">
-            <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
-            <AvatarFallback>
-              {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div>
-            <h3 className="font-semibold text-sm">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
-            <p className="text-xs text-muted-foreground">
-              {isTyping ? 'Typing...' : 'Team Leader'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-1">
-          {onCall && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onCall('audio')}
-                className="h-9 w-9"
-              >
-                <Phone className="h-5 w-5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onCall('video')}
-                className="h-9 w-9"
-              >
-                <VideoIcon className="h-5 w-5" />
-              </Button>
-            </>
-          )}
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => navigate(`/profile/${targetUserId}`)}>
-                View Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setIsMuted(!isMuted);
-                toast({
-                  title: isMuted ? "Notifications enabled" : "Notifications muted",
-                  description: isMuted ? "You'll receive notifications from this chat" : "You won't receive notifications from this chat"
-                });
-              }}>
-                {isMuted ? 'Unmute' : 'Mute'} Notifications
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                if (!confirm('Are you sure you want to block this user?')) return;
-                toast({ title: "User blocked", description: "You won't receive messages from this user" });
-              }}>
-                Block User
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-                Report
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="text-destructive"
-                onClick={handleClearChat}
-              >
-                Clear Chat
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      {/* Header - Centered Profile */}
+      <div className="flex flex-col items-center p-2 border-b bg-card">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex flex-col items-center cursor-pointer">
+              <Avatar className="h-12 w-12 mb-1">
+                <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
+                <AvatarFallback className="text-sm">
+                  {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <h3 className="font-semibold text-xs">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-44">
+            <DropdownMenuItem onClick={() => navigate(`/profile/${targetUserId}`)}>
+              Visit Account
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-destructive"
+              onClick={handleClearChat}
+            >
+              Delete Chat
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-destructive"
+              onClick={() => {
+                if (!confirm('Block this user? They won\'t be able to message you or view your account.')) return;
+                toast({ title: "User blocked" });
+              }}
+            >
+              Block Person
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Messages */}

@@ -63,39 +63,39 @@ export default function SearchPage() {
 
   return (
     <Layout>
-      <div className="w-full max-w-full p-3 space-y-4">
+      <div className="w-full max-w-full p-2 space-y-2">
         {/* Search Header */}
-        <div className="space-y-3">
-          <h1 className="text-lg font-bold">Search</h1>
+        <div className="space-y-2">
+          <h1 className="text-sm font-bold">Search</h1>
           
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search confessions, rooms, or users..."
-              className="pl-9 pr-9 h-10 text-sm"
+              placeholder="Search..."
+              className="pl-7 pr-7 h-7 text-xs"
             />
             {searchQuery && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 h-6 w-6"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3 w-3" />
               </Button>
             )}
           </div>
         </div>
 
         {/* Quick Filters */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           <Button 
             variant={activeFilter === 'all' ? 'default' : 'outline'} 
             size="sm" 
             onClick={() => setActiveFilter('all')}
-            className="gap-2"
+            className="gap-1 h-6 text-xs"
           >
             All
           </Button>

@@ -82,7 +82,7 @@ export function Layout({ children }: LayoutProps) {
     <ErrorBoundary>
       <div className="min-h-screen bg-background flex flex-col">
         <NavBar />
-        <main className="container max-w-full px-1 sm:px-2 md:px-3 flex-grow pt-14 sm:pt-16 pb-14 md:pb-4">
+        <main className="container max-w-full px-0 flex-grow pt-11 pb-12 md:pb-2">
           {children}
         </main>
         <BottomNavigation />

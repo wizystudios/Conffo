@@ -202,31 +202,31 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
         className="resize-none"
       />
 
-      {/* Media Preview */}
+      {/* Media Preview - Horizontal Scrollable Row */}
       {mediaFiles.length > 0 && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
             {mediaFiles.map((mediaFile, index) => (
-              <div key={index} className="relative group">
+              <div key={index} className="relative group flex-shrink-0 w-32">
                 {mediaFile.type === 'image' && (
                   <img
                     src={mediaFile.preview}
                     alt={`Upload ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg"
+                    className="w-32 h-32 object-cover rounded-lg"
                   />
                 )}
                 {mediaFile.type === 'video' && (
                   <video
                     src={mediaFile.preview}
-                    className="w-full h-32 object-cover rounded-lg"
+                    className="w-32 h-32 object-cover rounded-lg"
                     controls
                   />
                 )}
                 {mediaFile.type === 'audio' && (
-                  <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
+                  <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center">
                     <div className="text-center">
-                      <Music className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground truncate">
+                      <Music className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground truncate px-1">
                         {mediaFile.file.name}
                       </p>
                     </div>
@@ -237,7 +237,7 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
                   variant="destructive"
                   size="sm"
                   onClick={() => removeMediaFile(index)}
-                  className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 h-5 w-5 p-0 rounded-full"
                 >
                   <X className="h-3 w-3" />
                 </Button>

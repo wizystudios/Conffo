@@ -81,11 +81,9 @@ const App = () => {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/user/:userId" element={<ProfilePage />} />
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
-                  <Route path="/trending" element={<TrendingPage />} />
                   <Route path="/stories" element={<StoriesPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/recent" element={<RecentPage />} />
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/create-post" element={<CreatePostPage />} />
                   <Route path="/admin" element={<AdminPage />} />

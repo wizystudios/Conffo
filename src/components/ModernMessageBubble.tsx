@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
-import { MessageContextMenu } from '@/components/MessageContextMenu';
-import { FileText } from 'lucide-react';
+import { FileText, Copy, Forward, Trash2 } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -34,17 +36,32 @@ export function ModernMessageBubble({
     });
   };
 
+  const [touchStart, setTouchStart] = useState(0);
+  const [showContext, setShowContext] = useState(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(Date.now());
+  };
+
+  const handleTouchEnd = () => {
+    const touchDuration = Date.now() - touchStart;
+    if (touchDuration > 500) {
+      setShowContext(true);
+    }
+    setTouchStart(0);
+  };
+
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group`}>
-      <MessageContextMenu 
-        message={message} 
-        isOwn={isOwn}
-        onDelete={onDelete}
-        onEdit={onEdit}
-        onForward={onForward}
-        onReport={onReport}
+      <div 
+        className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%]`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setShowContext(true);
+        }}
       >
-        <div className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%] cursor-pointer`}>
         {showAvatar && !isOwn ? (
           <Avatar className="h-9 w-9 flex-shrink-0">
             <AvatarImage src={senderAvatar} />
@@ -115,8 +132,55 @@ export function ModernMessageBubble({
             {message.updated_at !== message.created_at && ' (edited)'}
           </span>
         </div>
-        </div>
-      </MessageContextMenu>
+      </div>
+
+      {/* Long-press context menu */}
+      <Sheet open={showContext} onOpenChange={setShowContext}>
+        <SheetContent side="bottom" className="h-auto rounded-t-xl">
+          <SheetHeader>
+            <SheetTitle className="text-sm">Message Actions</SheetTitle>
+          </SheetHeader>
+          <div className="grid gap-2 py-3">
+            {message.message_type === 'text' && (
+              <Button
+                variant="ghost"
+                className="justify-start gap-2 h-11"
+                onClick={() => {
+                  navigator.clipboard.writeText(message.content);
+                  setShowContext(false);
+                }}
+              >
+                <Copy className="h-4 w-4" />
+                Copy
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              className="justify-start gap-2 h-11"
+              onClick={() => {
+                onForward?.();
+                setShowContext(false);
+              }}
+            >
+              <Forward className="h-4 w-4" />
+              Forward
+            </Button>
+            {isOwn && (
+              <Button
+                variant="ghost"
+                className="justify-start gap-2 h-11 text-destructive"
+                onClick={() => {
+                  onDelete?.();
+                  setShowContext(false);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

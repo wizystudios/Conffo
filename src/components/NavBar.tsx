@@ -145,8 +145,8 @@ export function NavBar() {
   };
   
   return (
-    <div className={`bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/60 fixed top-0 left-0 right-0 border-b z-40 shadow-sm transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-      <div className="container mx-auto flex justify-between items-center px-4 py-3">
+    <div className={`bg-background fixed top-0 left-0 right-0 border-b z-40 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+      <div className="container mx-auto flex justify-between items-center px-2 py-1.5">
         <Link 
           to="/" 
           className="flex items-center gap-2 text-xl font-semibold"
@@ -155,44 +155,32 @@ export function NavBar() {
           <img 
             src="/lovable-uploads/ce53fd65-dc4f-4335-984b-567f5fbae96d.png" 
             alt="Logo" 
-            className="h-8 w-8 object-contain block dark:hidden"
+            className="h-6 w-6 object-contain block dark:hidden"
           />
           <img 
             src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
             alt="Logo" 
-            className="h-8 w-8 object-contain hidden dark:block"
+            className="h-6 w-6 object-contain hidden dark:block"
           />
         </Link>
         
-        <div className="hidden md:flex items-center space-x-1">
+        <div className="hidden md:flex items-center space-x-0.5">
           <Link to="/">
-            <Button variant={isActive('/') ? "default" : "ghost"} size="icon">
-              <Home className="h-5 w-5" />
-            </Button>
-          </Link>
-          
-          <Link to="/recent">
-            <Button variant={isActive('/recent') ? "default" : "ghost"} size="icon">
-              <Clock className="h-5 w-5" />
-            </Button>
-          </Link>
-          
-          <Link to="/trending">
-            <Button variant={isActive('/trending') ? "default" : "ghost"} size="icon">
-              <TrendingUp className="h-5 w-5" />
+            <Button variant={isActive('/') ? "default" : "ghost"} size="icon" className="h-7 w-7">
+              <Home className="h-4 w-4" />
             </Button>
           </Link>
           
           <Link to="/search">
-            <Button variant={isActive('/search') ? "default" : "ghost"} size="icon">
-              <Search className="h-5 w-5" />
+            <Button variant={isActive('/search') ? "default" : "ghost"} size="icon" className="h-7 w-7">
+              <Search className="h-4 w-4" />
             </Button>
           </Link>
           
           {isAuthenticated && (
             <Link to="/chat">
-              <Button variant={isActive('/chat') ? "default" : "ghost"} size="icon">
-                <MessageCircle className="h-5 w-5" />
+              <Button variant={isActive('/chat') ? "default" : "ghost"} size="icon" className="h-7 w-7">
+                <MessageCircle className="h-4 w-4" />
               </Button>
             </Link>
           )}

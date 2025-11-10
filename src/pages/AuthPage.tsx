@@ -149,102 +149,62 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-3">
-      <div className="w-full max-w-sm space-y-4">
-        {/* Header */}
-        <div className="text-center space-y-1">
-          <div className="flex items-center justify-center mb-3">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/')}
-              className="absolute left-3 top-3 p-1.5 h-auto"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
-          <p className="text-muted-foreground text-sm">
-            Share your thoughts anonymously
-          </p>
-        </div>
+    <div className="min-h-screen bg-background flex items-center justify-center p-2">
+      <div className="w-full max-w-xs space-y-2">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => navigate('/')}
+          className="mb-2 h-6 text-xs"
+        >
+          <ArrowLeft className="h-3 w-3 mr-1" />
+          Back
+        </Button>
 
-        {/* Auth Form */}
-        <div className="bg-background/80 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-border/50">
-          {authError && (
-            <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-xs text-destructive">{authError}</p>
-            </div>
-          )}
-          
-          <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-2 mb-4 h-8">
-              <TabsTrigger value="login" className="flex items-center gap-1.5 text-xs">
-                <User className="h-3 w-3" />
-                Login
-              </TabsTrigger>
-              <TabsTrigger value="register" className="flex items-center gap-1.5 text-xs">
-                <Mail className="h-3 w-3" />
-                Register
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login" className="space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-sm font-medium">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        id="signin-email" 
-                        type="email" 
-                        placeholder="your@email.com" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-12 bg-background/50"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        id="signin-password" 
-                        type="password" 
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 h-12 bg-background/50"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-base font-semibold" 
-                  disabled={loading}
-                >
-                  {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="register" className="space-y-4">
-              <EnhancedRegistrationForm />
-            </TabsContent>
-          </Tabs>
-        </div>
+        {authError && (
+          <div className="mb-2 p-1.5 bg-destructive/10 border border-destructive/20 rounded">
+            <p className="text-xs text-destructive">{authError}</p>
+          </div>
+        )}
         
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </p>
-        </div>
+        <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
+          <TabsList className="grid w-full grid-cols-2 mb-2 h-6">
+            <TabsTrigger value="login" className="text-xs">Login</TabsTrigger>
+            <TabsTrigger value="register" className="text-xs">Register</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="login" className="space-y-2">
+            <form onSubmit={handleSignIn} className="space-y-2">
+              <Input 
+                type="email" 
+                placeholder="Email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-7 text-xs"
+                required
+              />
+              <Input 
+                type="password" 
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-7 text-xs"
+                required
+              />
+              <Button 
+                type="submit" 
+                className="w-full h-7 text-xs" 
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="register" className="space-y-2">
+            <EnhancedRegistrationForm />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

@@ -160,8 +160,9 @@ const HomePage = () => {
     setActiveTab(tab);
   };
 
+  // For "My Crew" tab - show posts from users this user follows
   const currentConfessions = activeTab === 'all' ? recentConfessions : activeTab === 'fans' ? fansPosts : [];
-  const isLoadingConfessions = activeTab === 'all' ? isLoadingRecent : activeTab === 'fans' ? isLoadingFans : false;
+  const isLoadingConfessions = activeTab === 'all' ? isLoadingRecent : activeTab === 'fans' ? isLoadingFans : activeTab === 'crew';
 
   return (
     <Layout>
@@ -251,7 +252,13 @@ const HomePage = () => {
               <div className="space-y-0">
                 {fansPosts.map((confession: any, index: number) => (
                   <div key={confession.id}>
-                    <InstagramConfessionCard confession={confession} />
+                    <InstagramConfessionCard 
+                      confession={confession}
+                      onUpdate={() => {
+                        refetchRecent();
+                        refetchFans();
+                      }}
+                    />
                     {index === 2 && <PeopleYouMayKnow />}
                   </div>
                 ))}
@@ -279,7 +286,13 @@ const HomePage = () => {
                 <div className="space-y-0">
                   {recentConfessions.map((confession: any, index: number) => (
                     <div key={confession.id}>
-                      <InstagramConfessionCard confession={confession} />
+                      <InstagramConfessionCard 
+                        confession={confession}
+                        onUpdate={() => {
+                          refetchRecent();
+                          refetchFans();
+                        }}
+                      />
                       {index === 2 && <PeopleYouMayKnow />}
                     </div>
                   ))}

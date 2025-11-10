@@ -29,11 +29,11 @@ export function BottomNavigation() {
   ];
   
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-40 pb-safe">
-      <div className="flex items-center justify-around py-3">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-40 pb-safe">
+      <div className="flex items-center justify-around py-1.5">
         {links.map(({ to, icon: Icon, label }) => (
-          <Link key={to} to={to} className="flex flex-col items-center py-2 px-4">
-            <Icon className={`h-6 w-6 ${isActive(to) ? 'text-primary' : 'text-muted-foreground'}`} />
+          <Link key={to} to={to} className="flex flex-col items-center py-1 px-3">
+            <Icon className={`h-5 w-5 ${isActive(to) ? 'text-primary' : 'text-muted-foreground'}`} />
           </Link>
         ))}
         
@@ -43,10 +43,10 @@ export function BottomNavigation() {
             onClick={handleCreateNew} 
             variant="ghost"
             size="icon"
-            className="flex flex-col items-center py-2 px-4"
+            className="flex flex-col items-center py-1 px-3"
             aria-label="Create new post"
           >
-            <Plus className="h-6 w-6 text-primary" />
+            <Plus className="h-5 w-5 text-primary" />
           </Button>
         )}
         
@@ -54,8 +54,8 @@ export function BottomNavigation() {
         {isAuthenticated && user ? (
           <MobileProfileDropdown />
         ) : (
-          <Link to="/auth" className="flex flex-col items-center py-2 px-4">
-            <LogIn className="h-6 w-6 text-muted-foreground" />
+          <Link to="/auth" className="flex flex-col items-center py-1 px-3">
+            <LogIn className="h-5 w-5 text-muted-foreground" />
           </Link>
         )}
       </div>
