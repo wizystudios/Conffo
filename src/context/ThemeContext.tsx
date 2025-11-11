@@ -31,7 +31,8 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Remove previous class
+    // Remove previous class with transition
+    root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
     root.classList.remove("light", "dark");
 
     const applyTheme = () => {

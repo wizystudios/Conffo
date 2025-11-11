@@ -149,38 +149,38 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-2">
-      <div className="w-full max-w-xs space-y-2">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-3">
         <Button 
           variant="ghost" 
           size="sm"
           onClick={() => navigate('/')}
-          className="mb-2 h-6 text-xs"
+          className="mb-3 h-8 text-sm"
         >
-          <ArrowLeft className="h-3 w-3 mr-1" />
+          <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
 
         {authError && (
-          <div className="mb-2 p-1.5 bg-destructive/10 border border-destructive/20 rounded">
-            <p className="text-xs text-destructive">{authError}</p>
+          <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-sm text-destructive">{authError}</p>
           </div>
         )}
         
         <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 mb-2 h-6">
-            <TabsTrigger value="login" className="text-xs">Login</TabsTrigger>
-            <TabsTrigger value="register" className="text-xs">Register</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-3 h-9">
+            <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
+            <TabsTrigger value="register" className="text-sm">Register</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="login" className="space-y-2">
-            <form onSubmit={handleSignIn} className="space-y-2">
+          <TabsContent value="login" className="space-y-3">
+            <form onSubmit={handleSignIn} className="space-y-3">
               <Input 
                 type="email" 
                 placeholder="Email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-7 text-xs"
+                className="h-9 text-sm"
                 required
               />
               <Input 
@@ -188,12 +188,12 @@ export default function AuthPage() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-7 text-xs"
+                className="h-9 text-sm"
                 required
               />
               <Button 
                 type="submit" 
-                className="w-full h-7 text-xs" 
+                className="w-full h-9 text-sm" 
                 disabled={loading}
               >
                 {loading ? "Signing in..." : "Sign In"}
@@ -201,7 +201,7 @@ export default function AuthPage() {
             </form>
           </TabsContent>
           
-          <TabsContent value="register" className="space-y-2">
+          <TabsContent value="register" className="space-y-3">
             <EnhancedRegistrationForm />
           </TabsContent>
         </Tabs>

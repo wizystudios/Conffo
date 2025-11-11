@@ -4,6 +4,7 @@ import { Message } from '@/services/chatService';
 import { FileText, Copy, Forward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { haptic } from '@/utils/hapticFeedback';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -46,6 +47,7 @@ export function ModernMessageBubble({
   const handleTouchEnd = () => {
     const touchDuration = Date.now() - touchStart;
     if (touchDuration > 500) {
+      haptic.medium();
       setShowContext(true);
     }
     setTouchStart(0);
@@ -146,6 +148,7 @@ export function ModernMessageBubble({
                 variant="ghost"
                 className="justify-start gap-2 h-11"
                 onClick={() => {
+                  haptic.light();
                   navigator.clipboard.writeText(message.content);
                   setShowContext(false);
                 }}
@@ -158,6 +161,7 @@ export function ModernMessageBubble({
               variant="ghost"
               className="justify-start gap-2 h-11"
               onClick={() => {
+                haptic.light();
                 onForward?.();
                 setShowContext(false);
               }}
@@ -170,6 +174,7 @@ export function ModernMessageBubble({
                 variant="ghost"
                 className="justify-start gap-2 h-11 text-destructive"
                 onClick={() => {
+                  haptic.heavy();
                   onDelete?.();
                   setShowContext(false);
                 }}

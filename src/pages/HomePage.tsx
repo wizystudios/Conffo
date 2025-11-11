@@ -13,6 +13,7 @@ import { FollowingFeed } from '@/components/FollowingFeed';
 import { offlineQueue } from '@/utils/offlineQueue';
 import { RefreshCw, Search } from 'lucide-react';
 import { PostSkeleton } from '@/components/PostSkeleton';
+import { haptic } from '@/utils/hapticFeedback';
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState<'crew' | 'fans' | 'all'>('crew');
@@ -143,10 +144,12 @@ const HomePage = () => {
   };
 
   const handlePullToRefresh = async () => {
+    haptic.medium();
     setIsRefreshing(true);
     await offlineQueue.uploadQueue();
     await refetchRecent();
     await refetchFans();
+    haptic.success();
     setIsRefreshing(false);
   };
 
@@ -157,12 +160,13 @@ const HomePage = () => {
   };
 
   const handleTabChange = (tab: 'crew' | 'fans' | 'all') => {
+    haptic.light();
     setActiveTab(tab);
   };
 
   // For "My Crew" tab - show posts from users this user follows
   const currentConfessions = activeTab === 'all' ? recentConfessions : activeTab === 'fans' ? fansPosts : [];
-  const isLoadingConfessions = activeTab === 'all' ? isLoadingRecent : activeTab === 'fans' ? isLoadingFans : activeTab === 'crew';
+  const isLoadingConfessions = activeTab === 'all' ? isLoadingRecent : activeTab === 'fans' ? isLoadingFans : false;
 
   return (
     <Layout>
@@ -186,15 +190,7 @@ const HomePage = () => {
         )}
 
         <div className="sticky top-[56px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 py-1">
-          <div className="flex items-center gap-1 mb-1">
-            <Button
-              variant={activeTab === 'crew' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('crew')}
-              className="flex-1 h-6 text-xs rounded-full"
-            >
-              My Crew
-            </Button>
+          <div className="flex items-center justify-center gap-1 mb-1">
             <Button
               variant={activeTab === 'fans' ? 'default' : 'ghost'}
               size="sm"
@@ -210,6 +206,14 @@ const HomePage = () => {
               className="flex-1 h-6 text-xs rounded-full"
             >
               All Posts
+            </Button>
+            <Button
+              variant={activeTab === 'crew' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleTabChange('crew')}
+              className="flex-1 h-6 text-xs rounded-full"
+            >
+              My Crew
             </Button>
           </div>
           <Button

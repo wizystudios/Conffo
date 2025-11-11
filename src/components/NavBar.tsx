@@ -18,6 +18,7 @@ import { markAllNotificationsAsRead, getUserNotifications, deleteNotification, g
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, formatDistanceToNow } from "date-fns";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
+import { ProfileMenuSheet } from "@/components/ProfileMenuSheet";
 
 export function NavBar() {
   const [open, setOpen] = useState(false);
@@ -222,51 +223,15 @@ export function NavBar() {
           )}
           
           {isAuthenticated && user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 p-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatarUrl || ""} alt={user?.username || "User"} />
-                    <AvatarFallback>{user?.username?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
-                  </Avatar>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                 <DropdownMenuItem 
-                   onClick={() => {
-                     const event = new CustomEvent('create-confession');
-                     window.dispatchEvent(event);
-                   }}
-                   className="gap-2"
-                 >
-                   <Plus className="h-4 w-4" />
-                   Create Confession
-                 </DropdownMenuItem>
-                 <DropdownMenuItem 
-                   onClick={() => {
-                     const event = new CustomEvent('create-story');
-                     window.dispatchEvent(event);
-                   }}
-                   className="gap-2"
-                 >
-                   <Plus className="h-4 w-4" />
-                   Create Story
-                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="w-full flex items-center gap-2 p-2">
-                    <Settings className="h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-red-600">
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ProfileMenuSheet>
+              <Button variant="ghost" className="gap-2 p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatarUrl || ""} alt={user?.username || "User"} />
+                  <AvatarFallback>{user?.username?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+                </Avatar>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </ProfileMenuSheet>
           ) : isAuthenticated ? (
             <Link to="/profile">
               <Button variant="ghost" className="gap-2">

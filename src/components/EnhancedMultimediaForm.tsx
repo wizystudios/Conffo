@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { addConfessionWithMedia } from '@/services/supabaseDataService';
 import { Room } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { compressImages } from '@/utils/imageCompression';
 
 interface MediaFile {
   file: File;
@@ -42,10 +43,13 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
     'relationships', 'school', 'work', 'family', 'friends', 'random'
   ];
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
-    files.forEach(file => {
+    // Compress images before adding
+    const processedFiles = await compressImages(files);
+    
+    processedFiles.forEach(file => {
       if (file.size > 100 * 1024 * 1024) { // 100MB limit
         toast({
           title: "File too large",
