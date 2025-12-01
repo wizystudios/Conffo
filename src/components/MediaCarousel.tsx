@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface MediaItem {
   url: string;
@@ -9,44 +10,72 @@ interface MediaItem {
 interface MediaCarouselProps {
   media: MediaItem[];
   className?: string;
+  onOpenGallery?: (index: number) => void;
 }
 
-export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
+export function MediaCarousel({ media, className = '', onOpenGallery }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   if (!media || media.length === 0) return null;
 
   if (media.length === 1) {
     const item = media[0];
     return (
-      <div className={`relative w-full aspect-square bg-background ${className}`}>
+      <div 
+        className={`relative w-full aspect-square bg-background ${className}`}
+        onClick={() => onOpenGallery?.(0)}
+      >
         {item.type === 'image' ? (
           <img
             src={item.url}
             alt="Post media"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain cursor-pointer"
             loading="lazy"
           />
+        ) : item.type === 'video' ? (
+          <div className="relative w-full h-full">
+            <video
+              ref={videoRef}
+              src={item.url}
+              controls
+              playsInline
+              muted={isMuted}
+              className="w-full h-full object-contain"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted(!isMuted);
+                if (videoRef.current) videoRef.current.muted = !isMuted;
+              }}
+              className="absolute top-2 right-2 h-8 w-8 p-0 bg-black/60 hover:bg-black/80 rounded-full"
+            >
+              {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <Volume2 className="h-4 w-4 text-white" />}
+            </Button>
+          </div>
         ) : (
-          <video
-            src={item.url}
-            controls
-            playsInline
-            className="w-full h-full object-contain"
-          />
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <audio controls src={item.url} className="max-w-full" />
+          </div>
         )}
       </div>
     );
   }
 
-  const handlePrev = () => {
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!containerRef.current) return;
     const itemWidth = containerRef.current.offsetWidth;
     containerRef.current.scrollBy({ left: -itemWidth, behavior: 'smooth' });
   };
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!containerRef.current) return;
     const itemWidth = containerRef.current.offsetWidth;
     containerRef.current.scrollBy({ left: itemWidth, behavior: 'smooth' });
@@ -65,7 +94,8 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide flex"
+        onClick={() => onOpenGallery?.(currentIndex)}
+        className="w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide flex cursor-pointer"
         style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {media.map((item, index) => (
@@ -85,7 +115,9 @@ export function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
                 src={item.url}
                 controls
                 playsInline
+                muted
                 className="w-full h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
               />
             ) : item.type === 'audio' ? (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 p-6">

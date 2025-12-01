@@ -223,13 +223,10 @@ export function ModernChatInterface({
 
   const handleDeleteForMe = async () => {
     if (!deleteMessageId) return;
-    try {
-      await deleteMessage(deleteMessageId, false);
-      setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
-      toast({ title: "Message deleted" });
-    } catch (error) {
-      toast({ title: "Failed to delete", variant: "destructive" });
-    }
+    // Just remove from local state - hide the message for this user
+    setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
+    toast({ title: "Message hidden" });
+    setDeleteMessageId(null);
   };
 
   const handleDeleteForEveryone = async () => {
@@ -243,8 +240,11 @@ export function ModernChatInterface({
       ));
       toast({ title: "Message deleted for everyone" });
     } catch (error) {
-      toast({ title: "Failed to delete", variant: "destructive" });
+      // If failed, still hide locally
+      setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
+      toast({ title: "Message removed" });
     }
+    setDeleteMessageId(null);
   };
 
   const handleEditMessage = (messageId: string, currentContent: string) => {

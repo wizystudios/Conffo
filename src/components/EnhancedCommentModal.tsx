@@ -241,7 +241,7 @@ export function EnhancedCommentModal({
                       {confessionMediaUrls.map((url, index) => (
                         <div key={index} className="flex-shrink-0 w-24 h-24">
                           {confessionMediaTypes?.[index] === 'video' ? (
-                            <video src={url} className="w-full h-full object-cover rounded" />
+                            <video src={url} controls playsInline className="w-full h-full object-cover rounded" />
                           ) : (
                             <img src={url} alt="" className="w-full h-full object-cover rounded" />
                           )}
@@ -251,7 +251,7 @@ export function EnhancedCommentModal({
                   ) : (
                     <div className="w-32 h-32">
                       {confessionMediaTypes?.[0] === 'video' ? (
-                        <video src={confessionMediaUrls[0]} className="w-full h-full object-cover rounded" />
+                        <video src={confessionMediaUrls[0]} controls playsInline className="w-full h-full object-cover rounded" />
                       ) : (
                         <img src={confessionMediaUrls[0]} alt="" className="w-full h-full object-cover rounded" />
                       )}
@@ -261,7 +261,7 @@ export function EnhancedCommentModal({
               ) : confessionMediaUrl && (
                 <div className="mt-2 rounded-lg overflow-hidden w-32 h-32">
                   {confessionMediaType === 'video' ? (
-                    <video src={confessionMediaUrl} className="w-full h-full object-cover rounded" />
+                    <video src={confessionMediaUrl} controls playsInline className="w-full h-full object-cover rounded" />
                   ) : (
                     <img src={confessionMediaUrl} alt="" className="w-full h-full object-cover rounded" />
                   )}

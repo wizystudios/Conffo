@@ -169,20 +169,18 @@ export function ModernMessageBubble({
               <Forward className="h-4 w-4" />
               Forward
             </Button>
-            {isOwn && (
-              <Button
-                variant="ghost"
-                className="justify-start gap-2 h-11 text-destructive"
-                onClick={() => {
-                  haptic.heavy();
-                  onDelete?.();
-                  setShowContext(false);
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              className="justify-start gap-2 h-11 text-destructive"
+              onClick={() => {
+                haptic.heavy();
+                onDelete?.();
+                setShowContext(false);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              {isOwn ? 'Delete' : 'Hide for me'}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
