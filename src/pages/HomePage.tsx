@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
@@ -11,12 +11,29 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { FollowingFeed } from '@/components/FollowingFeed';
 import { offlineQueue } from '@/utils/offlineQueue';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { RefreshCw, Search } from 'lucide-react';
 import { PostSkeleton } from '@/components/PostSkeleton';
 import { haptic } from '@/utils/hapticFeedback';
+import { Confession } from '@/types';
+
+// Transform raw DB data to Confession type
+const transformConfession = (raw: any): Confession => ({
+  id: raw.id,
+  content: raw.content,
+  room: raw.room_id,
+  userId: raw.user_id,
+  timestamp: new Date(raw.created_at).getTime(),
+  reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
+  userReactions: [],
+  commentCount: 0,
+  mediaUrl: raw.media_url,
+  mediaType: raw.media_type as 'image' | 'video' | 'audio' | undefined,
+  tags: raw.tags || []
+});
 
 const HomePage = () => {
-  const [activeTab, setActiveTab] = useState<'crew' | 'fans' | 'all'>('crew');
+  const [activeTab, setActiveTab] = useState<'crew' | 'fans' | 'all'>('all');
   const [showConfessionForm, setShowConfessionForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
@@ -38,6 +55,7 @@ const HomePage = () => {
     };
   }, []);
 
+  // All Posts query
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch: refetchRecent, isLoading: isLoadingRecent } = useInfiniteQuery({
     queryKey: ['confessions', 'recent'],
     queryFn: async ({ pageParam = 0 }) => {
@@ -48,7 +66,7 @@ const HomePage = () => {
         .range(pageParam, pageParam + 9);
       
       if (error) throw error;
-      return data || [];
+      return (data || []).map(transformConfession);
     },
     getNextPageParam: (lastPage, pages) => {
       if (lastPage.length < 10) return undefined;
@@ -59,6 +77,7 @@ const HomePage = () => {
 
   const recentConfessions = data?.pages.flatMap(page => page) || [];
 
+  // Fans Posts query (posts from people who follow current user)
   const { data: fansData, fetchNextPage: fetchNextFans, hasNextPage: hasNextFans, isFetchingNextPage: isFetchingNextFans, refetch: refetchFans, isLoading: isLoadingFans } = useInfiniteQuery({
     queryKey: ['confessions', 'fans', user?.id],
     enabled: !!user,
@@ -82,7 +101,7 @@ const HomePage = () => {
         .range(pageParam, pageParam + 9);
       
       if (error) throw error;
-      return data || [];
+      return (data || []).map(transformConfession);
     },
     getNextPageParam: (lastPage, pages) => {
       if (lastPage.length < 10) return undefined;
@@ -130,13 +149,13 @@ const HomePage = () => {
     const isRightSwipe = distance < -50;
 
     if (isLeftSwipe) {
-      if (activeTab === 'crew') setActiveTab('fans');
-      else if (activeTab === 'fans') setActiveTab('all');
+      if (activeTab === 'fans') setActiveTab('all');
+      else if (activeTab === 'all') setActiveTab('crew');
     }
     
     if (isRightSwipe) {
-      if (activeTab === 'all') setActiveTab('fans');
-      else if (activeTab === 'fans') setActiveTab('crew');
+      if (activeTab === 'crew') setActiveTab('all');
+      else if (activeTab === 'all') setActiveTab('fans');
     }
 
     setTouchStart(0);
@@ -164,12 +183,11 @@ const HomePage = () => {
     setActiveTab(tab);
   };
 
-  // For "My Crew" tab - show posts from users this user follows
-  const currentConfessions = activeTab === 'all' ? recentConfessions : activeTab === 'fans' ? fansPosts : [];
   const isLoadingConfessions = activeTab === 'all' ? isLoadingRecent : activeTab === 'fans' ? isLoadingFans : false;
 
   return (
     <Layout>
+      <OfflineIndicator />
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -189,31 +207,31 @@ const HomePage = () => {
           </div>
         )}
 
-        <div className="sticky top-[56px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 py-1">
+        <div className="sticky top-[44px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 py-1">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Button
               variant={activeTab === 'fans' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => handleTabChange('fans')}
-              className="flex-1 h-6 text-xs rounded-full"
+              className="h-6 text-xs rounded-full px-3"
             >
-              My Fans
+              Fans
             </Button>
             <Button
               variant={activeTab === 'all' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => handleTabChange('all')}
-              className="flex-1 h-6 text-xs rounded-full"
+              className="h-6 text-xs rounded-full px-4"
             >
-              All Posts
+              All
             </Button>
             <Button
               variant={activeTab === 'crew' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => handleTabChange('crew')}
-              className="flex-1 h-6 text-xs rounded-full"
+              className="h-6 text-xs rounded-full px-3"
             >
-              My Crew
+              Crew
             </Button>
           </div>
           <Button

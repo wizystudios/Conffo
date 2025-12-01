@@ -35,6 +35,7 @@ import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { CallInterface } from '@/components/CallInterface';
 import { EnhancedCommentModal } from '@/components/EnhancedCommentModal';
 import { MediaCarousel } from '@/components/MediaCarousel';
+import { MediaGalleryViewer } from '@/components/MediaGalleryViewer';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -54,7 +55,19 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentCommentCount, setCurrentCommentCount] = useState(confession.commentCount || 0);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Prepare media array for gallery
+  const mediaArray = confession.mediaUrls && confession.mediaUrls.length > 0
+    ? confession.mediaUrls.map((url, index) => ({
+        url,
+        type: (confession.mediaTypes?.[index] || 'image') as 'image' | 'video' | 'audio'
+      }))
+    : confession.mediaUrl 
+      ? [{ url: confession.mediaUrl, type: (confession.mediaType || 'image') as 'image' | 'video' | 'audio' }]
+      : [];
   
   const formatTimeShort = (date: Date) => {
     const now = new Date();
@@ -372,58 +385,23 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       </div>
       
       {/* Multiple media carousel or single media */}
-      {confession.mediaUrls && confession.mediaUrls.length > 1 ? (
+      {mediaArray.length > 0 && (
         <MediaCarousel 
-          media={confession.mediaUrls.map((url, index) => ({
-            url,
-            type: confession.mediaTypes?.[index] || 'image'
-          }))}
+          media={mediaArray}
+          onOpenGallery={(index) => {
+            setGalleryIndex(index);
+            setShowGallery(true);
+          }}
         />
-      ) : confession.mediaUrl && (
-        <div className="w-full bg-background aspect-square flex items-center justify-center">
-          {confession.mediaType === 'image' ? (
-            <img 
-              src={confession.mediaUrl} 
-              alt="Post media" 
-              className="w-full h-full object-contain"
-              loading="lazy"
-            />
-          ) : confession.mediaType === 'video' ? (
-            <div className="relative w-full h-full">
-              <video 
-                ref={videoRef}
-                src={confession.mediaUrl} 
-                muted={isMuted}
-                loop
-                playsInline
-                className="w-full h-full object-contain"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleVolumeToggle}
-                className="absolute top-4 right-4 h-8 w-8 p-0 bg-black/60 hover:bg-black/80 rounded-full"
-              >
-                {isMuted ? <VolumeX className="h-4 w-4 text-white" /> : <Volume2 className="h-4 w-4 text-white" />}
-              </Button>
-              
-              {/* View count overlay */}
-              <div className="absolute bottom-4 left-4 bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
-                <div className="w-1 h-1 bg-white rounded-full"></div>
-                {Math.floor(Math.random() * 10000) + 100} views
-              </div>
-            </div>
-          ) : confession.mediaType === 'audio' ? (
-            <div className="w-full bg-gradient-to-br from-primary/20 to-primary/5 p-6 flex items-center justify-center">
-              <div className="max-w-md w-full">
-                <audio controls className="w-full" src={confession.mediaUrl}>
-                  Your browser does not support the audio element.
-                </audio>
-              </div>
-            </div>
-          ) : null}
-        </div>
       )}
+      
+      {/* Fullscreen Gallery Viewer */}
+      <MediaGalleryViewer
+        media={mediaArray}
+        initialIndex={galleryIndex}
+        isOpen={showGallery}
+        onClose={() => setShowGallery(false)}
+      />
       
       <div className="px-4 pt-3">
         <div className="mb-3">

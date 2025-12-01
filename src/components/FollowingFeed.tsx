@@ -4,10 +4,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { InstagramConfessionCard } from './InstagramConfessionCard';
 import { Card } from './ui/card';
 import { UserPlus } from 'lucide-react';
+import { Confession } from '@/types';
+
+// Transform raw DB data to Confession type
+const transformConfession = (raw: any): Confession => ({
+  id: raw.id,
+  content: raw.content,
+  room: raw.room_id,
+  userId: raw.user_id,
+  timestamp: new Date(raw.created_at).getTime(),
+  reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
+  userReactions: [],
+  commentCount: 0,
+  mediaUrl: raw.media_url,
+  mediaType: raw.media_type as 'image' | 'video' | 'audio' | undefined,
+  tags: raw.tags || []
+});
 
 export function FollowingFeed() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<Confession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +53,7 @@ export function FollowingFeed() {
           .order('created_at', { ascending: false })
           .limit(20);
 
-        setPosts(confessions || []);
+        setPosts((confessions || []).map(transformConfession));
       } catch (error) {
         console.error('Error fetching following feed:', error);
       } finally {
