@@ -712,32 +712,17 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_comment_count: {
-        Args: { confession_uuid: string }
-        Returns: number
-      }
+      get_comment_count: { Args: { confession_uuid: string }; Returns: number }
       get_comment_like_count: {
         Args: { comment_uuid: string }
         Returns: number
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_followers_count: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
-      get_following_count: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
-      get_reaction_counts: {
-        Args: { confession_uuid: string }
-        Returns: Json
-      }
+      get_current_user_role: { Args: never; Returns: string }
+      get_followers_count: { Args: { user_uuid: string }; Returns: number }
+      get_following_count: { Args: { user_uuid: string }; Returns: number }
+      get_reaction_counts: { Args: { confession_uuid: string }; Returns: Json }
       get_reaction_counts_for_all_confessions: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           confession_id: string
           total_reactions: number
