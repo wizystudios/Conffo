@@ -193,7 +193,7 @@ const HomePage = () => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="sticky top-[44px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 py-1.5">
+        <div className="px-2 py-1.5">
           <div className="flex items-center justify-between gap-1">
             <Button
               variant="ghost"

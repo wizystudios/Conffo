@@ -64,29 +64,25 @@ export default function SearchPage() {
   return (
     <Layout>
       <div className="w-full max-w-full p-2 space-y-2">
-        {/* Search Header */}
-        <div className="space-y-2">
-          <h1 className="text-sm font-bold">Search</h1>
-          
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="pl-7 pr-7 h-7 text-xs"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 h-6 w-6"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="pl-7 pr-7 h-7 text-xs"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 h-6 w-6"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
         </div>
 
         {/* Quick Filters */}
