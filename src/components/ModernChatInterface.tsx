@@ -334,12 +334,15 @@ export function ModernChatInterface({
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header - Centered Profile */}
-      <div className="flex flex-col items-center p-2 border-b bg-card">
+      {/* Header with Back Button and Centered Profile */}
+      <div className="flex items-center justify-between p-2 border-b bg-card">
+        <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="rounded-full">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex flex-col items-center cursor-pointer">
-              <Avatar className="h-12 w-12 mb-1">
+              <Avatar className="h-10 w-10 mb-1">
                 <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
                 <AvatarFallback className="text-sm">
                   {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
@@ -369,6 +372,7 @@ export function ModernChatInterface({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <div className="w-10" /> {/* Spacer for balance */}
       </div>
 
       {/* Messages */}

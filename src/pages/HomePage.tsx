@@ -193,57 +193,54 @@ const HomePage = () => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {isAuthenticated && (
-          <div className="px-2 sm:px-4 py-1">
+        <div className="sticky top-[44px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 py-1.5">
+          <div className="flex items-center justify-between gap-1">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              onClick={handlePullToRefresh}
+              disabled={isRefreshing}
+              className="h-7 w-7"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              <Button
+                variant={activeTab === 'fans' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('fans')}
+                className="h-6 text-xs rounded-full px-3"
+              >
+                Fans
+              </Button>
+              <Button
+                variant={activeTab === 'all' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('all')}
+                className="h-6 text-xs rounded-full px-4"
+              >
+                All
+              </Button>
+              <Button
+                variant={activeTab === 'crew' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handleTabChange('crew')}
+                className="h-6 text-xs rounded-full px-3"
+              >
+                Crew
+              </Button>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => navigate('/search')}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-muted/50 hover:bg-muted h-6"
+              className="h-7 w-7"
             >
-              <Search className="h-3 w-3" />
-              <span className="text-xs text-muted-foreground">Search</span>
+              <Search className="h-4 w-4" />
             </Button>
           </div>
-        )}
-
-        <div className="sticky top-[44px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 py-1">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Button
-              variant={activeTab === 'fans' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('fans')}
-              className="h-6 text-xs rounded-full px-3"
-            >
-              Fans
-            </Button>
-            <Button
-              variant={activeTab === 'all' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('all')}
-              className="h-6 text-xs rounded-full px-4"
-            >
-              All
-            </Button>
-            <Button
-              variant={activeTab === 'crew' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => handleTabChange('crew')}
-              className="h-6 text-xs rounded-full px-3"
-            >
-              Crew
-            </Button>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePullToRefresh}
-            disabled={isRefreshing}
-            className="w-full h-5 text-xs"
-          >
-            <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Syncing...' : 'Refresh & Sync'}
-          </Button>
         </div>
 
       <AllUsersBar />
