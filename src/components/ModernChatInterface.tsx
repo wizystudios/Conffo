@@ -17,6 +17,10 @@ import { ForwardMessageModal } from '@/components/ForwardMessageModal';
 import { DeleteMessageDialog } from '@/components/DeleteMessageDialog';
 import { ReportDialog } from '@/components/ReportDialog';
 import { useNavigate } from 'react-router-dom';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
+import { OnlineIndicator } from '@/components/OnlineIndicator';
+import { TypingIndicator } from '@/components/TypingIndicator';
 
 
 interface ChatInterfaceProps {
@@ -50,11 +54,12 @@ export function ModernChatInterface({
   const { user } = useAuth();
   const { messages, isLoading, setMessages } = useRealTimeChat(targetUserId);
   const { markAsRead } = useUnreadMessages();
+  const { isTyping: isTargetTyping, sendTypingEvent } = useTypingIndicator(targetUserId);
+  const { isTargetOnline } = useOnlinePresence(targetUserId);
   const [newMessage, setNewMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
@@ -67,6 +72,7 @@ export function ModernChatInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   // Get target user profile and check follow status
@@ -335,20 +341,24 @@ export function ModernChatInterface({
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header with Back Button and Centered Profile */}
-      <div className="flex items-center justify-between p-2 border-b bg-card">
+      <div className="flex items-center justify-between p-2 bg-card">
         <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="rounded-full">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex flex-col items-center cursor-pointer">
-              <Avatar className="h-10 w-10 mb-1">
-                <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
-                <AvatarFallback className="text-sm">
-                  {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-10 w-10 mb-1">
+                  <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
+                  <AvatarFallback className="text-sm">
+                    {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <OnlineIndicator isOnline={isTargetOnline} size="md" className="bottom-1 right-0" />
+              </div>
               <h3 className="font-semibold text-xs">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
+              {isTargetOnline && <span className="text-[10px] text-green-500">online</span>}
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="center" className="w-44">
@@ -420,11 +430,16 @@ export function ModernChatInterface({
             );
           })}
         </div>
+        {isTargetTyping && (
+          <div className="px-4 pb-2">
+            <TypingIndicator />
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-background border-t">
+      <div className="p-3 bg-background">
         <div className="flex items-center gap-2">
           <input
             type="file"
@@ -452,9 +467,15 @@ export function ModernChatInterface({
 
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              // Send typing event
+              if (e.target.value.length > 0) {
+                sendTypingEvent();
+              }
+            }}
             placeholder="Type your message here"
-            className="flex-1 rounded-full bg-gray-100 border-0 text-sm px-4 focus-visible:ring-0"
+            className="flex-1 rounded-full bg-muted border-0 text-sm px-4 focus-visible:ring-0"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

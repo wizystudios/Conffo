@@ -146,7 +146,7 @@ export function NavBar() {
   };
   
   return (
-    <div className={`bg-background fixed top-0 left-0 right-0 border-b z-40 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <div className={`bg-background fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="container mx-auto flex justify-between items-center px-2 py-1.5">
         <Link 
           to="/" 

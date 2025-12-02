@@ -90,15 +90,14 @@ export default function ChatListPage() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center gap-2 p-2 border-b bg-background/95 backdrop-blur-sm">
+      <div className="flex items-center gap-2 p-2 bg-background">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-7 w-7">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-sm font-bold">Messages</h1>
       </div>
 
       {/* Search */}
-      <div className="p-2 border-b">
+      <div className="p-2">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
           <Input

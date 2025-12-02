@@ -97,6 +97,16 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           setConfessionAuthor(authorData);
         }
         
+        // Get comment count from database
+        const { count: commentCount } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('confession_id', confession.id);
+        
+        if (commentCount !== null) {
+          setCurrentCommentCount(commentCount);
+        }
+        
         const { data: savedData } = await supabase
           .from('saved_confessions')
           .select('id')
@@ -148,8 +158,40 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         console.error('Error fetching user data:', error);
       }
     };
+
+    // Fetch comment count even if not logged in
+    const fetchPublicData = async () => {
+      try {
+        // Get confession author info
+        const { data: authorData } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', confession.userId)
+          .maybeSingle();
+        
+        if (authorData) {
+          setConfessionAuthor(authorData);
+        }
+
+        // Get comment count from database
+        const { count: commentCount } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('confession_id', confession.id);
+        
+        if (commentCount !== null) {
+          setCurrentCommentCount(commentCount);
+        }
+      } catch (error) {
+        console.error('Error fetching public data:', error);
+      }
+    };
     
-    fetchUserData();
+    if (user) {
+      fetchUserData();
+    } else {
+      fetchPublicData();
+    }
   }, [confession.id, confession.userId, user]);
 
   useEffect(() => {
