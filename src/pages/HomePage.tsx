@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
@@ -12,10 +12,11 @@ import { Button } from '@/components/ui/button';
 import { FollowingFeed } from '@/components/FollowingFeed';
 import { offlineQueue } from '@/utils/offlineQueue';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { RefreshCw, Search } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { PostSkeleton } from '@/components/PostSkeleton';
 import { haptic } from '@/utils/hapticFeedback';
 import { Confession } from '@/types';
+import { PullToRefreshIndicator } from '@/components/PullToRefreshIndicator';
 
 // Transform raw DB data to Confession type
 const transformConfession = (raw: any): Confession => ({
@@ -36,11 +37,15 @@ const HomePage = () => {
   const [activeTab, setActiveTab] = useState<'crew' | 'fans' | 'all'>('all');
   const [showConfessionForm, setShowConfessionForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const startY = useRef(0);
+  const isPulling = useRef(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const observerTarget = useRef(null);
+  const REFRESH_THRESHOLD = 80;
 
   useEffect(() => {
     const handleCreateConfession = () => setShowConfessionForm(true);
@@ -77,7 +82,7 @@ const HomePage = () => {
 
   const recentConfessions = data?.pages.flatMap(page => page) || [];
 
-  // Fans Posts query (posts from people who follow current user)
+  // Fans Posts query
   const { data: fansData, fetchNextPage: fetchNextFans, hasNextPage: hasNextFans, isFetchingNextPage: isFetchingNextFans, refetch: refetchFans, isLoading: isLoadingFans } = useInfiniteQuery({
     queryKey: ['confessions', 'fans', user?.id],
     enabled: !!user,
@@ -132,16 +137,62 @@ const HomePage = () => {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, hasNextFans, isFetchingNextFans, activeTab, fetchNextPage, fetchNextFans]);
 
-  // Swipe gesture handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
+  // Pull to refresh handlers
+  const handlePullTouchStart = useCallback((e: React.TouchEvent) => {
+    if (window.scrollY <= 0) {
+      startY.current = e.touches[0].clientY;
+      isPulling.current = true;
+    }
+  }, []);
+
+  const handlePullTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling.current || isRefreshing) return;
+    if (window.scrollY > 0) {
+      isPulling.current = false;
+      setPullDistance(0);
+      return;
+    }
+
+    const currentY = e.touches[0].clientY;
+    const distance = Math.max(0, (currentY - startY.current) * 0.5);
+    if (distance > 0) {
+      setPullDistance(Math.min(distance, REFRESH_THRESHOLD * 1.5));
+    }
+  }, [isRefreshing]);
+
+  const handlePullTouchEnd = useCallback(async () => {
+    if (!isPulling.current) return;
+    isPulling.current = false;
+
+    if (pullDistance >= REFRESH_THRESHOLD && !isRefreshing) {
+      haptic.medium();
+      setIsRefreshing(true);
+      setPullDistance(REFRESH_THRESHOLD);
+      
+      try {
+        await offlineQueue.uploadQueue();
+        await refetchRecent();
+        await refetchFans();
+        haptic.success();
+      } finally {
+        setIsRefreshing(false);
+        setPullDistance(0);
+      }
+    } else {
+      setPullDistance(0);
+    }
+  }, [pullDistance, isRefreshing, refetchRecent, refetchFans]);
+
+  // Swipe gesture handlers for tabs
+  const handleSwipeStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleSwipeMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
 
-  const handleTouchEnd = () => {
+  const handleSwipeEnd = () => {
     if (!touchStart || !touchEnd) return;
     
     const distance = touchStart - touchEnd;
@@ -162,7 +213,7 @@ const HomePage = () => {
     setTouchEnd(0);
   };
 
-  const handlePullToRefresh = async () => {
+  const handleManualRefresh = async () => {
     haptic.medium();
     setIsRefreshing(true);
     await offlineQueue.uploadQueue();
@@ -183,22 +234,29 @@ const HomePage = () => {
     setActiveTab(tab);
   };
 
-  const isLoadingConfessions = activeTab === 'all' ? isLoadingRecent : activeTab === 'fans' ? isLoadingFans : false;
-
   return (
     <Layout>
       <OfflineIndicator />
+      
+      {/* Pull to refresh indicator */}
+      <PullToRefreshIndicator 
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        progress={Math.min(pullDistance / REFRESH_THRESHOLD, 1)}
+      />
+      
       <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onTouchStart={(e) => { handlePullTouchStart(e); handleSwipeStart(e); }}
+        onTouchMove={(e) => { handlePullTouchMove(e); handleSwipeMove(e); }}
+        onTouchEnd={() => { handlePullTouchEnd(); handleSwipeEnd(); }}
       >
+        {/* Tab bar */}
         <div className="px-2 py-1.5">
-          <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              onClick={handlePullToRefresh}
+              onClick={handleManualRefresh}
               disabled={isRefreshing}
               className="h-7 w-7"
             >
@@ -231,29 +289,20 @@ const HomePage = () => {
                 Crew
               </Button>
             </div>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/search')}
-              className="h-7 w-7"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 
-      <AllUsersBar />
+        <AllUsersBar />
 
-      {isAuthenticated && showConfessionForm && (
-        <div className="mx-2 mb-3 p-3 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">
-          <h2 className="text-base font-semibold mb-3">Share Your Confession</h2>
-          <EnhancedMultimediaForm 
-            onSuccess={handleConfessionSuccess} 
-            onCancel={() => setShowConfessionForm(false)}
-          />
-        </div>
-      )}
+        {isAuthenticated && showConfessionForm && (
+          <div className="mx-2 mb-3 p-3 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">
+            <h2 className="text-base font-semibold mb-3">Share Your Confession</h2>
+            <EnhancedMultimediaForm 
+              onSuccess={handleConfessionSuccess} 
+              onCancel={() => setShowConfessionForm(false)}
+            />
+          </div>
+        )}
 
         {activeTab === 'crew' ? (
           <FollowingFeed />
