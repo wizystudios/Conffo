@@ -75,8 +75,38 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
               (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
       };
       
-      // Fix the type issue by ensuring mediaType is correctly typed
-      const mediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
+      // Parse media URLs - check if it's a JSON array
+      let mediaUrls: string[] = [];
+      let mediaTypes: ('image' | 'video' | 'audio')[] = [];
+      let singleMediaUrl: string | null = null;
+      let singleMediaType: 'image' | 'video' | 'audio' | undefined = undefined;
+      
+      if (row.media_url) {
+        try {
+          // Try to parse as JSON array
+          if (row.media_url.startsWith('[')) {
+            mediaUrls = JSON.parse(row.media_url);
+            // For multiple media, determine types from URL extensions or default to image
+            mediaTypes = mediaUrls.map(url => {
+              if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+              if (url.match(/\.(mp3|wav|ogg|webm)$/i)) return 'audio';
+              return 'image';
+            });
+          } else {
+            // Single URL
+            singleMediaUrl = row.media_url;
+            singleMediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
+            mediaUrls = [row.media_url];
+            mediaTypes = [singleMediaType || 'image'];
+          }
+        } catch {
+          // If JSON parse fails, treat as single URL
+          singleMediaUrl = row.media_url;
+          singleMediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
+          mediaUrls = [row.media_url];
+          mediaTypes = [singleMediaType || 'image'];
+        }
+      }
       
       return {
         id: row.id,
@@ -87,8 +117,10 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         reactions,
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
-        mediaUrl: row.media_url || null,
-        mediaType,
+        mediaUrl: singleMediaUrl || (mediaUrls.length > 0 ? mediaUrls[0] : null),
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        mediaType: singleMediaType,
+        mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
         tags: row.tags || []
       };
     }));
@@ -162,8 +194,34 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
             (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
     };
     
-    // Fix: Cast media_type to the correct union type
-    const mediaType = data.media_type as 'image' | 'video' | 'audio' | undefined;
+    // Parse media URLs - check if it's a JSON array
+    let mediaUrls: string[] = [];
+    let mediaTypes: ('image' | 'video' | 'audio')[] = [];
+    let singleMediaUrl: string | null = null;
+    let singleMediaType: 'image' | 'video' | 'audio' | undefined = undefined;
+    
+    if (data.media_url) {
+      try {
+        if (data.media_url.startsWith('[')) {
+          mediaUrls = JSON.parse(data.media_url);
+          mediaTypes = mediaUrls.map(url => {
+            if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+            if (url.match(/\.(mp3|wav|ogg|webm)$/i)) return 'audio';
+            return 'image';
+          });
+        } else {
+          singleMediaUrl = data.media_url;
+          singleMediaType = data.media_type as 'image' | 'video' | 'audio' | undefined;
+          mediaUrls = [data.media_url];
+          mediaTypes = [singleMediaType || 'image'];
+        }
+      } catch {
+        singleMediaUrl = data.media_url;
+        singleMediaType = data.media_type as 'image' | 'video' | 'audio' | undefined;
+        mediaUrls = [data.media_url];
+        mediaTypes = [singleMediaType || 'image'];
+      }
+    }
     
     return {
       id: data.id,
@@ -174,8 +232,10 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
       reactions,
       commentCount: typeof commentCount === 'number' ? commentCount : 0,
       userReactions,
-      mediaUrl: data.media_url || null,
-      mediaType,
+      mediaUrl: singleMediaUrl || (mediaUrls.length > 0 ? mediaUrls[0] : null),
+      mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+      mediaType: singleMediaType,
+      mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
       tags: data.tags || []
     };
   } catch (error) {
