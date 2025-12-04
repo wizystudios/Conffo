@@ -1,28 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bell, BellDot, Check, Trash2, Sun, Moon, User, Heart, Bookmark, Settings, LogOut, Shield, Palette } from "lucide-react";
+import { Bell, BellDot, Check, Trash2, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
-import { useTheme } from "@/context/ThemeContext";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { markAllNotificationsAsRead, getUserNotifications, deleteNotification, getNotificationSender } from "@/utils/notificationUtils";
-import { Checkbox } from "@/components/ui/checkbox";
 import { formatDistanceToNow } from "date-fns";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { haptic } from "@/utils/hapticFeedback";
+import { FullPageMenu } from "@/components/FullPageMenu";
 
 export function NavBar() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [showNotificationBadge, setShowNotificationBadge] = useState(false);
-  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isNavbarVisible = useScrollNavbar();
   
   // Fetch notifications
@@ -92,24 +89,9 @@ export function NavBar() {
     refetchNotifications();
   };
 
-  const handleLogout = async () => {
-    haptic.medium();
-    try {
-      await supabase.auth.signOut();
-      toast({ title: "Logged out successfully" });
-      navigate('/auth');
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to log out", variant: "destructive" });
-    }
-  };
-
-  const handleNavigation = (path: string) => {
+  const handleMenuToggle = () => {
     haptic.light();
-    navigate(path);
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setIsMenuOpen(!isMenuOpen);
   };
   
   return (
@@ -223,61 +205,11 @@ export function NavBar() {
             </Popover>
           )}
           
-          {/* Menu Dropdown */}
+          {/* Menu Button */}
           {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2">
-                <DropdownMenuItem onClick={() => handleNavigation('/profile')} className="rounded-xl py-3">
-                  <User className="h-4 w-4 mr-3" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation(`/user/${user?.id}?tab=liked`)} className="rounded-xl py-3">
-                  <Heart className="h-4 w-4 mr-3" />
-                  Liked
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation('/notifications')} className="rounded-xl py-3">
-                  <Bell className="h-4 w-4 mr-3" />
-                  Notifications
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation(`/user/${user?.id}?tab=saved`)} className="rounded-xl py-3">
-                  <Bookmark className="h-4 w-4 mr-3" />
-                  Saved
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                
-                <DropdownMenuItem onClick={toggleTheme} className="rounded-xl py-3">
-                  {theme === 'dark' ? <Sun className="h-4 w-4 mr-3" /> : <Moon className="h-4 w-4 mr-3" />}
-                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation('/profile?tab=settings')} className="rounded-xl py-3">
-                  <Settings className="h-4 w-4 mr-3" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation('/profile?tab=avatar')} className="rounded-xl py-3">
-                  <Palette className="h-4 w-4 mr-3" />
-                  Avatar
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleNavigation('/profile?tab=verify')} className="rounded-xl py-3">
-                  <Shield className="h-4 w-4 mr-3" />
-                  Verify
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                
-                <DropdownMenuItem onClick={handleLogout} className="rounded-xl py-3 text-destructive">
-                  <LogOut className="h-4 w-4 mr-3" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleMenuToggle}>
+              <Menu className="h-5 w-5" />
+            </Button>
           ) : (
             <Link to="/auth">
               <Button variant="ghost" size="sm">Sign In</Button>
@@ -285,6 +217,9 @@ export function NavBar() {
           )}
         </div>
       </div>
+      
+      {/* Full Page Menu */}
+      <FullPageMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
     </div>
   );
 }

@@ -280,12 +280,12 @@ export function StoryViewer({
           </div>
         </div>
         
-        {/* Story content */}
+        {/* Moment content */}
         <div className="h-full w-full">
           {currentStory.mediaType === 'image' ? (
             <img 
               src={currentStory.mediaUrl} 
-              alt="Story"
+              alt="Moment"
               className="w-full h-full object-contain"
               style={{
                 filter: currentStory.effects?.beautyMode 

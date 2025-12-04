@@ -34,8 +34,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { CallInterface } from '@/components/CallInterface';
 import { EnhancedCommentModal } from '@/components/EnhancedCommentModal';
-import { MediaCarousel } from '@/components/MediaCarousel';
-import { MediaGalleryViewer } from '@/components/MediaGalleryViewer';
+import { MediaGridDisplay } from '@/components/MediaGridDisplay';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -55,8 +54,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentCommentCount, setCurrentCommentCount] = useState(confession.commentCount || 0);
-  const [showGallery, setShowGallery] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Prepare media array for gallery
@@ -426,24 +423,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Multiple media carousel or single media */}
+      {/* Media Grid Display */}
       {mediaArray.length > 0 && (
-        <MediaCarousel 
-          media={mediaArray}
-          onOpenGallery={(index) => {
-            setGalleryIndex(index);
-            setShowGallery(true);
-          }}
-        />
+        <MediaGridDisplay media={mediaArray} />
       )}
-      
-      {/* Fullscreen Gallery Viewer */}
-      <MediaGalleryViewer
-        media={mediaArray}
-        initialIndex={galleryIndex}
-        isOpen={showGallery}
-        onClose={() => setShowGallery(false)}
-      />
       
       <div className="px-4 pt-3">
         <div className="mb-3">
