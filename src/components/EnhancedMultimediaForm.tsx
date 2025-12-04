@@ -3,11 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
-import { Camera, X, Upload, Music, Video, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Music, Video, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { addConfessionWithMedia } from '@/services/supabaseDataService';
 import { Room } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { compressImages } from '@/utils/imageCompression';
@@ -108,30 +106,35 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  const uploadMediaFiles = async (): Promise<string[]> => {
-    if (mediaFiles.length === 0) return [];
+  const uploadMediaFiles = async (): Promise<{urls: string[], types: string[]}> => {
+    if (mediaFiles.length === 0) return { urls: [], types: [] };
 
-    const uploadPromises = mediaFiles.map(async (mediaFile, index) => {
+    const urls: string[] = [];
+    const types: string[] = [];
+    
+    for (let i = 0; i < mediaFiles.length; i++) {
+      const mediaFile = mediaFiles[i];
       const fileExt = mediaFile.file.name.split('.').pop();
-      const fileName = `${Date.now()}_${index}.${fileExt}`;
+      const fileName = `${Date.now()}_${i}.${fileExt}`;
       const filePath = `confessions/${user?.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('confession-media')
+        .from('media')
         .upload(filePath, mediaFile.file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('confession-media')
+        .from('media')
         .getPublicUrl(filePath);
 
-      return publicUrl;
-    });
-
-    const uploadedUrls = await Promise.all(uploadPromises);
+      urls.push(publicUrl);
+      types.push(mediaFile.type);
+      setUploadProgress(Math.round(((i + 1) / mediaFiles.length) * 80));
+    }
+    
     setUploadProgress(100);
-    return uploadedUrls;
+    return { urls, types };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,17 +162,29 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
     setUploadProgress(0);
 
     try {
-      const mediaUrls = await uploadMediaFiles();
+      const { urls, types } = await uploadMediaFiles();
       
-      await addConfessionWithMedia(
-        content,
-        selectedRoom || 'random',
-        user.id,
-        mediaFiles.length > 0 ? mediaFiles[0].file : undefined,
-        tags,
-        mediaUrls.length > 0 ? mediaUrls[0] : undefined,
-        mediaUrls.length > 0 ? (mediaFiles[0].type === 'video' ? 'video' : 'image') : undefined
-      );
+      // Store multiple URLs as JSON array when more than one
+      const mediaUrlValue = urls.length > 1 
+        ? JSON.stringify(urls) 
+        : (urls[0] || null);
+      
+      const mediaTypeValue = types.length > 1 
+        ? 'multiple' 
+        : (types[0] || null);
+      
+      const { error } = await supabase
+        .from('confessions')
+        .insert([{
+          content: content || 'Multimedia post',
+          room_id: selectedRoom || 'random',
+          user_id: user.id,
+          media_url: mediaUrlValue,
+          media_type: mediaTypeValue,
+          tags
+        }]);
+      
+      if (error) throw error;
 
       toast({
         title: "Confession posted!",

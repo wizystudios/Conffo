@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
-import { addConfessionWithMedia, getRooms } from '@/services/supabaseDataService';
+import { getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { X, Image as ImageIcon, Video as VideoIcon, Music, Hash, ArrowLeft, Loader2 } from 'lucide-react';
@@ -132,25 +132,38 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
     setUploadProgress(0);
     
     try {
-      let mediaUrl = null;
-      let mediaType = undefined;
+      const uploadedUrls: string[] = [];
+      const uploadedTypes: string[] = [];
       
-      if (mediaFiles.length > 0) {
-        const media = await uploadMedia(mediaFiles[0].file);
-        mediaUrl = media.mediaUrl;
-        mediaType = media.mediaType;
-        setUploadProgress(50);
+      // Upload all media files
+      for (let i = 0; i < mediaFiles.length; i++) {
+        const media = await uploadMedia(mediaFiles[i].file);
+        uploadedUrls.push(media.mediaUrl);
+        uploadedTypes.push(media.mediaType);
+        setUploadProgress(Math.round(((i + 1) / (mediaFiles.length + 1)) * 80));
       }
       
-      await addConfessionWithMedia(
-        content, 
-        room, 
-        user.id, 
-        mediaFiles[0]?.file, 
-        tags,
-        mediaUrl,
-        mediaType
-      );
+      // Store multiple URLs as JSON array when more than one
+      const mediaUrlValue = uploadedUrls.length > 1 
+        ? JSON.stringify(uploadedUrls) 
+        : (uploadedUrls[0] || null);
+      
+      const mediaTypeValue = uploadedTypes.length > 1 
+        ? 'multiple' 
+        : (uploadedTypes[0] || null);
+      
+      const { error } = await supabase
+        .from('confessions')
+        .insert([{
+          content,
+          room_id: room,
+          user_id: user.id,
+          media_url: mediaUrlValue,
+          media_type: mediaTypeValue,
+          tags
+        }]);
+      
+      if (error) throw error;
       
       setUploadProgress(100);
       
@@ -187,7 +200,7 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="font-semibold text-lg">New Post</h1>
+        <h1 className="font-semibold text-lg">New Confession</h1>
         <Button 
           onClick={handleSubmit}
           disabled={content.trim() === '' || isSubmitting}
@@ -210,7 +223,7 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Text Area */}
           <Textarea
-            placeholder="What's on your mind?"
+            placeholder="Share your confession..."
             className="min-h-[120px] text-base resize-none border-0 focus-visible:ring-0 p-0 text-lg"
             value={content}
             onChange={(e) => setContent(e.target.value)}
