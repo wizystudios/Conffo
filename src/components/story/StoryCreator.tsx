@@ -261,7 +261,7 @@ export function StoryCreator({ onSuccess, onCancel }: StoryCreatorProps) {
     if (!user || !mediaFile) {
       toast({
         title: "Error",
-        description: "You must be logged in and have media selected to create a story",
+        description: "You must be logged in and have media selected to create a moment",
         variant: "destructive"
       });
       return;
@@ -270,7 +270,6 @@ export function StoryCreator({ onSuccess, onCancel }: StoryCreatorProps) {
     setIsCreating(true);
     
     try {
-      // Updated to match the createStory function signature
       const result = await createStory(
         user.id,
         mediaFile,
@@ -281,7 +280,7 @@ export function StoryCreator({ onSuccess, onCancel }: StoryCreatorProps) {
       if (result) {
         toast({
           title: "Success",
-          description: "Your story has been created!",
+          description: "Your moment has been created!",
           variant: "default"
         });
         
@@ -292,10 +291,10 @@ export function StoryCreator({ onSuccess, onCancel }: StoryCreatorProps) {
         throw new Error("Failed to create story");
       }
     } catch (error) {
-      console.error('Error creating story:', error);
+      console.error('Error creating moment:', error);
       toast({
         title: "Error",
-        description: "Failed to create your story. Please try again.",
+        description: "Failed to create your moment. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -324,7 +323,7 @@ export function StoryCreator({ onSuccess, onCancel }: StoryCreatorProps) {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          Create Story
+          Create Moment
           {onCancel && (
             <Button variant="outline" size="icon" onClick={onCancel}>
               <X className="h-4 w-4" />

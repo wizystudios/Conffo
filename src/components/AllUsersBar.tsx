@@ -89,8 +89,8 @@ export function AllUsersBar() {
     fetchAllUsers();
   }, [user, isAuthenticated]);
 
-  const handleCreatePost = () => {
-    window.dispatchEvent(new Event('create-confession'));
+  const handleCreateMoment = () => {
+    window.dispatchEvent(new Event('create-moment'));
   };
 
   const handleFollow = async (targetUserId: string) => {
@@ -147,10 +147,10 @@ export function AllUsersBar() {
               </Link>
             )}
             
-            {/* Plus button for creating posts */}
+            {/* Plus button for creating moments */}
             <Button
               size="sm"
-              onClick={handleCreatePost}
+              onClick={handleCreateMoment}
               className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full p-0"
             >
               <Plus className="h-3 w-3" />

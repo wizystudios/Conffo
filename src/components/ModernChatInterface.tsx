@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, Phone, VideoIcon, MoreVertical, ArrowLeft } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { OnlineIndicator } from '@/components/OnlineIndicator';
 import { TypingIndicator } from '@/components/TypingIndicator';
+import { hideMessageLocally, isMessageHidden, saveMessagesLocally, deleteMessageLocally } from '@/utils/localChatStorage';
 
 
 interface ChatInterfaceProps {
@@ -105,8 +106,14 @@ export function ModernChatInterface({
     enabled: !!user?.id && !!targetUserId,
   });
 
-  // Play sound when new message received
+  // Play sound when new message received and filter hidden messages
   useEffect(() => {
+    // Filter out hidden messages
+    const visibleMessages = messages.filter(m => !isMessageHidden(m.id));
+    if (visibleMessages.length !== messages.length) {
+      setMessages(visibleMessages);
+    }
+    
     if (messages.length > lastMessageCountRef.current) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.sender_id !== user?.id) {
@@ -114,7 +121,7 @@ export function ModernChatInterface({
       }
       lastMessageCountRef.current = messages.length;
     }
-  }, [messages, user?.id]);
+  }, [messages, user?.id, setMessages]);
 
   useEffect(() => {
     // Only scroll to bottom if user is near the bottom
@@ -228,17 +235,20 @@ export function ModernChatInterface({
   };
 
   const handleDeleteForMe = async () => {
-    if (!deleteMessageId) return;
-    // Just remove from local state - hide the message for this user
+    if (!deleteMessageId || !user) return;
+    // Hide the message locally only - persists in localStorage
+    hideMessageLocally(deleteMessageId);
     setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
     toast({ title: "Message hidden" });
     setDeleteMessageId(null);
   };
 
   const handleDeleteForEveryone = async () => {
-    if (!deleteMessageId) return;
+    if (!deleteMessageId || !user) return;
     try {
       await deleteMessage(deleteMessageId, true);
+      // Also mark as deleted locally
+      deleteMessageLocally(user.id, targetUserId, deleteMessageId);
       setMessages(prev => prev.map(m => 
         m.id === deleteMessageId 
           ? { ...m, content: 'This message was deleted', message_type: 'text' as const, media_url: undefined }
@@ -246,7 +256,8 @@ export function ModernChatInterface({
       ));
       toast({ title: "Message deleted for everyone" });
     } catch (error) {
-      // If failed, still hide locally
+      // If failed, just hide locally
+      hideMessageLocally(deleteMessageId);
       setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
       toast({ title: "Message removed" });
     }

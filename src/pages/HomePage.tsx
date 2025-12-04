@@ -17,6 +17,7 @@ import { PostSkeleton } from '@/components/PostSkeleton';
 import { haptic } from '@/utils/hapticFeedback';
 import { Confession } from '@/types';
 import { PullToRefreshIndicator } from '@/components/PullToRefreshIndicator';
+import { StoryCreator } from '@/components/story/StoryCreator';
 
 // Transform raw DB data to Confession type
 const transformConfession = (raw: any): Confession => ({
@@ -46,17 +47,18 @@ const HomePage = () => {
   const navigate = useNavigate();
   const observerTarget = useRef(null);
   const REFRESH_THRESHOLD = 80;
+  const [showMomentCreator, setShowMomentCreator] = useState(false);
 
   useEffect(() => {
     const handleCreateConfession = () => setShowConfessionForm(true);
-    const handleCreateStory = () => setShowConfessionForm(true);
+    const handleCreateMoment = () => setShowMomentCreator(true);
     
     window.addEventListener('create-confession', handleCreateConfession);
-    window.addEventListener('create-story', handleCreateStory);
+    window.addEventListener('create-moment', handleCreateMoment);
     
     return () => {
       window.removeEventListener('create-confession', handleCreateConfession);
-      window.removeEventListener('create-story', handleCreateStory);
+      window.removeEventListener('create-moment', handleCreateMoment);
     };
   }, []);
 
@@ -229,6 +231,10 @@ const HomePage = () => {
     setShowConfessionForm(false);
   };
 
+  const handleMomentSuccess = () => {
+    setShowMomentCreator(false);
+  };
+
   const handleTabChange = (tab: 'crew' | 'fans' | 'all') => {
     haptic.light();
     setActiveTab(tab);
@@ -300,6 +306,15 @@ const HomePage = () => {
             <EnhancedMultimediaForm 
               onSuccess={handleConfessionSuccess} 
               onCancel={() => setShowConfessionForm(false)}
+            />
+          </div>
+        )}
+
+        {isAuthenticated && showMomentCreator && (
+          <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm animate-in fade-in">
+            <StoryCreator 
+              onSuccess={handleMomentSuccess} 
+              onCancel={() => setShowMomentCreator(false)}
             />
           </div>
         )}
