@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { supabase, checkIfFollowing, addFollow } from '@/integrations/supabase/client';
@@ -20,6 +20,7 @@ interface User {
 
 export function AllUsersBar() {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,8 +90,9 @@ export function AllUsersBar() {
     fetchAllUsers();
   }, [user, isAuthenticated]);
 
-  const handleCreateMoment = () => {
-    window.dispatchEvent(new Event('create-moment'));
+  // Plus button opens New Confession page
+  const handleCreateConfession = () => {
+    navigate('/create-post');
   };
 
   const handleFollow = async (targetUserId: string) => {
@@ -147,10 +149,10 @@ export function AllUsersBar() {
               </Link>
             )}
             
-            {/* Plus button for creating moments */}
+            {/* Plus button for creating new confession */}
             <Button
               size="sm"
-              onClick={handleCreateMoment}
+              onClick={handleCreateConfession}
               className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full p-0"
             >
               <Plus className="h-3 w-3" />
