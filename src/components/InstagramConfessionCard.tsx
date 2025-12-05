@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { 
   Heart, 
@@ -16,8 +16,7 @@ import {
   Info,
   Flag,
   BookmarkCheck,
-  Phone,
-  Video
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,9 +31,8 @@ import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
-import { CallInterface } from '@/components/CallInterface';
 import { EnhancedCommentModal } from '@/components/EnhancedCommentModal';
-import { MediaGridDisplay } from '@/components/MediaGridDisplay';
+import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -43,20 +41,19 @@ interface InstagramConfessionCardProps {
 
 export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfessionCardProps) {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [lastComment, setLastComment] = useState<any>(null);
   const [showFullContent, setShowFullContent] = useState(false);
-  const [showCallInterface, setShowCallInterface] = useState(false);
-  const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentCommentCount, setCurrentCommentCount] = useState(confession.commentCount || 0);
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Prepare media array for gallery
+  // Prepare media array for carousel
   const mediaArray = confession.mediaUrls && confession.mediaUrls.length > 0
     ? confession.mediaUrls.map((url, index) => ({
         url,
@@ -83,7 +80,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       if (!user) return;
       
       try {
-        // Get confession author info
         const { data: authorData } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -94,7 +90,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           setConfessionAuthor(authorData);
         }
         
-        // Get comment count from database
         const { count: commentCount } = await supabase
           .from('comments')
           .select('id', { count: 'exact', head: true })
@@ -156,10 +151,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       }
     };
 
-    // Fetch comment count even if not logged in
     const fetchPublicData = async () => {
       try {
-        // Get confession author info
         const { data: authorData } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -170,7 +163,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           setConfessionAuthor(authorData);
         }
 
-        // Get comment count from database
         const { count: commentCount } = await supabase
           .from('comments')
           .select('id', { count: 'exact', head: true })
@@ -224,7 +216,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     try {
       await toggleReaction(confession.id, user.id, reaction);
       
-      // Trigger success animation for likes
       const event = new CustomEvent('conffo-success', {
         detail: { message: 'Liked! 🐟' }
       });
@@ -288,7 +279,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       if (result) {
         setIsSaved(!isSaved);
         
-        // Trigger success animation for saves
         const event = new CustomEvent('conffo-success', {
           detail: { message: 'Saved! 🐟' }
         });
@@ -303,7 +293,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'ConfessZone Post',
+          title: 'Conffo Post',
           text: `${confession.content.substring(0, 50)}...`,
           url: `${window.location.origin}/confession/${confession.id}`
         });
@@ -315,9 +305,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     }
   };
 
-  const handleCall = (type: 'audio' | 'video') => {
-    setCallType(type);
-    setShowCallInterface(true);
+  const handleChat = () => {
+    navigate(`/chat/${confession.userId}`);
   };
 
   const handleDelete = async () => {
@@ -346,7 +335,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
 
   const handleCommentSuccess = () => {
-    // Trigger success animation when comment is posted
     const event = new CustomEvent('conffo-success', {
       detail: { message: 'Comment posted! 🐟' }
     });
@@ -363,9 +351,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   return (
     <div className="w-full bg-background mb-0 border-b border-border">
+      {/* Header - no rounded corners */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
-          <div className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+          <div className="bg-primary/10 text-primary px-2 py-1 text-xs font-medium">
             #{confession.room}
           </div>
           <UsernameDisplay 
@@ -398,16 +387,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             {isAuthenticated && confession.userId !== user?.id && (
-              <>
-                <DropdownMenuItem onClick={() => handleCall('audio')}>
-                  <Phone className="h-4 w-4 mr-2" />
-                  Audio Call
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCall('video')}>
-                  <Video className="h-4 w-4 mr-2" />
-                  Video Call
-                </DropdownMenuItem>
-              </>
+              <DropdownMenuItem onClick={handleChat}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Message
+              </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={handleSave}>
               {isSaved ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
@@ -423,11 +406,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Media Grid Display */}
+      {/* Media Carousel - no rounded corners */}
       {mediaArray.length > 0 && (
-        <MediaGridDisplay media={mediaArray} />
+        <MediaCarouselDisplay media={mediaArray} />
       )}
       
+      {/* Content */}
       <div className="px-4 pt-3">
         <div className="mb-3">
           <div className="flex items-start gap-2">
@@ -453,6 +437,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
+      {/* Actions */}
       <div className="px-4 pt-1 pb-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-4">
@@ -498,62 +483,37 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             </Button>
           </div>
           
-          {isAuthenticated && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSave}
-              className="h-8 w-8 p-0 hover:bg-transparent hover:scale-110 transition-all"
-            >
-              {isSaved ? (
-                <BookmarkCheck className="h-6 w-6 text-primary" />
-              ) : (
-                <Bookmark className="h-6 w-6 text-foreground hover:text-primary" />
-              )}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            className="h-8 w-8 p-0 hover:bg-transparent hover:scale-110 transition-all"
+          >
+            <Bookmark className={`h-6 w-6 ${isSaved ? 'fill-foreground' : ''}`} />
+          </Button>
         </div>
         
-        {(confession.reactions.heart > 0 || currentCommentCount > 0) && (
-          <div className="text-sm space-y-1 mb-2">
-            {confession.reactions.heart > 0 && (
-              <p className="font-medium">{confession.reactions.heart} {confession.reactions.heart === 1 ? 'like' : 'likes'}</p>
-            )}
-            {lastComment && (
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-sm">{lastComment.username}</span>
-                <span className="text-sm text-muted-foreground">{lastComment.content.substring(0, 50)}{lastComment.content.length > 50 ? '...' : ''}</span>
-              </div>
-            )}
+        {lastComment && (
+          <div className="text-sm">
+            <span className="font-semibold">{lastComment.username}</span>
+            <span className="ml-2 text-muted-foreground">{lastComment.content}</span>
           </div>
         )}
         
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground mt-1">
           {formatTimeShort(new Date(confession.timestamp))}
         </div>
       </div>
       
       <EnhancedCommentModal
-        isOpen={showCommentModal}
-        onClose={() => setShowCommentModal(false)}
         confessionId={confession.id}
         confessionContent={confession.content}
-        confessionAuthor={confessionAuthor?.username || 'Anonymous User'}
-        onCommentCountChange={setCurrentCommentCount}
+        confessionAuthor={confessionAuthor?.username || 'Anonymous'}
+        isOpen={showCommentModal}
+        onClose={() => setShowCommentModal(false)}
         onCommentSuccess={handleCommentSuccess}
-        confessionMediaUrl={confession.mediaUrl}
-        confessionMediaType={confession.mediaType as 'image' | 'video'}
         confessionMediaUrls={confession.mediaUrls}
         confessionMediaTypes={confession.mediaTypes}
-      />
-      
-      <CallInterface
-        isOpen={showCallInterface}
-        onClose={() => setShowCallInterface(false)}
-        callType={callType}
-        targetUserId={confession.userId}
-        targetUsername={confessionAuthor?.username}
-        targetAvatarUrl={confessionAuthor?.avatar_url}
       />
     </div>
   );

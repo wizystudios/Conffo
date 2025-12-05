@@ -5,13 +5,12 @@ import { UserConfessions } from '@/components/UserConfessions';
 import { UserSavedPosts } from '@/components/UserSavedPosts';
 import { UserLikedPosts } from '@/components/UserLikedPosts';
 import { Button } from '@/components/ui/button';
-import { Phone, Video } from 'lucide-react';
-import { Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { MessageSquare } from 'lucide-react';
+import { Navigate, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
 import { SimpleProfileForm } from '@/components/SimpleProfileForm';
-import { CallInterface } from '@/components/CallInterface';
 import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal';
 import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
@@ -34,13 +33,12 @@ export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('posts');
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [showCallInterface, setShowCallInterface] = useState(false);
-  const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
@@ -139,9 +137,10 @@ export default function ProfilePage() {
     fetchProfileData();
   }, [userId, user]);
 
-  const handleCall = (type: 'audio' | 'video') => {
-    setCallType(type);
-    setShowCallInterface(true);
+  const handleChat = () => {
+    if (userId) {
+      navigate(`/chat/${userId}`);
+    }
   };
 
   const handleFollowChange = () => {
@@ -258,6 +257,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               
+              {/* Other user profile: Follow button + Chat icon only */}
               {!isOwnProfile && isAuthenticated && userId && (
                 <div className="flex gap-2">
                   <div className="flex-1">
@@ -265,15 +265,10 @@ export default function ProfilePage() {
                   </div>
                   <Button 
                     variant="outline"
-                    onClick={() => handleCall('audio')}
+                    size="icon"
+                    onClick={handleChat}
                   >
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleCall('video')}
-                  >
-                    <Video className="h-4 w-4" />
+                    <MessageSquare className="h-4 w-4" />
                   </Button>
                 </div>
               )}
@@ -381,23 +376,12 @@ export default function ProfilePage() {
         </div>
         
         {userId && (
-          <>
-            <CallInterface
-              isOpen={showCallInterface}
-              onClose={() => setShowCallInterface(false)}
-              callType={callType}
-              targetUserId={userId}
-              targetUsername={username}
-              targetAvatarUrl={avatarUrl}
-            />
-            
-            <FullScreenFollowersModal
-              isOpen={showFollowersModal}
-              onClose={() => setShowFollowersModal(false)}
-              userId={userId}
-              initialTab={followersModalTab}
-            />
-          </>
+          <FullScreenFollowersModal
+            isOpen={showFollowersModal}
+            onClose={() => setShowFollowersModal(false)}
+            userId={userId}
+            initialTab={followersModalTab}
+          />
         )}
       </div>
     </Layout>

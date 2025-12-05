@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, ArrowLeft } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -23,7 +23,6 @@ import { OnlineIndicator } from '@/components/OnlineIndicator';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { hideMessageLocally, isMessageHidden, saveMessagesLocally, deleteMessageLocally } from '@/utils/localChatStorage';
 
-
 interface ChatInterfaceProps {
   targetUserId: string;
   targetUsername?: string;
@@ -32,7 +31,6 @@ interface ChatInterfaceProps {
   onCall?: (type: 'audio' | 'video') => void;
 }
 
-// Sound effects (base64 encoded short audio)
 const playSendSound = () => {
   const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTON2+/Edjn');
   audio.volume = 0.3;
@@ -58,11 +56,8 @@ export function ModernChatInterface({
   const { isTyping: isTargetTyping, sendTypingEvent } = useTypingIndicator(targetUserId);
   const { isTargetOnline } = useOnlinePresence(targetUserId);
   const [newMessage, setNewMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<{ content: string; type: 'text' | 'image' | 'video' | 'audio' | 'file'; mediaUrl?: string } | null>(null);
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
@@ -73,10 +68,8 @@ export function ModernChatInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
-  // Get target user profile and check follow status
   const { data: targetProfile } = useQuery({
     queryKey: ['profile', targetUserId],
     queryFn: async () => {
@@ -90,7 +83,6 @@ export function ModernChatInterface({
     enabled: !!targetUserId,
   });
 
-  // Check if user follows the target user
   const { data: isFollowing } = useQuery({
     queryKey: ['following', user?.id, targetUserId],
     queryFn: async () => {
@@ -106,9 +98,7 @@ export function ModernChatInterface({
     enabled: !!user?.id && !!targetUserId,
   });
 
-  // Play sound when new message received and filter hidden messages
   useEffect(() => {
-    // Filter out hidden messages
     const visibleMessages = messages.filter(m => !isMessageHidden(m.id));
     if (visibleMessages.length !== messages.length) {
       setMessages(visibleMessages);
@@ -124,16 +114,8 @@ export function ModernChatInterface({
   }, [messages, user?.id, setMessages]);
 
   useEffect(() => {
-    // Only scroll to bottom if user is near the bottom
-    const scrollContainer = messagesEndRef.current?.parentElement;
-    if (scrollContainer) {
-      const isNearBottom = scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 100;
-      if (isNearBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     
-    // Mark messages as read when viewing chat
     if (messages.length > 0 && user) {
       markAsRead(targetUserId);
     }
@@ -145,20 +127,13 @@ export function ModernChatInterface({
     setIsSending(true);
     try {
       const newMsg = await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration);
-      
-      // Add message immediately to local state for instant UI update
       setMessages(prev => {
-        // Avoid duplicates
-        if (prev.find(msg => msg.id === newMsg.id)) {
-          return prev;
-        }
+        if (prev.find(msg => msg.id === newMsg.id)) return prev;
         return [...prev, newMsg];
       });
-      
       setNewMessage('');
       playSendSound();
     } catch (error) {
-      console.error('Error sending message:', error);
       toast({
         title: "Failed to send",
         description: "Message could not be delivered",
@@ -172,7 +147,7 @@ export function ModernChatInterface({
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "File too large",
@@ -185,42 +160,17 @@ export function ModernChatInterface({
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     const isAudio = file.type.startsWith('audio/');
-    const isDocument = file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text');
 
     try {
-      if (isVideo) {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        
-        video.onloadedmetadata = async () => {
-          try {
-            const url = await uploadChatMedia(file, 'video');
-            handleSendMessage(file.name, 'video', url, video.duration);
-          } catch (error) {
-            toast({
-              title: "Upload failed",
-              description: "Could not upload video",
-              variant: "destructive"
-            });
-          }
-        };
-        
-        video.src = URL.createObjectURL(file);
-      } else if (isImage) {
+      if (isImage) {
         const url = await uploadChatMedia(file, 'image');
         handleSendMessage(file.name, 'image', url);
+      } else if (isVideo) {
+        const url = await uploadChatMedia(file, 'video');
+        handleSendMessage(file.name, 'video', url);
       } else if (isAudio) {
         const url = await uploadChatMedia(file, 'audio');
         handleSendMessage(file.name, 'audio', url);
-      } else if (isDocument) {
-        const url = await uploadChatMedia(file, 'image');
-        handleSendMessage(file.name, 'file', url);
-      } else {
-        toast({
-          title: "Unsupported file type",
-          description: "Please select an image, video, audio, or document file",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       toast({
@@ -230,13 +180,8 @@ export function ModernChatInterface({
     }
   };
 
-  const handleDeleteMessage = (messageId: string) => {
-    setDeleteMessageId(messageId);
-  };
-
   const handleDeleteForMe = async () => {
     if (!deleteMessageId || !user) return;
-    // Hide the message locally only - persists in localStorage
     hideMessageLocally(deleteMessageId);
     setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
     toast({ title: "Message hidden" });
@@ -247,7 +192,6 @@ export function ModernChatInterface({
     if (!deleteMessageId || !user) return;
     try {
       await deleteMessage(deleteMessageId, true);
-      // Also mark as deleted locally
       deleteMessageLocally(user.id, targetUserId, deleteMessageId);
       setMessages(prev => prev.map(m => 
         m.id === deleteMessageId 
@@ -256,7 +200,6 @@ export function ModernChatInterface({
       ));
       toast({ title: "Message deleted for everyone" });
     } catch (error) {
-      // If failed, just hide locally
       hideMessageLocally(deleteMessageId);
       setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
       toast({ title: "Message removed" });
@@ -264,39 +207,8 @@ export function ModernChatInterface({
     setDeleteMessageId(null);
   };
 
-  const handleEditMessage = (messageId: string, currentContent: string) => {
-    setEditingMessageId(messageId);
-    setEditContent(currentContent);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingMessageId || !editContent.trim()) return;
-    try {
-      await editMessage(editingMessageId, editContent);
-      setMessages(prev => prev.map(m => 
-        m.id === editingMessageId 
-          ? { ...m, content: editContent, updated_at: new Date().toISOString() }
-          : m
-      ));
-      setEditingMessageId(null);
-      setEditContent('');
-      toast({ title: "Message updated" });
-    } catch (error) {
-      toast({ title: "Failed to update", variant: "destructive" });
-    }
-  };
-
-  const handleForwardMessage = (message: any) => {
-    setForwardMessage({
-      content: message.content,
-      type: message.message_type,
-      mediaUrl: message.media_url
-    });
-    setShowForwardModal(true);
-  };
-
   const handleClearChat = async () => {
-    if (!confirm('Are you sure you want to clear this chat? This will delete all messages.')) return;
+    if (!confirm('Are you sure you want to clear this chat?')) return;
     try {
       await clearConversation(targetUserId);
       setMessages([]);
@@ -306,28 +218,18 @@ export function ModernChatInterface({
     }
   };
 
-
-  // Show restriction message if not following
   if (!isFollowing && user?.id && targetUserId && user.id !== targetUserId && !isLoading) {
     return (
       <div className="flex flex-col h-screen bg-background">
-        <div className="flex items-center justify-between p-4 bg-card border-b">
-          <div className="flex items-center space-x-3">
-            {onBack && (
-              <Button variant="ghost" size="icon" onClick={onBack} className="rounded-full">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={targetProfile?.avatar_url} />
-              <AvatarFallback>
-                {targetProfile?.username?.charAt(0)?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold">{targetProfile?.username || 'Unknown User'}</h3>
-            </div>
-          </div>
+        <div className="flex items-center gap-3 p-4 bg-background border-b">
+          <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={targetProfile?.avatar_url} />
+            <AvatarFallback>{targetProfile?.username?.charAt(0) || 'U'}</AvatarFallback>
+          </Avatar>
+          <span className="font-semibold">{targetProfile?.username || 'Unknown'}</span>
         </div>
         
         <div className="flex-1 flex items-center justify-center p-8">
@@ -337,69 +239,55 @@ export function ModernChatInterface({
             <p className="text-muted-foreground max-w-sm">
               You need to follow {targetProfile?.username || 'this user'} to start a conversation.
             </p>
-            <Button 
-              onClick={() => window.history.back()}
-              variant="outline"
-            >
-              Go Back
-            </Button>
+            <Button onClick={() => window.history.back()} variant="outline">Go Back</Button>
           </div>
         </div>
       </div>
     );
   }
 
+  const displayName = targetProfile?.username || targetUsername || 'Unknown';
+  const displayAvatar = targetProfile?.avatar_url || targetAvatarUrl;
+
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header with Back Button and Centered Profile */}
-      <div className="flex items-center justify-between p-2 bg-card">
-        <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="rounded-full">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+      {/* Header - Clean Instagram style */}
+      <div className="flex items-center justify-between px-3 py-2 bg-background border-b border-border">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-9 w-9">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3" onClick={() => navigate(`/user/${targetUserId}`)}>
+            <div className="relative">
+              <Avatar className="h-10 w-10 border border-border">
+                <AvatarImage src={displayAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${targetUserId}`} />
+                <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">{displayName}</h3>
+              {isTargetOnline && <span className="text-xs text-green-500">Active now</span>}
+            </div>
+          </div>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex flex-col items-center cursor-pointer">
-              <div className="relative">
-                <Avatar className="h-10 w-10 mb-1">
-                  <AvatarImage src={targetProfile?.avatar_url || targetAvatarUrl} />
-                  <AvatarFallback className="text-sm">
-                    {(targetProfile?.username || targetUsername)?.charAt(0)?.toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <OnlineIndicator isOnline={isTargetOnline} size="md" className="bottom-1 right-0" />
-              </div>
-              <h3 className="font-semibold text-xs">{targetProfile?.username || targetUsername || 'Unknown User'}</h3>
-              {isTargetOnline && <span className="text-[10px] text-green-500">online</span>}
-            </div>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <MoreVertical className="h-5 w-5" />
+            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="center" className="w-44">
-            <DropdownMenuItem onClick={() => navigate(`/profile/${targetUserId}`)}>
-              Visit Account
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-destructive"
-              onClick={handleClearChat}
-            >
-              Delete Chat
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-destructive"
-              onClick={() => {
-                if (!confirm('Block this user? They won\'t be able to message you or view your account.')) return;
-                toast({ title: "User blocked" });
-              }}
-            >
-              Block Person
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleClearChat} className="text-destructive">Clear Chat</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="w-10" /> {/* Spacer for balance */}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto bg-background">
+      <div className="flex-1 overflow-y-auto px-4 py-2 bg-background">
         {editingMessageId ? (
-          <div className="fixed bottom-20 left-0 right-0 bg-background border-t p-4 shadow-lg">
+          <div className="fixed bottom-20 left-0 right-0 bg-background border-t p-4 shadow-lg z-20">
             <div className="max-w-2xl mx-auto flex gap-2">
               <Input
                 value={editContent}
@@ -408,16 +296,28 @@ export function ModernChatInterface({
                 className="flex-1"
                 autoFocus
               />
-              <Button onClick={handleSaveEdit}>Save</Button>
-              <Button variant="outline" onClick={() => {
-                setEditingMessageId(null);
-                setEditContent('');
-              }}>Cancel</Button>
+              <Button onClick={async () => {
+                if (!editingMessageId || !editContent.trim()) return;
+                try {
+                  await editMessage(editingMessageId, editContent);
+                  setMessages(prev => prev.map(m => 
+                    m.id === editingMessageId 
+                      ? { ...m, content: editContent, updated_at: new Date().toISOString() }
+                      : m
+                  ));
+                  setEditingMessageId(null);
+                  setEditContent('');
+                  toast({ title: "Message updated" });
+                } catch (error) {
+                  toast({ title: "Failed to update", variant: "destructive" });
+                }
+              }}>Save</Button>
+              <Button variant="outline" onClick={() => { setEditingMessageId(null); setEditContent(''); }}>Cancel</Button>
             </div>
           </div>
         ) : null}
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           {messages.map((message, index) => {
             const isOwn = message.sender_id === user?.id;
             const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
@@ -428,11 +328,18 @@ export function ModernChatInterface({
                 message={message}
                 isOwn={isOwn}
                 showAvatar={showAvatar}
-                senderAvatar={targetProfile?.avatar_url || targetAvatarUrl}
-                senderName={targetProfile?.username || targetUsername}
-                onDelete={() => handleDeleteMessage(message.id)}
-                onEdit={() => handleEditMessage(message.id, message.content)}
-                onForward={() => handleForwardMessage(message)}
+                senderAvatar={displayAvatar}
+                senderName={displayName}
+                onDelete={() => setDeleteMessageId(message.id)}
+                onEdit={() => { setEditingMessageId(message.id); setEditContent(message.content); }}
+                onForward={() => {
+                  setForwardMessage({
+                    content: message.content,
+                    type: message.message_type,
+                    mediaUrl: message.media_url
+                  });
+                  setShowForwardModal(true);
+                }}
                 onReport={() => {
                   setReportMessageId(message.id);
                   setShowReportDialog(true);
@@ -441,16 +348,12 @@ export function ModernChatInterface({
             );
           })}
         </div>
-        {isTargetTyping && (
-          <div className="px-4 pb-2">
-            <TypingIndicator />
-          </div>
-        )}
+        {isTargetTyping && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-3 bg-background">
+      {/* Input - Instagram style */}
+      <div className="p-3 bg-background border-t border-border">
         <div className="flex items-center gap-2">
           <input
             type="file"
@@ -459,77 +362,79 @@ export function ModernChatInterface({
               const file = e.target.files?.[0];
               if (file) handleFileUpload(file);
             }}
-            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+            accept="image/*,video/*,audio/*"
             className="hidden"
           />
           
-          <div className="relative">
-            <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
+          <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => fileInputRef.current?.click()}>
+              <ImageIcon className="h-5 w-5 text-primary" />
+            </Button>
+            <Input
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                sendTypingEvent();
+              }}
+              placeholder="Message..."
+              className="flex-1 border-0 bg-transparent h-8 focus-visible:ring-0 px-0"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(newMessage);
+                }
+              }}
+            />
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+              <Smile className="h-5 w-5 text-muted-foreground" />
+            </Button>
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
-
-          <Input
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
-              // Send typing event
-              if (e.target.value.length > 0) {
-                sendTypingEvent();
-              }
-            }}
-            placeholder="Type your message here"
-            className="flex-1 rounded-full bg-muted border-0 text-sm px-4 focus-visible:ring-0"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage(newMessage);
-              }
-            }}
-          />
-
-          <Button
-            onClick={() => handleSendMessage(newMessage)}
-            disabled={isSending || !newMessage.trim()}
-            size="icon"
-            className="h-9 w-9 rounded-full bg-transparent hover:bg-transparent text-blue-600 disabled:opacity-50"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          {newMessage.trim() ? (
+            <Button 
+              onClick={() => handleSendMessage(newMessage)} 
+              disabled={isSending}
+              size="icon"
+              className="h-10 w-10 rounded-full"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+              <Mic className="h-5 w-5" />
+            </Button>
+          )}
         </div>
+        
+        {showEmojiPicker && (
+          <div className="mt-2">
+            <EmojiPicker onSelect={(emoji) => {
+              setNewMessage(prev => prev + emoji);
+              setShowEmojiPicker(false);
+            }} />
+          </div>
+        )}
       </div>
 
       {/* Modals */}
-      {forwardMessage && (
-        <ForwardMessageModal
-          open={showForwardModal}
-          onOpenChange={setShowForwardModal}
-          messageContent={forwardMessage.content}
-          messageType={forwardMessage.type}
-          mediaUrl={forwardMessage.mediaUrl}
-        />
-      )}
-
+      <ForwardMessageModal
+        isOpen={showForwardModal}
+        onClose={() => setShowForwardModal(false)}
+        message={forwardMessage}
+      />
+      
       <DeleteMessageDialog
-        open={!!deleteMessageId}
-        onOpenChange={(open) => !open && setDeleteMessageId(null)}
+        isOpen={!!deleteMessageId}
+        onClose={() => setDeleteMessageId(null)}
         onDeleteForMe={handleDeleteForMe}
         onDeleteForEveryone={handleDeleteForEveryone}
-        isOwn={deleteMessageId ? messages.find(m => m.id === deleteMessageId)?.sender_id === user?.id : false}
       />
-
+      
       <ReportDialog
-        open={showReportDialog}
-        onOpenChange={setShowReportDialog}
-        type="comment"
+        isOpen={showReportDialog}
+        onClose={() => setShowReportDialog(false)}
         itemId={reportMessageId || ''}
+        itemType="message"
       />
     </div>
   );
