@@ -408,7 +408,7 @@ export function ModernChatInterface({
         
         {showEmojiPicker && (
           <div className="mt-2">
-            <EmojiPicker onSelect={(emoji) => {
+            <EmojiPicker onEmojiSelect={(emoji) => {
               setNewMessage(prev => prev + emoji);
               setShowEmojiPicker(false);
             }} />
@@ -418,23 +418,26 @@ export function ModernChatInterface({
 
       {/* Modals */}
       <ForwardMessageModal
-        isOpen={showForwardModal}
-        onClose={() => setShowForwardModal(false)}
-        message={forwardMessage}
+        open={showForwardModal}
+        onOpenChange={setShowForwardModal}
+        messageContent={forwardMessage?.content || ''}
+        messageType={forwardMessage?.type || 'text'}
+        mediaUrl={forwardMessage?.mediaUrl}
       />
       
       <DeleteMessageDialog
-        isOpen={!!deleteMessageId}
-        onClose={() => setDeleteMessageId(null)}
+        open={!!deleteMessageId}
+        onOpenChange={(open) => !open && setDeleteMessageId(null)}
         onDeleteForMe={handleDeleteForMe}
         onDeleteForEveryone={handleDeleteForEveryone}
+        isOwn={!!deleteMessageId && messages.find(m => m.id === deleteMessageId)?.sender_id === user?.id}
       />
       
       <ReportDialog
-        isOpen={showReportDialog}
-        onClose={() => setShowReportDialog(false)}
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
         itemId={reportMessageId || ''}
-        itemType="message"
+        type="confession"
       />
     </div>
   );
