@@ -269,6 +269,7 @@ export type Database = {
           media_duration: number | null
           media_url: string | null
           message_type: string
+          read_at: string | null
           receiver_id: string
           sender_id: string
           updated_at: string
@@ -281,6 +282,7 @@ export type Database = {
           media_duration?: number | null
           media_url?: string | null
           message_type?: string
+          read_at?: string | null
           receiver_id: string
           sender_id: string
           updated_at?: string
@@ -293,6 +295,7 @@ export type Database = {
           media_duration?: number | null
           media_url?: string | null
           message_type?: string
+          read_at?: string | null
           receiver_id?: string
           sender_id?: string
           updated_at?: string
@@ -652,6 +655,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       user_follows: {
         Row: {
           created_at: string
@@ -681,6 +705,10 @@ export type Database = {
       add_follow: {
         Args: { p_follower_id: string; p_following_id: string }
         Returns: undefined
+      }
+      are_users_blocked: {
+        Args: { user1_uuid: string; user2_uuid: string }
+        Returns: boolean
       }
       can_access_profile: {
         Args: { profile_user_id: string }
@@ -731,6 +759,10 @@ export type Database = {
       get_user_reactions: {
         Args: { confession_uuid: string; user_uuid: string }
         Returns: string[]
+      }
+      is_user_blocked: {
+        Args: { blocked_uuid: string; blocker_uuid: string }
+        Returns: boolean
       }
       mark_story_viewed: {
         Args: { story_uuid: string; viewer_uuid: string }
