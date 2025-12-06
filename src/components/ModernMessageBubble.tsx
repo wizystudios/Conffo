@@ -5,6 +5,7 @@ import { FileText, Copy, Forward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { haptic } from '@/utils/hapticFeedback';
+import { MessageReadReceipt } from '@/components/MessageReadReceipt';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -129,10 +130,17 @@ export function ModernMessageBubble({
             </a>
           ) : null}
           
-          <span className={`text-xs text-muted-foreground ${isOwn ? 'text-right pr-1' : 'text-left pl-1'}`}>
-            {formatTime(message.created_at)}
-            {message.updated_at !== message.created_at && ' (edited)'}
-          </span>
+          <div className={`flex items-center gap-1 text-xs text-muted-foreground ${isOwn ? 'justify-end pr-1' : 'justify-start pl-1'}`}>
+            <span>{formatTime(message.created_at)}</span>
+            {message.updated_at !== message.created_at && <span>(edited)</span>}
+            {isOwn && (
+              <MessageReadReceipt 
+                isSent={true}
+                isDelivered={true}
+                isRead={message.is_read || !!message.read_at}
+              />
+            )}
+          </div>
         </div>
       </div>
 

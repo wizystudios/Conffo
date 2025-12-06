@@ -6,7 +6,7 @@ import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertica
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { sendMessage, uploadChatMedia, deleteMessage, editMessage, clearConversation } from '@/services/chatService';
+import { sendMessage, uploadChatMedia, deleteMessage, editMessage, clearConversation, markConversationAsRead } from '@/services/chatService';
 import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,7 @@ import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { OnlineIndicator } from '@/components/OnlineIndicator';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { hideMessageLocally, isMessageHidden, saveMessagesLocally, deleteMessageLocally } from '@/utils/localChatStorage';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
 
 interface ChatInterfaceProps {
   targetUserId: string;
@@ -65,10 +66,18 @@ export function ModernChatInterface({
   const [editContent, setEditContent] = useState('');
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
   const navigate = useNavigate();
+
+  // Mark messages as read when opening the chat
+  useEffect(() => {
+    if (targetUserId && user?.id) {
+      markConversationAsRead(targetUserId).catch(console.error);
+    }
+  }, [targetUserId, user?.id]);
 
   const { data: targetProfile } = useQuery({
     queryKey: ['profile', targetUserId],
@@ -257,7 +266,10 @@ export function ModernChatInterface({
           <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-9 w-9">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-3" onClick={() => navigate(`/user/${targetUserId}`)}>
+          <button 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => navigate(`/user/${targetUserId}`)}
+          >
             <div className="relative">
               <Avatar className="h-10 w-10 border border-border">
                 <AvatarImage src={displayAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${targetUserId}`} />
@@ -265,11 +277,11 @@ export function ModernChatInterface({
               </Avatar>
               <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />
             </div>
-            <div>
+            <div className="text-left">
               <h3 className="font-semibold text-sm">{displayName}</h3>
               {isTargetOnline && <span className="text-xs text-green-500">Active now</span>}
             </div>
-          </div>
+          </button>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -354,65 +366,93 @@ export function ModernChatInterface({
 
       {/* Input - Instagram style */}
       <div className="p-3 bg-background border-t border-border">
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(file);
+        {showVoiceRecorder ? (
+          <VoiceRecorder
+            onRecordingComplete={async (audioBlob, duration) => {
+              try {
+                setIsSending(true);
+                const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+                const mediaUrl = await uploadChatMedia(file, 'audio');
+                await sendMessage(targetUserId, 'Voice message', 'audio', mediaUrl, duration);
+                playSendSound();
+                setShowVoiceRecorder(false);
+              } catch (error) {
+                console.error('Error sending voice message:', error);
+                toast({ title: 'Failed to send voice message', variant: 'destructive' });
+              } finally {
+                setIsSending(false);
+              }
             }}
-            accept="image/*,video/*,audio/*"
-            className="hidden"
+            onCancel={() => setShowVoiceRecorder(false)}
           />
-          
-          <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => fileInputRef.current?.click()}>
-              <ImageIcon className="h-5 w-5 text-primary" />
-            </Button>
-            <Input
-              value={newMessage}
-              onChange={(e) => {
-                setNewMessage(e.target.value);
-                sendTypingEvent();
-              }}
-              placeholder="Message..."
-              className="flex-1 border-0 bg-transparent h-8 focus-visible:ring-0 px-0"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(newMessage);
-                }
-              }}
-            />
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-              <Smile className="h-5 w-5 text-muted-foreground" />
-            </Button>
-          </div>
-          
-          {newMessage.trim() ? (
-            <Button 
-              onClick={() => handleSendMessage(newMessage)} 
-              disabled={isSending}
-              size="icon"
-              className="h-10 w-10 rounded-full"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-              <Mic className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-        
-        {showEmojiPicker && (
-          <div className="mt-2">
-            <EmojiPicker onEmojiSelect={(emoji) => {
-              setNewMessage(prev => prev + emoji);
-              setShowEmojiPicker(false);
-            }} />
-          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+                accept="image/*,video/*,audio/*"
+                className="hidden"
+              />
+              
+              <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                  <ImageIcon className="h-5 w-5 text-primary" />
+                </Button>
+                <Input
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    sendTypingEvent();
+                  }}
+                  placeholder="Message..."
+                  className="flex-1 border-0 bg-transparent h-8 focus-visible:ring-0 px-0"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(newMessage);
+                    }
+                  }}
+                />
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                  <Smile className="h-5 w-5 text-muted-foreground" />
+                </Button>
+              </div>
+              
+              {newMessage.trim() ? (
+                <Button 
+                  onClick={() => handleSendMessage(newMessage)} 
+                  disabled={isSending}
+                  size="icon"
+                  className="h-10 w-10 rounded-full"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-10 w-10 rounded-full"
+                  onClick={() => setShowVoiceRecorder(true)}
+                >
+                  <Mic className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
+            
+            {showEmojiPicker && (
+              <div className="mt-2">
+                <EmojiPicker onEmojiSelect={(emoji) => {
+                  setNewMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                }} />
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -9,6 +9,7 @@ export interface Message {
   media_url?: string;
   media_duration?: number;
   is_read: boolean;
+  read_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -108,8 +109,23 @@ export const getConversations = async (): Promise<Conversation[]> => {
 export const markMessageAsRead = async (messageId: string): Promise<void> => {
   const { error } = await supabase
     .from('messages')
-    .update({ is_read: true })
+    .update({ is_read: true, read_at: new Date().toISOString() })
     .eq('id', messageId);
+
+  if (error) throw error;
+};
+
+// Mark all messages in a conversation as read
+export const markConversationAsRead = async (senderId: string): Promise<void> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('messages')
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq('sender_id', senderId)
+    .eq('receiver_id', user.user.id)
+    .eq('is_read', false);
 
   if (error) throw error;
 };
