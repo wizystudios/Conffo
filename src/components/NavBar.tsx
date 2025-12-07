@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Bell, BellDot, Check, Trash2, Menu } from "lucide-react";
+import { Bell, BellDot, Check, Trash2, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UsernameDisplay } from "@/components/UsernameDisplay";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -208,7 +208,7 @@ export function NavBar() {
           {/* Menu Button */}
           {isAuthenticated ? (
             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleMenuToggle}>
-              <Menu className="h-5 w-5" />
+              <ChevronDown className="h-5 w-5" />
             </Button>
           ) : (
             <Link to="/auth">

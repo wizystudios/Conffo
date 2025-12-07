@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { 
   User, 
   Heart, 
@@ -10,14 +9,14 @@ import {
   Settings, 
   LogOut, 
   Shield, 
-  Palette,
-  X
+  Palette
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { haptic } from "@/utils/hapticFeedback";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface FullPageMenuProps {
   isOpen: boolean;
@@ -52,43 +51,20 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-        onClick={onClose}
-      />
-      
-      {/* Menu rises from bottom with curved top */}
-      <div 
-        className="fixed inset-x-0 bottom-0 z-50 bg-background animate-in slide-in-from-bottom duration-300"
-        style={{ 
-          borderTopLeftRadius: '24px', 
-          borderTopRightRadius: '24px',
-          maxHeight: '85vh',
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.15)'
-        }}
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent 
+        side="bottom" 
+        className="h-[85vh] rounded-t-3xl px-0 pb-safe"
       >
         {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-2">
+        <div className="flex justify-center pt-1 pb-2">
           <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
         </div>
 
-        {/* Header */}
-        <div className="flex justify-between items-center px-6 pb-4">
-          <h2 className="text-xl font-bold">Menu</h2>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onClose}
-            className="rounded-full h-10 w-10"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+        <SheetHeader className="px-6 pb-4">
+          <SheetTitle className="text-xl font-bold text-left">Menu</SheetTitle>
+        </SheetHeader>
 
         {/* Menu items */}
         <div className="overflow-y-auto px-4 pb-8" style={{ maxHeight: 'calc(85vh - 100px)' }}>
@@ -194,7 +170,7 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
             </button>
           </div>
         </div>
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }

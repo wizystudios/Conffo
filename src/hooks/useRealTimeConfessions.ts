@@ -17,6 +17,39 @@ export function useRealTimeConfessions(initialConfessions: Confession[]) {
         console.log('New confession received in real-time:', payload);
         // Add the new confession to the top of the list
         const newConfession = payload.new as any;
+        
+        // Parse media URLs - check if it's a JSON array
+        let mediaUrls: string[] = [];
+        let mediaTypes: ('image' | 'video' | 'audio')[] = [];
+        let singleMediaUrl: string | null = null;
+        let singleMediaType: 'image' | 'video' | 'audio' | undefined = undefined;
+        
+        if (newConfession.media_url) {
+          try {
+            // Try to parse as JSON array
+            if (newConfession.media_url.startsWith('[')) {
+              mediaUrls = JSON.parse(newConfession.media_url);
+              mediaTypes = mediaUrls.map((url: string) => {
+                if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+                if (url.match(/\.(mp3|wav|ogg|webm)$/i)) return 'audio';
+                return 'image';
+              });
+            } else {
+              // Single URL
+              singleMediaUrl = newConfession.media_url;
+              singleMediaType = newConfession.media_type as 'image' | 'video' | 'audio' | undefined;
+              mediaUrls = [newConfession.media_url];
+              mediaTypes = [singleMediaType || 'image'];
+            }
+          } catch {
+            // If JSON parse fails, treat as single URL
+            singleMediaUrl = newConfession.media_url;
+            singleMediaType = newConfession.media_type as 'image' | 'video' | 'audio' | undefined;
+            mediaUrls = [newConfession.media_url];
+            mediaTypes = [singleMediaType || 'image'];
+          }
+        }
+        
         const confession: Confession = {
           id: newConfession.id,
           content: newConfession.content,
@@ -26,8 +59,10 @@ export function useRealTimeConfessions(initialConfessions: Confession[]) {
           reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
           commentCount: 0,
           userReactions: [],
-          mediaUrl: newConfession.media_url,
-          mediaType: newConfession.media_type,
+          mediaUrl: singleMediaUrl || (mediaUrls.length > 0 ? mediaUrls[0] : null),
+          mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+          mediaType: singleMediaType,
+          mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
           tags: newConfession.tags || []
         };
         setConfessions(prev => [confession, ...prev]);
