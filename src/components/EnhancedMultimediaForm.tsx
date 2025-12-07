@@ -162,7 +162,10 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
     setUploadProgress(0);
 
     try {
+      console.log('Starting upload with', mediaFiles.length, 'files');
       const { urls, types } = await uploadMediaFiles();
+      console.log('Uploaded URLs:', urls);
+      console.log('Uploaded Types:', types);
       
       // Store multiple URLs as JSON array when more than one
       const mediaUrlValue = urls.length > 1 
@@ -172,6 +175,9 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
       const mediaTypeValue = types.length > 1 
         ? 'multiple' 
         : (types[0] || null);
+      
+      console.log('Final media_url value:', mediaUrlValue);
+      console.log('Final media_type value:', mediaTypeValue);
       
       const { error } = await supabase
         .from('confessions')
@@ -184,7 +190,10 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
           tags
         }]);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
       toast({
         title: "Confession posted!",

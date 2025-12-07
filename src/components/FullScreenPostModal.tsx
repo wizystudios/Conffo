@@ -135,13 +135,19 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
       const uploadedUrls: string[] = [];
       const uploadedTypes: string[] = [];
       
+      console.log('Starting upload with', mediaFiles.length, 'files');
+      
       // Upload all media files
       for (let i = 0; i < mediaFiles.length; i++) {
+        console.log('Uploading file', i + 1, 'of', mediaFiles.length);
         const media = await uploadMedia(mediaFiles[i].file);
         uploadedUrls.push(media.mediaUrl);
         uploadedTypes.push(media.mediaType);
         setUploadProgress(Math.round(((i + 1) / (mediaFiles.length + 1)) * 80));
       }
+      
+      console.log('All files uploaded. URLs:', uploadedUrls);
+      console.log('Types:', uploadedTypes);
       
       // Store multiple URLs as JSON array when more than one
       const mediaUrlValue = uploadedUrls.length > 1 
@@ -152,7 +158,10 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
         ? 'multiple' 
         : (uploadedTypes[0] || null);
       
-      const { error } = await supabase
+      console.log('Final media_url:', mediaUrlValue);
+      console.log('Final media_type:', mediaTypeValue);
+      
+      const { error, data } = await supabase
         .from('confessions')
         .insert([{
           content,
@@ -161,7 +170,10 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
           media_url: mediaUrlValue,
           media_type: mediaTypeValue,
           tags
-        }]);
+        }])
+        .select();
+      
+      console.log('Insert result:', data, error);
       
       if (error) throw error;
       

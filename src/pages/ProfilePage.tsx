@@ -5,7 +5,7 @@ import { UserConfessions } from '@/components/UserConfessions';
 import { UserSavedPosts } from '@/components/UserSavedPosts';
 import { UserLikedPosts } from '@/components/UserLikedPosts';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Ban, UserMinus } from 'lucide-react';
 import { Navigate, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,8 @@ import { RealImageVerification } from '@/components/RealImageVerification';
 import { ProfileInfoSection } from '@/components/ProfileInfoSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut } from 'lucide-react';
+import { blockUser, unblockUser, isUserBlocked } from '@/services/blockService';
+import { toast } from '@/hooks/use-toast';
 
 interface ProfileData {
   id: string;
@@ -42,6 +44,8 @@ export default function ProfilePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockLoading, setIsBlockLoading] = useState(false);
 
   // Handle tab from URL params
   useEffect(() => {
@@ -56,6 +60,11 @@ export default function ProfilePage() {
     
     const ownProfile = !userId || userId === user.id;
     setIsOwnProfile(ownProfile);
+    
+    // Check if user is blocked
+    if (userId && userId !== user.id) {
+      isUserBlocked(userId).then(setIsBlocked);
+    }
   }, [userId, user]);
 
   useEffect(() => {
@@ -192,6 +201,31 @@ export default function ProfilePage() {
     setShowFollowersModal(true);
   };
 
+  const handleBlockToggle = async () => {
+    if (!userId || isBlockLoading) return;
+    
+    setIsBlockLoading(true);
+    try {
+      if (isBlocked) {
+        const success = await unblockUser(userId);
+        if (success) {
+          setIsBlocked(false);
+          toast({ title: "User unblocked" });
+        }
+      } else {
+        const success = await blockUser(userId);
+        if (success) {
+          setIsBlocked(true);
+          toast({ title: "User blocked" });
+        }
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update block status", variant: "destructive" });
+    } finally {
+      setIsBlockLoading(false);
+    }
+  };
+
   if (isLoading || isLoadingProfile) {
     return (
       <Layout>
@@ -258,6 +292,7 @@ export default function ProfilePage() {
               </div>
               
               {/* Other user profile: Follow button + Chat icon only */}
+              {/* Other user profile: Follow button + Chat + Block */}
               {!isOwnProfile && isAuthenticated && userId && (
                 <div className="flex gap-2">
                   <div className="flex-1">
@@ -269,6 +304,14 @@ export default function ProfilePage() {
                     onClick={handleChat}
                   >
                     <MessageSquare className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant={isBlocked ? "destructive" : "outline"}
+                    size="icon"
+                    onClick={handleBlockToggle}
+                    disabled={isBlockLoading}
+                  >
+                    {isBlocked ? <UserMinus className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
                   </Button>
                 </div>
               )}
