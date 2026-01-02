@@ -7,7 +7,7 @@ import { AllUsersBar } from '@/components/AllUsersBar';
 import { PeopleYouMayKnow } from '@/components/PeopleYouMayKnow';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { FollowingFeed } from '@/components/FollowingFeed';
 import { offlineQueue } from '@/utils/offlineQueue';
@@ -18,6 +18,7 @@ import { haptic } from '@/utils/hapticFeedback';
 import { Confession } from '@/types';
 import { PullToRefreshIndicator } from '@/components/PullToRefreshIndicator';
 import { StoryCreator } from '@/components/story/StoryCreator';
+import { getBlockedUsers, getBlockedByUsers } from '@/services/blockService';
 
 // Transform raw DB data to Confession type
 const transformConfession = (raw: any): Confession => ({
@@ -48,6 +49,25 @@ const HomePage = () => {
   const observerTarget = useRef(null);
   const REFRESH_THRESHOLD = 80;
   const [showMomentCreator, setShowMomentCreator] = useState(false);
+
+  // Get blocked users to filter them out
+  const { data: blockedUsers = [] } = useQuery({
+    queryKey: ['blocked-users', user?.id],
+    queryFn: getBlockedUsers,
+    enabled: !!user?.id,
+  });
+
+  const { data: blockedByUsers = [] } = useQuery({
+    queryKey: ['blocked-by-users', user?.id],
+    queryFn: getBlockedByUsers,
+    enabled: !!user?.id,
+  });
+
+  // Combine all blocked user IDs (both directions)
+  const allBlockedIds = [
+    ...blockedUsers.map(b => b.blocked_id),
+    ...blockedByUsers.map(b => b.blocker_id)
+  ];
 
   useEffect(() => {
     const handleCreateConfession = () => setShowConfessionForm(true);
@@ -82,7 +102,9 @@ const HomePage = () => {
     initialPageParam: 0
   });
 
-  const recentConfessions = data?.pages.flatMap(page => page) || [];
+  // Filter blocked users from recent confessions
+  const recentConfessions = (data?.pages.flatMap(page => page) || [])
+    .filter(c => !allBlockedIds.includes(c.userId));
 
   // Fans Posts query
   const { data: fansData, fetchNextPage: fetchNextFans, hasNextPage: hasNextFans, isFetchingNextPage: isFetchingNextFans, refetch: refetchFans, isLoading: isLoadingFans } = useInfiniteQuery({
@@ -117,7 +139,9 @@ const HomePage = () => {
     initialPageParam: 0
   });
 
-  const fansPosts = fansData?.pages.flatMap(page => page) || [];
+  // Filter blocked users from fans posts
+  const fansPosts = (fansData?.pages.flatMap(page => page) || [])
+    .filter(c => !allBlockedIds.includes(c.userId));
 
   // Infinite scroll observer
   useEffect(() => {

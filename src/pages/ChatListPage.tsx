@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, MessageCircle, ArrowLeft, Edit, Camera } from 'lucide-react';
+import { Search, MessageCircle, ArrowLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { formatDistanceToNow } from 'date-fns';
+import { getBlockedUsers } from '@/services/blockService';
 
 interface ChatUser {
   id: string;
@@ -22,29 +23,22 @@ interface ChatUser {
 
 export default function ChatListPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'messages' | 'channels' | 'requests'>('messages');
   const { user, isAuthenticated } = useAuth();
   const { unreadCounts } = useUnreadMessages();
   const navigate = useNavigate();
 
-  // Get user profile
-  const { data: userProfile } = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', user.id)
-        .single();
-      return data;
-    },
+  // Get blocked users
+  const { data: blockedUsers = [] } = useQuery({
+    queryKey: ['blocked-users', user?.id],
+    queryFn: getBlockedUsers,
     enabled: !!user?.id,
   });
 
+  const blockedUserIds = blockedUsers.map(b => b.blocked_id);
+
   // Get followed users that you can chat with
   const { data: followedUsers = [], isLoading } = useQuery({
-    queryKey: ['followed-users', user?.id],
+    queryKey: ['followed-users', user?.id, blockedUserIds.length],
     queryFn: async () => {
       if (!user) return [];
       
@@ -57,7 +51,12 @@ export default function ChatListPage() {
       
       if (!follows || follows.length === 0) return [];
       
-      const followingIds = follows.map(f => f.following_id);
+      // Filter out blocked users
+      const followingIds = follows
+        .map(f => f.following_id)
+        .filter(id => !blockedUserIds.includes(id));
+      
+      if (followingIds.length === 0) return [];
       
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -99,7 +98,7 @@ export default function ChatListPage() {
             lastMessage,
             lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : undefined,
             unreadCount: unreadCounts[profile.id] || 0,
-            isOnline: Math.random() > 0.5 // Simulated for now
+            isOnline: Math.random() > 0.5
           };
         })
       );
@@ -125,18 +124,15 @@ export default function ChatListPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - Instagram style */}
+      {/* Header - Clean */}
       <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold">{userProfile?.username || 'Messages'}</h1>
+            <h1 className="text-xl font-bold">Messages</h1>
           </div>
-          <Button variant="ghost" size="icon">
-            <Edit className="h-5 w-5" />
-          </Button>
         </div>
 
         {/* Search Bar */}
@@ -150,53 +146,6 @@ export default function ChatListPage() {
               className="pl-10 bg-muted/50 border-0 rounded-xl"
             />
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-border">
-          {(['messages', 'channels', 'requests'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-3 text-sm font-medium capitalize transition-colors ${
-                activeTab === tab 
-                  ? 'text-primary border-b-2 border-primary' 
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Users Stories Bar */}
-      <div className="px-4 py-3 border-b border-border overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4">
-          {/* Your Note */}
-          <div className="flex flex-col items-center min-w-[60px]">
-            <div className="relative">
-              <Avatar className="h-14 w-14 border-2 border-border">
-                <AvatarImage src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user?.id}`} />
-                <AvatarFallback>{userProfile?.username?.charAt(0) || 'Y'}</AvatarFallback>
-              </Avatar>
-              <div className="absolute bottom-0 right-0 h-5 w-5 bg-primary rounded-full flex items-center justify-center border-2 border-background">
-                <span className="text-xs text-primary-foreground">+</span>
-              </div>
-            </div>
-            <span className="text-xs mt-1 text-muted-foreground">Your note</span>
-          </div>
-
-          {/* Other users with notes */}
-          {filteredUsers.slice(0, 6).map((chatUser) => (
-            <div key={chatUser.id} className="flex flex-col items-center min-w-[60px]">
-              <Avatar className="h-14 w-14 border-2 border-primary/50">
-                <AvatarImage src={chatUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${chatUser.id}`} />
-                <AvatarFallback>{chatUser.username.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span className="text-xs mt-1 truncate w-14 text-center">{chatUser.username}</span>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -225,12 +174,12 @@ export default function ChatListPage() {
               className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors active:scale-[0.99]"
             >
               <div className="relative">
-                <Avatar className="h-14 w-14">
+                <Avatar className="h-12 w-12">
                   <AvatarImage src={chatUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${chatUser.id}`} />
                   <AvatarFallback>{chatUser.username.charAt(0)}</AvatarFallback>
                 </Avatar>
                 {chatUser.isOnline && (
-                  <div className="absolute bottom-0 right-0 h-3.5 w-3.5 bg-green-500 rounded-full border-2 border-background" />
+                  <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
                 )}
               </div>
               
@@ -248,16 +197,13 @@ export default function ChatListPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                {chatUser.unreadCount && chatUser.unreadCount > 0 && (
-                  <div className="h-5 min-w-5 px-1.5 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-primary-foreground">
-                      {chatUser.unreadCount > 9 ? '9+' : chatUser.unreadCount}
-                    </span>
-                  </div>
-                )}
-                <Camera className="h-5 w-5 text-muted-foreground" />
-              </div>
+              {chatUser.unreadCount && chatUser.unreadCount > 0 && (
+                <div className="h-5 min-w-5 px-1.5 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary-foreground">
+                    {chatUser.unreadCount > 9 ? '9+' : chatUser.unreadCount}
+                  </span>
+                </div>
+              )}
             </Link>
           ))
         )}

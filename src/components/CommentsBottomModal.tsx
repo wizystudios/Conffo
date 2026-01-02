@@ -10,6 +10,7 @@ import { BottomSlideModal } from '@/components/BottomSlideModal';
 import { toast } from '@/hooks/use-toast';
 import { TreeComment } from '@/components/TreeComment';
 import { Confession, Comment } from '@/types';
+import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 
 interface CommentsBottomModalProps {
   isOpen: boolean;
@@ -127,34 +128,23 @@ export function CommentsBottomModal({ isOpen, onClose, confessionId, confession,
 
   const commentTree = buildCommentTree(comments);
 
+  // Build media array for carousel
+  const mediaArray = confession.mediaUrls && confession.mediaUrls.length > 0
+    ? confession.mediaUrls.map((url, index) => ({
+        url,
+        type: (confession.mediaTypes?.[index] || 'image') as 'image' | 'video' | 'audio'
+      }))
+    : confession.mediaUrl 
+      ? [{ url: confession.mediaUrl, type: (confession.mediaType || 'image') as 'image' | 'video' | 'audio' }]
+      : [];
+
   return (
     <BottomSlideModal isOpen={isOpen} onClose={onClose} title="">
       <div className="flex flex-col h-full">
-        {/* Post Media - Compact at Top */}
-        {confession.mediaUrl && (
-          <div className="w-full bg-black">
-            {confession.mediaType === 'image' ? (
-              <img 
-                src={confession.mediaUrl} 
-                alt="Post" 
-                className="w-full h-auto max-h-[30vh] object-contain"
-              />
-            ) : confession.mediaType === 'video' ? (
-              <video 
-                src={confession.mediaUrl} 
-                className="w-full h-auto max-h-[30vh] object-contain"
-                controls
-                playsInline
-              />
-            ) : confession.mediaType === 'audio' ? (
-              <div className="p-3">
-                <audio 
-                  src={confession.mediaUrl} 
-                  controls
-                  className="w-full"
-                />
-              </div>
-            ) : null}
+        {/* Post Media - Using carousel for multi-media support */}
+        {mediaArray.length > 0 && (
+          <div className="w-full max-h-[30vh] overflow-hidden">
+            <MediaCarouselDisplay media={mediaArray} />
           </div>
         )}
 

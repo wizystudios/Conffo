@@ -85,24 +85,81 @@ export async function deleteNotification(notificationId: string) {
 }
 
 /**
- * Gets sender information from notification content - simplified to avoid recursion
+ * Gets sender information from notification content
  * @param notification The notification object
- * @returns Basic sender info or null
+ * @returns Sender info with username and userId
  */
 export async function getNotificationSender(notification: { type: string; related_id?: string; content: string }) {
   try {
-    // Simplified approach to avoid recursion - just return basic info
-    if (notification.type === 'new_reaction' || notification.type === 'new_comment') {
-      return {
-        userId: 'anonymous',
-        username: 'Someone'
-      };
+    // For reactions and comments, we need to find the user who triggered it
+    if ((notification.type === 'new_reaction' || notification.type === 'new_comment') && notification.related_id) {
+      // Get the confession to find who made the reaction/comment
+      const { data: confession } = await supabase
+        .from('confessions')
+        .select('id')
+        .eq('id', notification.related_id)
+        .maybeSingle();
+      
+      if (confession) {
+        // Get the most recent reaction/comment on this confession
+        if (notification.type === 'new_reaction') {
+          const { data: reaction } = await supabase
+            .from('reactions')
+            .select('user_id')
+            .eq('confession_id', notification.related_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (reaction?.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', reaction.user_id)
+              .maybeSingle();
+            
+            return {
+              userId: reaction.user_id,
+              username: profile?.username || 'Someone',
+              avatarUrl: profile?.avatar_url
+            };
+          }
+        } else if (notification.type === 'new_comment') {
+          const { data: comment } = await supabase
+            .from('comments')
+            .select('user_id')
+            .eq('confession_id', notification.related_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (comment?.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', comment.user_id)
+              .maybeSingle();
+            
+            return {
+              userId: comment.user_id,
+              username: profile?.username || 'Someone',
+              avatarUrl: profile?.avatar_url
+            };
+          }
+        }
+      }
     }
     
-    return null;
+    return {
+      userId: 'anonymous',
+      username: 'Someone'
+    };
   } catch (error) {
     console.error('Error getting notification sender:', error);
-    return null;
+    return {
+      userId: 'anonymous',
+      username: 'Someone'
+    };
   }
 }
 
