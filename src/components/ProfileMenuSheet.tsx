@@ -12,7 +12,8 @@ import {
   LogOut,
   Sun,
   BookMarked,
-  Heart
+  Heart,
+  Ban
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,7 @@ export function ProfileMenuSheet({ children }: ProfileMenuSheetProps) {
     { icon: User, label: 'My Profile', path: '/profile' },
     { icon: BookMarked, label: 'Saved Posts', path: `/user/${user?.id}?tab=saved` },
     { icon: Heart, label: 'Liked Posts', path: `/user/${user?.id}?tab=liked` },
+    { icon: Ban, label: 'Blocked Users', path: '/blocked' },
   ];
 
   const handleNavigation = (path: string) => {

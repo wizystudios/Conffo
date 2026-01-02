@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
-import { addConfessionWithMedia, getRooms } from '@/services/supabaseDataService';
+import { createConfessionWithMediaItems, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { X, Image, Video, Music, FileText, Tag } from 'lucide-react';
@@ -122,28 +122,25 @@ export function EnhancedCreatePostModal({ isOpen, onClose, onSuccess, initialRoo
     setUploadProgress(0);
     
     try {
-      // Upload first media file only (primary media)
-      let mediaUrl = null;
-      let mediaType = undefined;
-      
+      // Upload ALL media files
+      const uploaded: Array<{ url: string; type: 'image' | 'video' | 'audio' }> = [];
+
       if (mediaFiles.length > 0) {
-        const progressStep = 50 / mediaFiles.length;
-        const media = await uploadMedia(mediaFiles[0].file);
-        mediaUrl = media.mediaUrl;
-        mediaType = media.mediaType;
-        setUploadProgress(50);
+        for (let i = 0; i < mediaFiles.length; i++) {
+          const media = await uploadMedia(mediaFiles[i].file);
+          uploaded.push({ url: media.mediaUrl, type: media.mediaType });
+          setUploadProgress(Math.round(((i + 1) / mediaFiles.length) * 80));
+        }
       }
-      
-      await addConfessionWithMedia(
-        content, 
-        room, 
-        user.id, 
-        mediaFiles[0]?.file, 
+
+      await createConfessionWithMediaItems(
+        content,
+        room,
+        user.id,
         tags,
-        mediaUrl,
-        mediaType
+        uploaded
       );
-      
+
       setUploadProgress(100);
       
       // Reset form
