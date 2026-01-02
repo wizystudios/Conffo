@@ -38,65 +38,58 @@ const NotificationItem = ({ notification, isSelected, onToggleSelect, onNavigate
 
   return (
     <div 
-      className={`p-4 hover:bg-muted/50 relative transition-colors ${
+      className={`p-3 hover:bg-muted/50 relative transition-colors ${
         !notification.is_read ? 'bg-primary/5 border-l-2 border-l-primary' : ''
       } ${isClickable ? 'cursor-pointer' : ''}`}
       onClick={isClickable ? handleClick : undefined}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 pt-1">
+      <div className="flex items-start gap-2">
+        <div className="flex-shrink-0">
           <Checkbox 
             checked={isSelected}
             onCheckedChange={onToggleSelect}
             onClick={(e) => e.stopPropagation()}
+            className="h-4 w-4"
           />
         </div>
         
         <div className="flex-shrink-0">
-          {getNotificationIcon()}
+          {notification.senderInfo?.userId ? (
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${notification.senderInfo.userId}`} />
+              <AvatarFallback className="text-xs">
+                {(notification.senderInfo.username || 'U').charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+              {getNotificationIcon()}
+            </div>
+          )}
         </div>
         
         <div className="flex-grow min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-grow min-w-0">
-              {notification.senderInfo?.username && (
-                <div className="flex items-center gap-2 mb-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${notification.senderInfo.userId}`} />
-                    <AvatarFallback className="text-xs">
-                      {notification.senderInfo.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium text-sm">{notification.senderInfo.username}</span>
-                </div>
-              )}
-              
-              <p className="text-sm break-words line-clamp-3 text-muted-foreground">
-                {notification.type === 'message' ? (
-                  <>
-                    <span className="font-medium text-foreground">New message: </span>
-                    {notification.content.length > 50 
-                      ? `${notification.content.substring(0, 50)}...` 
-                      : notification.content
-                    }
-                  </>
-                ) : (
-                  notification.content.replace('Someone', notification.senderInfo?.username || 'Someone')
-                )}
-              </p>
-              
-              <div className="flex items-center gap-2 mt-2">
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                </p>
-                {!notification.is_read && (
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                )}
-                {isClickable && (
-                  <span className="text-xs text-primary">Tap to open chat</span>
-                )}
-              </div>
-            </div>
+          <p className="text-xs break-words line-clamp-2">
+            {notification.senderInfo?.username && notification.senderInfo.username !== 'Someone' ? (
+              <>
+                <span className="font-semibold">{notification.senderInfo.username}</span>
+                {' '}
+                {notification.type === 'new_reaction' && 'reacted to your confession'}
+                {notification.type === 'new_comment' && 'commented on your confession'}
+                {notification.type === 'follow' && 'started following you'}
+                {notification.type === 'message' && notification.content}
+              </>
+            ) : (
+              notification.content
+            )}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <p className="text-[10px] text-muted-foreground">
+              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+            </p>
+            {!notification.is_read && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            )}
           </div>
         </div>
       </div>

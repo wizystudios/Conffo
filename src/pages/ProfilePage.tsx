@@ -260,38 +260,44 @@ export default function ProfilePage() {
         <div className="w-full bg-background">
           <div className="max-w-lg mx-auto px-3 py-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-16 w-16 border-2 border-border">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-20 w-20 border-2 border-border flex-shrink-0">
                   <AvatarImage src={avatarUrl} alt={username} />
-                  <AvatarFallback className="text-xl">
+                  <AvatarFallback className="text-2xl">
                     {username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 
-                <div className="flex-1">
-                  <h2 className="text-lg font-bold">{username}</h2>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold truncate">{username}</h2>
                   
-                  <div className="flex items-center gap-4 mt-1">
+                  {/* Bio - Shown prominently */}
+                  {profileData.bio && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {profileData.bio}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center gap-4 mt-2">
                     <button 
-                      className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
+                      className="flex items-center gap-1 hover:opacity-80 cursor-pointer"
                       onClick={handleFollowersClick}
                     >
-                      <span className="font-semibold">{followersCount}</span>
-                      <span className="text-sm text-muted-foreground">Fans</span>
+                      <span className="font-semibold text-sm">{followersCount}</span>
+                      <span className="text-xs text-muted-foreground">Fans</span>
                     </button>
                     
                     <button 
-                      className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
+                      className="flex items-center gap-1 hover:opacity-80 cursor-pointer"
                       onClick={handleFollowingClick}
                     >
-                      <span className="font-semibold">{followingCount}</span>
-                      <span className="text-sm text-muted-foreground">Crew</span>
+                      <span className="font-semibold text-sm">{followingCount}</span>
+                      <span className="text-xs text-muted-foreground">Crew</span>
                     </button>
                   </div>
                 </div>
               </div>
               
-              {/* Other user profile: Follow button + Chat icon only */}
               {/* Other user profile: Follow button + Chat + Block */}
               {!isOwnProfile && isAuthenticated && userId && (
                 <div className="flex gap-2">
