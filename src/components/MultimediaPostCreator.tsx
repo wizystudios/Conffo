@@ -230,20 +230,42 @@ export function MultimediaPostCreator({ onSuccess, onCancel }: MultimediaPostCre
         uploadedMedia.push({ type: 'audio', url: audioUrl });
       }
 
-      // Create confession
+      // Create confession (single-media fields for back-compat)
+      const primary = uploadedMedia[0];
+
       const { data: confession, error: confessionError } = await supabase
         .from('confessions')
         .insert({
           content: content.trim() || 'Multimedia post',
           user_id: user.id,
           room_id: 'random', // Default room
-          media_url: uploadedMedia.length > 0 ? uploadedMedia[0].url : null,
-          media_type: uploadedMedia.length > 0 ? uploadedMedia[0].type : null
+          media_url: primary?.url ?? null,
+          media_type: primary?.type ?? null
         })
-        .select()
+        .select('id')
         .single();
 
-      if (confessionError) throw confessionError;
+      if (confessionError || !confession) throw confessionError;
+
+      // Store all media items (carousel)
+      if (uploadedMedia.length > 0) {
+        const rows = uploadedMedia.map((m, index) => ({
+          confession_id: confession.id,
+          user_id: user.id,
+          media_url: m.url,
+          media_type: m.type,
+          order_index: index,
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('confession_media')
+          .insert(rows);
+
+        if (mediaError) {
+          await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
+          throw mediaError;
+        }
+      }
 
       // Save audio data if exists
       if (audioBlob && confession) {

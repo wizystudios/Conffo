@@ -21,19 +21,51 @@ import { StoryCreator } from '@/components/story/StoryCreator';
 import { getBlockedUsers, getBlockedByUsers } from '@/services/blockService';
 
 // Transform raw DB data to Confession type
-const transformConfession = (raw: any): Confession => ({
-  id: raw.id,
-  content: raw.content,
-  room: raw.room_id,
-  userId: raw.user_id,
-  timestamp: new Date(raw.created_at).getTime(),
-  reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
-  userReactions: [],
-  commentCount: 0,
-  mediaUrl: raw.media_url,
-  mediaType: raw.media_type as 'image' | 'video' | 'audio' | undefined,
-  tags: raw.tags || []
-});
+const transformConfession = (raw: any): Confession => {
+  const mediaRows = Array.isArray(raw.confession_media)
+    ? [...raw.confession_media].sort(
+        (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)
+      )
+    : [];
+
+  const mediaUrls = mediaRows.map((m: any) => m.media_url).filter(Boolean);
+  const mediaTypes = mediaRows.map((m: any) => (m.media_type || 'image') as any);
+
+  // Back-compat: some older posts stored JSON in confessions.media_url
+  let legacyUrls: string[] = [];
+  if (mediaUrls.length === 0 && typeof raw.media_url === 'string' && raw.media_url.startsWith('[')) {
+    try {
+      legacyUrls = JSON.parse(raw.media_url);
+    } catch {
+      legacyUrls = [];
+    }
+  }
+
+  const allUrls = mediaUrls.length > 0 ? mediaUrls : legacyUrls;
+  const allTypes = mediaUrls.length > 0
+    ? mediaTypes
+    : allUrls.map((url) => {
+        if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+        if (url.match(/\.(mp3|wav|ogg|webm)$/i)) return 'audio';
+        return 'image';
+      });
+
+  return {
+    id: raw.id,
+    content: raw.content,
+    room: raw.room_id,
+    userId: raw.user_id,
+    timestamp: new Date(raw.created_at).getTime(),
+    reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
+    userReactions: [],
+    commentCount: 0,
+    mediaUrl: allUrls[0] ?? raw.media_url ?? null,
+    mediaUrls: allUrls.length > 0 ? allUrls : undefined,
+    mediaType: (allTypes[0] ?? raw.media_type) as any,
+    mediaTypes: allTypes.length > 0 ? (allTypes as any) : undefined,
+    tags: raw.tags || []
+  };
+};
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState<'crew' | 'fans' | 'all'>('all');
@@ -88,7 +120,10 @@ const HomePage = () => {
     queryFn: async ({ pageParam = 0 }) => {
       const { data, error } = await supabase
         .from('confessions')
-        .select('*')
+        .select(`
+          *,
+          confession_media (media_url, media_type, order_index)
+        `)
         .order('created_at', { ascending: false })
         .range(pageParam, pageParam + 9);
       

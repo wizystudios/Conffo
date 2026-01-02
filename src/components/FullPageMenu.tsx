@@ -1,15 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { 
-  User, 
-  Heart, 
-  Bell, 
-  Bookmark, 
-  Sun, 
-  Moon, 
-  Settings, 
-  LogOut, 
-  Shield, 
-  Palette
+import {
+  User,
+  Heart,
+  Bell,
+  Bookmark,
+  Sun,
+  Moon,
+  Settings,
+  LogOut,
+  Shield,
+  Palette,
+  Ban
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -107,6 +108,16 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
                 <Bookmark className="h-5 w-5 text-yellow-500" />
               </div>
               <span className="text-base font-medium">Saved</span>
+            </button>
+
+            <button
+              onClick={() => handleNavigation('/blocked')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+            >
+              <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center">
+                <Ban className="h-5 w-5" />
+              </div>
+              <span className="text-base font-medium">Blocked Users</span>
             </button>
 
             <div className="h-px bg-border my-3" />

@@ -14,7 +14,12 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
         created_at,
         media_url,
         media_type,
-        tags
+        tags,
+        confession_media (
+          media_url,
+          media_type,
+          order_index
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -75,32 +80,43 @@ export const getConfessions = async (roomId?: string, userId?: string): Promise<
               (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
       };
       
-      // Parse media URLs - check if it's a JSON array
+      // Parse media URLs
       let mediaUrls: string[] = [];
       let mediaTypes: ('image' | 'video' | 'audio')[] = [];
       let singleMediaUrl: string | null = null;
       let singleMediaType: 'image' | 'video' | 'audio' | undefined = undefined;
-      
-      if (row.media_url) {
+
+      const mediaRows = (row as any).confession_media as
+        | Array<{ media_url: string; media_type: string; order_index: number }>
+        | undefined;
+
+      if (mediaRows && mediaRows.length > 0) {
+        const sorted = [...mediaRows].sort(
+          (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+        );
+        mediaUrls = sorted.map((m) => m.media_url);
+        mediaTypes = sorted.map((m) => (m.media_type as any) || 'image');
+        singleMediaUrl = mediaUrls[0] || null;
+        singleMediaType = mediaTypes[0];
+      } else if (row.media_url) {
+        // Back-compat: some older posts stored JSON in confessions.media_url
         try {
-          // Try to parse as JSON array
           if (row.media_url.startsWith('[')) {
             mediaUrls = JSON.parse(row.media_url);
-            // For multiple media, determine types from URL extensions or default to image
-            mediaTypes = mediaUrls.map(url => {
+            mediaTypes = mediaUrls.map((url) => {
               if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
               if (url.match(/\.(mp3|wav|ogg|webm)$/i)) return 'audio';
               return 'image';
             });
+            singleMediaUrl = mediaUrls[0] || null;
+            singleMediaType = mediaTypes[0];
           } else {
-            // Single URL
             singleMediaUrl = row.media_url;
             singleMediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
             mediaUrls = [row.media_url];
             mediaTypes = [singleMediaType || 'image'];
           }
         } catch {
-          // If JSON parse fails, treat as single URL
           singleMediaUrl = row.media_url;
           singleMediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
           mediaUrls = [row.media_url];
@@ -144,7 +160,12 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
         created_at,
         media_url,
         media_type,
-        tags
+        tags,
+        confession_media (
+          media_url,
+          media_type,
+          order_index
+        )
       `)
       .eq('id', id)
       .single();
@@ -194,21 +215,36 @@ export const getConfessionById = async (id: string, userId?: string): Promise<Co
             (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
     };
     
-    // Parse media URLs - check if it's a JSON array
+    // Parse media URLs
     let mediaUrls: string[] = [];
     let mediaTypes: ('image' | 'video' | 'audio')[] = [];
     let singleMediaUrl: string | null = null;
     let singleMediaType: 'image' | 'video' | 'audio' | undefined = undefined;
-    
-    if (data.media_url) {
+
+    const mediaRows = (data as any).confession_media as
+      | Array<{ media_url: string; media_type: string; order_index: number }>
+      | undefined;
+
+    if (mediaRows && mediaRows.length > 0) {
+      const sorted = [...mediaRows].sort(
+        (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+      );
+      mediaUrls = sorted.map((m) => m.media_url);
+      mediaTypes = sorted.map((m) => (m.media_type as any) || 'image');
+      singleMediaUrl = mediaUrls[0] || null;
+      singleMediaType = mediaTypes[0];
+    } else if (data.media_url) {
+      // Back-compat: some older posts stored JSON in confessions.media_url
       try {
         if (data.media_url.startsWith('[')) {
           mediaUrls = JSON.parse(data.media_url);
-          mediaTypes = mediaUrls.map(url => {
+          mediaTypes = mediaUrls.map((url) => {
             if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
             if (url.match(/\.(mp3|wav|ogg|webm)$/i)) return 'audio';
             return 'image';
           });
+          singleMediaUrl = mediaUrls[0] || null;
+          singleMediaType = mediaTypes[0];
         } else {
           singleMediaUrl = data.media_url;
           singleMediaType = data.media_type as 'image' | 'video' | 'audio' | undefined;
@@ -328,6 +364,63 @@ export const addConfessionWithMedia = async (
   } catch (error) {
     console.error('Error adding confession with media:', error);
     throw error;
+  }
+};
+
+export const createConfessionWithMediaItems = async (
+  content: string,
+  room: Room,
+  userId: string,
+  tags: string[] = [],
+  media: Array<{ url: string; type: 'image' | 'video' | 'audio' }> = []
+): Promise<void> => {
+  // 1) Create ONE confession row
+  const primary = media[0];
+
+  const { data: confession, error: confessionError } = await supabase
+    .from('confessions')
+    .insert({
+      content,
+      room_id: room,
+      user_id: userId,
+      tags,
+      // Back-compat fields (so older UI paths still show something)
+      media_url: primary?.url ?? null,
+      media_type: primary?.type ?? null,
+    })
+    .select('id')
+    .single();
+
+  if (confessionError || !confession) {
+    console.error('Error creating confession:', confessionError);
+    throw confessionError || new Error('Failed to create confession');
+  }
+
+  // 2) Add MANY media rows
+  if (media.length > 0) {
+    const rows = media.map((m, index) => ({
+      confession_id: confession.id,
+      user_id: userId,
+      media_url: m.url,
+      media_type: m.type,
+      order_index: index,
+    }));
+
+    const { error: mediaError } = await supabase
+      .from('confession_media')
+      .insert(rows);
+
+    if (mediaError) {
+      // Best-effort cleanup to avoid "text-only" orphan posts
+      await supabase
+        .from('confessions')
+        .delete()
+        .eq('id', confession.id)
+        .eq('user_id', userId);
+
+      console.error('Error adding confession media:', mediaError);
+      throw mediaError;
+    }
   }
 };
 

@@ -162,37 +162,46 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
     setUploadProgress(0);
 
     try {
-      console.log('Starting upload with', mediaFiles.length, 'files');
       const { urls, types } = await uploadMediaFiles();
-      console.log('Uploaded URLs:', urls);
-      console.log('Uploaded Types:', types);
-      
-      // Store multiple URLs as JSON array when more than one
-      const mediaUrlValue = urls.length > 1 
-        ? JSON.stringify(urls) 
-        : (urls[0] || null);
-      
-      const mediaTypeValue = types.length > 1 
-        ? 'multiple' 
-        : (types[0] || null);
-      
-      console.log('Final media_url value:', mediaUrlValue);
-      console.log('Final media_type value:', mediaTypeValue);
-      
-      const { error } = await supabase
+
+      const primaryUrl = urls[0] || null;
+      const primaryType = (types[0] as any) || null;
+
+      const { data: confession, error: confessionError } = await supabase
         .from('confessions')
         .insert([{
           content: content || 'Multimedia post',
           room_id: selectedRoom || 'random',
           user_id: user.id,
-          media_url: mediaUrlValue,
-          media_type: mediaTypeValue,
+          // Back-compat single-media fields
+          media_url: primaryUrl,
+          media_type: primaryType,
           tags
-        }]);
-      
-      if (error) {
-        console.error('Insert error:', error);
-        throw error;
+        }])
+        .select('id')
+        .single();
+
+      if (confessionError || !confession) {
+        throw confessionError || new Error('Failed to create confession');
+      }
+
+      if (urls.length > 0) {
+        const rows = urls.map((url, index) => ({
+          confession_id: confession.id,
+          user_id: user.id,
+          media_url: url,
+          media_type: types[index] || 'image',
+          order_index: index,
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('confession_media')
+          .insert(rows);
+
+        if (mediaError) {
+          await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
+          throw mediaError;
+        }
       }
 
       toast({

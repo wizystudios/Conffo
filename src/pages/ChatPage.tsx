@@ -1,10 +1,30 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ModernChatInterface } from '@/components/ModernChatInterface';
+import { useAuth } from '@/context/AuthContext';
+import { areUsersBlocked } from '@/services/blockService';
+import { toast } from '@/hooks/use-toast';
 
 export default function ChatPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user?.id || !userId) return;
+
+    (async () => {
+      const blocked = await areUsersBlocked(user.id, userId);
+      if (blocked) {
+        toast({
+          title: 'Blocked',
+          description: "You can't start a conversation with this user.",
+          variant: 'destructive',
+        });
+        navigate(-1);
+      }
+    })();
+  }, [user?.id, userId, navigate]);
 
   if (!userId) {
     return <div>Invalid chat</div>;
@@ -16,10 +36,7 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <ModernChatInterface
-        targetUserId={userId}
-        onBack={handleBack}
-      />
+      <ModernChatInterface targetUserId={userId} onBack={handleBack} />
     </div>
   );
 }

@@ -16,6 +16,11 @@ export const getOptimizedConfessions = async (roomId?: string, userId?: string, 
         media_url,
         media_type,
         tags,
+        confession_media (
+          media_url,
+          media_type,
+          order_index
+        ),
         profiles:user_id (username, avatar_url)
       `)
       .order('created_at', { ascending: false })
@@ -75,19 +80,34 @@ export const getOptimizedConfessions = async (roomId?: string, userId?: string, 
     }, {} as Record<string, number>) || {};
     
     // Map to final confession format
-    return confessions.map(row => ({
-      id: row.id,
-      content: row.content,
-      room: row.room_id as Room,
-      userId: row.user_id || '',
-      timestamp: new Date(row.created_at).getTime(),
-      reactions: getReactionCounts(allReactions, row.id),
-      commentCount: commentCountMap[row.id] || 0,
-      userReactions: (userReactionsMap[row.id] || []) as Reaction[],
-      mediaUrl: row.media_url,
-      mediaType: row.media_type as 'image' | 'video' | undefined,
-      tags: row.tags || []
-    }));
+    return confessions.map((row: any) => {
+      const mediaRows = (row as any).confession_media as
+        | Array<{ media_url: string; media_type: string; order_index: number }>
+        | undefined;
+
+      const sorted = mediaRows && mediaRows.length > 0
+        ? [...mediaRows].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+        : [];
+
+      const mediaUrls = sorted.map((m) => m.media_url);
+      const mediaTypes = sorted.map((m) => (m.media_type as any) || 'image');
+
+      return {
+        id: row.id,
+        content: row.content,
+        room: row.room_id as Room,
+        userId: row.user_id || '',
+        timestamp: new Date(row.created_at).getTime(),
+        reactions: getReactionCounts(allReactions, row.id),
+        commentCount: commentCountMap[row.id] || 0,
+        userReactions: (userReactionsMap[row.id] || []) as Reaction[],
+        mediaUrl: mediaUrls[0] ?? row.media_url,
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        mediaType: (mediaTypes[0] ?? (row.media_type as any)) as any,
+        mediaTypes: mediaTypes.length > 0 ? (mediaTypes as any) : undefined,
+        tags: row.tags || []
+      };
+    });
     
   } catch (error) {
     console.error('Error in getOptimizedConfessions:', error);

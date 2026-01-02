@@ -132,58 +132,56 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
     setUploadProgress(0);
     
     try {
-      const uploadedUrls: string[] = [];
-      const uploadedTypes: string[] = [];
-      
-      console.log('Starting upload with', mediaFiles.length, 'files');
-      
+      const uploaded: Array<{ url: string; type: 'image' | 'video' | 'audio' }> = [];
+
       // Upload all media files
       for (let i = 0; i < mediaFiles.length; i++) {
-        console.log('Uploading file', i + 1, 'of', mediaFiles.length);
         const media = await uploadMedia(mediaFiles[i].file);
-        uploadedUrls.push(media.mediaUrl);
-        uploadedTypes.push(media.mediaType);
-        setUploadProgress(Math.round(((i + 1) / (mediaFiles.length + 1)) * 80));
+        uploaded.push({ url: media.mediaUrl, type: media.mediaType });
+        setUploadProgress(Math.round(((i + 1) / Math.max(mediaFiles.length, 1)) * 80));
       }
-      
-      console.log('All files uploaded. URLs:', uploadedUrls);
-      console.log('Types:', uploadedTypes);
-      
-      // Store multiple URLs as JSON array when more than one
-      const mediaUrlValue = uploadedUrls.length > 1 
-        ? JSON.stringify(uploadedUrls) 
-        : (uploadedUrls[0] || null);
-      
-      const mediaTypeValue = uploadedTypes.length > 1 
-        ? 'multiple' 
-        : (uploadedTypes[0] || null);
-      
-      console.log('Final media_url:', mediaUrlValue);
-      console.log('Final media_type:', mediaTypeValue);
-      
-      const { error, data } = await supabase
+
+      const primary = uploaded[0];
+
+      const { data: confession, error: confessionError } = await supabase
         .from('confessions')
         .insert([{
           content,
           room_id: room,
           user_id: user.id,
-          media_url: mediaUrlValue,
-          media_type: mediaTypeValue,
+          // Back-compat single-media fields
+          media_url: primary?.url ?? null,
+          media_type: primary?.type ?? null,
           tags
         }])
-        .select();
-      
-      console.log('Insert result:', data, error);
-      
-      if (error) throw error;
-      
+        .select('id')
+        .single();
+
+      if (confessionError || !confession) throw confessionError || new Error('Failed to create confession');
+
+      if (uploaded.length > 0) {
+        const rows = uploaded.map((m, index) => ({
+          confession_id: confession.id,
+          user_id: user.id,
+          media_url: m.url,
+          media_type: m.type,
+          order_index: index,
+        }));
+
+        const { error: mediaError } = await supabase.from('confession_media').insert(rows);
+        if (mediaError) {
+          await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
+          throw mediaError;
+        }
+      }
+
       setUploadProgress(100);
-      
+
       toast({
         title: "Posted!",
         description: "Your confession has been shared successfully.",
       });
-      
+
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
