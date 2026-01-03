@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
 import { FileText, Copy, Forward, Trash2, Reply } from 'lucide-react';
@@ -47,25 +47,76 @@ export function ModernMessageBubble({
 
   const [touchStart, setTouchStart] = useState(0);
   const [showContext, setShowContext] = useState(false);
+  
+  // Swipe to reply state
+  const [swipeX, setSwipeX] = useState(0);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isSwipingRef = useRef(false);
+  const hasTriggeredReplyRef = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(Date.now());
+    startXRef.current = e.touches[0].clientX;
+    startYRef.current = e.touches[0].clientY;
+    isSwipingRef.current = false;
+    hasTriggeredReplyRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const deltaX = e.touches[0].clientX - startXRef.current;
+    const deltaY = e.touches[0].clientY - startYRef.current;
+    
+    // Only allow swipe right, and only if horizontal movement is greater than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 10) {
+      isSwipingRef.current = true;
+      // Cap the swipe at 80px and only allow positive (right) swipe
+      const cappedSwipe = Math.min(Math.max(0, deltaX), 80);
+      setSwipeX(cappedSwipe);
+      
+      // Trigger reply at threshold
+      if (cappedSwipe >= 60 && !hasTriggeredReplyRef.current) {
+        hasTriggeredReplyRef.current = true;
+        haptic.medium();
+      }
+    }
   };
 
   const handleTouchEnd = () => {
     const touchDuration = Date.now() - touchStart;
-    if (touchDuration > 500) {
+    
+    // If swiped enough, trigger reply
+    if (swipeX >= 60 && hasTriggeredReplyRef.current) {
+      onReply?.();
+    } else if (!isSwipingRef.current && touchDuration > 500) {
+      // Long press for context menu (only if not swiping)
       haptic.medium();
       setShowContext(true);
     }
+    
+    // Reset swipe state with animation
+    setSwipeX(0);
     setTouchStart(0);
+    isSwipingRef.current = false;
   };
 
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group relative`}>
+      {/* Reply indicator on swipe */}
+      {swipeX > 0 && (
+        <div 
+          className={`absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center transition-opacity ${swipeX >= 60 ? 'opacity-100' : 'opacity-50'}`}
+          style={{ width: `${swipeX}px` }}
+        >
+          <Reply className={`h-5 w-5 text-primary transition-transform ${swipeX >= 60 ? 'scale-125' : 'scale-100'}`} />
+        </div>
+      )}
+      
       <div 
-        className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%]`}
+        className={`flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%] transition-transform duration-100`}
+        style={{ transform: `translateX(${swipeX}px)` }}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onContextMenu={(e) => {
           e.preventDefault();
