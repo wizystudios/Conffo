@@ -84,11 +84,6 @@ export default function MultiStepAuthPage() {
 
       if (error) throw error;
 
-      const successEvent = new CustomEvent('conffo-success', {
-        detail: { message: 'Welcome back!' }
-      });
-      window.dispatchEvent(successEvent);
-
       setTimeout(() => {
         window.location.href = '/';
       }, 500);
@@ -143,11 +138,6 @@ export default function MultiStepAuthPage() {
             updated_at: new Date().toISOString()
           });
       }
-
-      const successEvent = new CustomEvent('conffo-success', {
-        detail: { message: 'Account created!' }
-      });
-      window.dispatchEvent(successEvent);
 
       if (data?.user) {
         setTimeout(() => {

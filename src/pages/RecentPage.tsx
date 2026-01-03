@@ -32,7 +32,7 @@ export default function RecentPage() {
           <div className="flex items-center justify-center px-4 py-3">
             <h1 className="text-xl font-bold flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Recent Posts
+              Recent Confessions
             </h1>
           </div>
         </div>
@@ -61,7 +61,7 @@ export default function RecentPage() {
             ) : (
               <div className="text-center py-12">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">No recent posts found</p>
+                <p className="text-muted-foreground">No recent confessions found</p>
               </div>
             )}
           </>

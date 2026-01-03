@@ -182,7 +182,7 @@ export function EnhancedCommentModal({
         setNewComment('');
         setReplyingTo(null);
         if (onCommentSuccess) onCommentSuccess();
-        toast({ description: "✅ Comment added!" });
+        // No toast - comment appears instantly via real-time
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -233,8 +233,8 @@ export function EnhancedCommentModal({
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{confessionContent}</p>
               
-              {/* Show media if available */}
-              {confessionMediaUrls && confessionMediaUrls.length > 0 ? (
+              {/* Always show media preview if available - single or multiple */}
+              {(confessionMediaUrls && confessionMediaUrls.length > 0) ? (
                 <div className="mt-2 rounded-lg overflow-hidden max-w-xs">
                   {confessionMediaUrls.length > 1 ? (
                     <div className="flex gap-1 overflow-x-auto">

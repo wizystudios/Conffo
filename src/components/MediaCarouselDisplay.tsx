@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -16,8 +16,34 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!media || media.length === 0) return null;
+
+  // Auto-play/pause video based on scroll visibility
+  useEffect(() => {
+    const video = videoRef.current;
+    const container = containerRef.current;
+    if (!video || !container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            video.play().then(() => setIsPlaying(true)).catch(() => {});
+          } else {
+            video.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [currentIndex, media]);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? media.length - 1 : prev - 1));
@@ -48,7 +74,7 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const currentMedia = media[currentIndex];
 
   return (
-    <div className="relative w-full bg-black">
+    <div ref={containerRef} className="relative w-full bg-black">
       {/* Media Display */}
       <div className="relative aspect-square">
         {currentMedia.type === 'image' ? (

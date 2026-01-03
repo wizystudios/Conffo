@@ -1,14 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import {
   User,
-  Heart,
   Bell,
-  Bookmark,
   Sun,
   Moon,
   Settings,
   LogOut,
-  Shield,
   Palette,
   Ban
 } from "lucide-react";
@@ -81,16 +78,6 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
             </button>
 
             <button
-              onClick={() => handleNavigation(`/user/${user?.id}?tab=liked`)}
-              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
-            >
-              <div className="h-11 w-11 rounded-full bg-red-500/10 flex items-center justify-center">
-                <Heart className="h-5 w-5 text-red-500" />
-              </div>
-              <span className="text-base font-medium">Liked</span>
-            </button>
-
-            <button
               onClick={() => handleNavigation('/notifications')}
               className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
             >
@@ -101,13 +88,13 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
             </button>
 
             <button
-              onClick={() => handleNavigation(`/user/${user?.id}?tab=saved`)}
+              onClick={() => handleNavigation('/blocked')}
               className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
             >
-              <div className="h-11 w-11 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                <Bookmark className="h-5 w-5 text-yellow-500" />
+              <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center">
+                <Ban className="h-5 w-5" />
               </div>
-              <span className="text-base font-medium">Saved</span>
+              <span className="text-base font-medium">Blocked Users</span>
             </button>
 
             <button
@@ -148,25 +135,8 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
               <span className="text-base font-medium">Settings</span>
             </button>
 
-            <button
-              onClick={() => handleNavigation('/profile?tab=avatar')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
-            >
-              <div className="h-11 w-11 rounded-full bg-pink-500/10 flex items-center justify-center">
-                <Palette className="h-5 w-5 text-pink-500" />
-              </div>
-              <span className="text-base font-medium">Avatar</span>
-            </button>
 
-            <button
-              onClick={() => handleNavigation('/profile?tab=verify')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
-            >
-              <div className="h-11 w-11 rounded-full bg-green-500/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-green-500" />
-              </div>
-              <span className="text-base font-medium">Verify</span>
-            </button>
+            <div className="h-px bg-border my-3" />
 
             <div className="h-px bg-border my-3" />
 

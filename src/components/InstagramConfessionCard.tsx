@@ -206,24 +206,44 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
     }
   }, [confession.mediaType]);
   
+  // Local optimistic state for reactions
+  const [localReactions, setLocalReactions] = useState(confession.reactions);
+  const [localUserReactions, setLocalUserReactions] = useState(confession.userReactions || []);
+
+  // Sync with props when confession changes
+  useEffect(() => {
+    setLocalReactions(confession.reactions);
+    setLocalUserReactions(confession.userReactions || []);
+  }, [confession.reactions, confession.userReactions]);
+
   const handleReaction = async (reaction: Reaction) => {
     if (!isAuthenticated || !user || isUpdating) {
       return;
     }
     
+    // Optimistic update - immediately update UI
+    const wasActive = localUserReactions.includes(reaction);
+    const newUserReactions = wasActive 
+      ? localUserReactions.filter(r => r !== reaction)
+      : [...localUserReactions, reaction];
+    const reactionDelta = wasActive ? -1 : 1;
+    
+    setLocalUserReactions(newUserReactions);
+    setLocalReactions(prev => ({
+      ...prev,
+      [reaction]: Math.max(0, prev[reaction] + reactionDelta)
+    }));
+    
     setIsUpdating(true);
     
     try {
       await toggleReaction(confession.id, user.id, reaction);
-      
-      const event = new CustomEvent('conffo-success', {
-        detail: { message: 'Liked! 🐟' }
-      });
-      window.dispatchEvent(event);
-      
-      if (onUpdate) onUpdate();
+      // Silently succeed - no toast needed
     } catch (error) {
       console.error('Error toggling reaction:', error);
+      // Revert optimistic update on error
+      setLocalUserReactions(confession.userReactions || []);
+      setLocalReactions(confession.reactions);
     } finally {
       setIsUpdating(false);
     }
@@ -274,18 +294,18 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       return;
     }
     
+    // Optimistic update
+    setIsSaved(!isSaved);
+    
     try {
       const result = await saveConfession(confession.id, user.id);
-      if (result) {
-        setIsSaved(!isSaved);
-        
-        const event = new CustomEvent('conffo-success', {
-          detail: { message: 'Saved! 🐟' }
-        });
-        window.dispatchEvent(event);
+      if (!result) {
+        // Revert on failure
+        setIsSaved(isSaved);
       }
     } catch (error) {
       console.error('Error saving confession:', error);
+      setIsSaved(isSaved); // Revert
     }
   };
   
@@ -335,14 +355,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
 
   const handleCommentSuccess = () => {
-    const event = new CustomEvent('conffo-success', {
-      detail: { message: 'Comment posted! 🐟' }
-    });
-    window.dispatchEvent(event);
+    // Optimistic update - increment comment count immediately
+    setCurrentCommentCount(prev => prev + 1);
   };
   
-  const userReactions = confession.userReactions || [];
-  const isLiked = userReactions.includes('heart');
+  const isLiked = localUserReactions.includes('heart');
   
   const shouldTruncate = confession.content.length > 150;
   const displayContent = shouldTruncate && !showFullContent 
@@ -415,7 +432,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       <div className="px-4 pt-3">
         <div className="mb-3">
           <div className="flex items-start gap-2">
-            <span className="font-semibold text-sm">
+            <span className="font-semibold text-sm flex-shrink-0">
               <UsernameDisplay 
                 userId={confession.userId}
                 showAvatar={false}
@@ -424,7 +441,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 showStoryIndicator={false}
               />
             </span>
-            <p className="text-sm leading-relaxed flex-1">{displayContent}</p>
+            <p className="text-sm leading-relaxed flex-1 break-words whitespace-pre-wrap overflow-hidden">{displayContent}</p>
           </div>
           {shouldTruncate && !showFullContent && (
             <button 
@@ -453,8 +470,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                   className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground hover:text-red-500'}`} 
                 />
               </Button>
-              {confession.reactions.heart > 0 && (
-                <span className="text-sm font-medium">{confession.reactions.heart}</span>
+              {localReactions.heart > 0 && (
+                <span className="text-sm font-medium">{localReactions.heart}</span>
               )}
             </div>
             

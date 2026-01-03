@@ -165,7 +165,7 @@ export function ImprovedCommentModal({
         if (error) throw error;
         setNewComment('');
         setReplyingTo(null);
-        toast({ description: "✅ Comment added!" });
+        // No toast - comment appears in real-time via subscription
       }
     } catch (error) {
       console.error('Error adding comment:', error);

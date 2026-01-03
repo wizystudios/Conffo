@@ -5,10 +5,11 @@ import { Confession } from '@/types';
 import { InstagramConfessionCard } from './InstagramConfessionCard';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Trash2, Edit, Bookmark } from 'lucide-react';
+import { Trash2, Edit, Bookmark, Heart } from 'lucide-react';
 import { ConfessionEditDialog } from './ConfessionEditDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { UserLikedPosts as UserLikedPostsSimple } from './UserLikedPosts';
 
 interface UserConfessionsProps {
   userId?: string;
@@ -234,11 +235,26 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
     return (
       <>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-background border-b border-border rounded-none">
-            <TabsTrigger value="posts">My Posts</TabsTrigger>
-            <TabsTrigger value="saved">
+          <TabsList className="grid w-full grid-cols-3 bg-background border-b border-border rounded-none h-auto p-0">
+            <TabsTrigger 
+              value="posts" 
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none py-3"
+            >
+              Confessions
+            </TabsTrigger>
+            <TabsTrigger 
+              value="saved"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none py-3"
+            >
               <Bookmark className="h-4 w-4 mr-1" />
               Saved
+            </TabsTrigger>
+            <TabsTrigger 
+              value="liked"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none py-3"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Liked
             </TabsTrigger>
           </TabsList>
           
@@ -248,6 +264,10 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
           
           <TabsContent value="saved">
             {renderConfessions(savedConfessions)}
+          </TabsContent>
+
+          <TabsContent value="liked">
+            <UserLikedPostsSimple userId={user?.id} />
           </TabsContent>
         </Tabs>
 

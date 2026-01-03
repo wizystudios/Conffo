@@ -363,14 +363,14 @@ export default function ProfilePage() {
                           className="h-8 w-8 object-contain"
                         />
                         <span className="font-medium">Conffo</span>
-                        <span className="text-sm text-muted-foreground">created by</span>
+                        <span className="text-sm text-muted-foreground">from</span>
                         <div className="flex items-center">
                           <img 
                             src="/lovable-uploads/5affd7c4-65bb-4b3a-af86-0cf0b47b138f.png" 
-                            alt="KN Technology" 
+                            alt="Wetech" 
                             className="h-6 w-6 rounded-full object-cover mr-1"
                           />
-                          <span className="font-medium">KN Technology</span>
+                          <span className="font-medium">Wetech</span>
                         </div>
                       </div>
                       
@@ -411,25 +411,7 @@ export default function ProfilePage() {
               </TabsContent>
             </Tabs>
           ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-background rounded-none">
-                <TabsTrigger value="posts">Posts</TabsTrigger>
-                <TabsTrigger value="saved">Saved</TabsTrigger>
-                <TabsTrigger value="liked">Liked</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="posts">
-                <UserConfessions userId={userId} />
-              </TabsContent>
-              
-              <TabsContent value="saved">
-                <UserSavedPosts userId={userId} />
-              </TabsContent>
-              
-              <TabsContent value="liked">
-                <UserLikedPosts userId={userId} />
-              </TabsContent>
-            </Tabs>
+            <UserConfessions userId={userId} />
           )}
         </div>
         

@@ -296,8 +296,8 @@ export function ModernChatInterface({
         </DropdownMenu>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 bg-background">
+      {/* Messages - with proper scroll */}
+      <div className="flex-1 overflow-y-auto px-4 py-2 bg-background overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
         {editingMessageId ? (
           <div className="fixed bottom-20 left-0 right-0 bg-background border-t p-4 shadow-lg z-20">
             <div className="max-w-2xl mx-auto flex gap-2">
