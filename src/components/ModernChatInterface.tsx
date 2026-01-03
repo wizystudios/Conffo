@@ -426,7 +426,7 @@ export function ModernChatInterface({
             );
           })}
         </div>
-        {isTargetTyping && <TypingIndicator />}
+        {isTargetTyping && <TypingIndicator userName={displayName} />}
         <div ref={messagesEndRef} />
       </div>
 
