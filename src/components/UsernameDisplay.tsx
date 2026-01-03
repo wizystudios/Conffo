@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Star, Users, MessageCircle } from 'lucide-react';
+import { Star, Users, MessageCircle, BadgeCheck } from 'lucide-react';
 import { ProfileHoverCard } from '@/components/ProfileHoverCard';
 
 interface UsernameDisplayProps {
@@ -28,6 +28,7 @@ export function UsernameDisplay({
   const { user, isAuthenticated } = useAuth();
   const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFan, setIsFan] = useState(false); // They follow you
   const [isCrew, setIsCrew] = useState(false); // You follow them
@@ -47,7 +48,7 @@ export function UsernameDisplay({
         // Fetch from profiles table
         const { data: profileData, error } = await supabase
           .from('profiles')
-          .select('username, avatar_url')
+          .select('username, avatar_url, is_verified')
           .eq('id', userId)
           .maybeSingle();
         
@@ -58,24 +59,28 @@ export function UsernameDisplay({
           console.log('UsernameDisplay: Using fallback username:', fallbackUsername);
           setUsername(fallbackUsername);
           setAvatarUrl(null);
+          setIsVerified(false);
         } else if (profileData) {
           // Use profile data
           const displayName = profileData.username || `user_${userId.slice(0, 8)}`;
           console.log('UsernameDisplay: Profile data found, username:', displayName);
           setUsername(displayName);
           setAvatarUrl(profileData.avatar_url);
+          setIsVerified(profileData.is_verified || false);
         } else {
           // No profile found, use fallback
           const fallbackUsername = `user_${userId.slice(0, 8)}`;
           console.log('UsernameDisplay: No profile found, using fallback:', fallbackUsername);
           setUsername(fallbackUsername);
           setAvatarUrl(null);
+          setIsVerified(false);
         }
       } catch (error) {
         console.error('UsernameDisplay: Error in fetchUserData:', error);
         const fallbackUsername = `user_${userId.slice(0, 8)}`;
         setUsername(fallbackUsername);
         setAvatarUrl(null);
+        setIsVerified(false);
       } finally {
         setIsLoading(false);
       }
@@ -158,9 +163,14 @@ export function UsernameDisplay({
           <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
       )}
-      <span className={`${textSizeClass[size]} font-medium`}>
-        {username}
-      </span>
+      <div className="flex items-center gap-1">
+        <span className={`${textSizeClass[size]} font-medium`}>
+          {username}
+        </span>
+        {isVerified && (
+          <BadgeCheck className="h-3.5 w-3.5 text-primary fill-primary/20 flex-shrink-0" />
+        )}
+      </div>
       {showRelationshipBadge && user && userId !== user.id && (
         <div className="flex items-center gap-1">
           {isFan && (
