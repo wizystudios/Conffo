@@ -44,6 +44,9 @@ export function ReplyPreview({ message, onCancel, senderName, isOwn }: ReplyPrev
     }
   };
 
+  // Show thumbnail for image and video messages
+  const showThumbnail = (message.message_type === 'image' || message.message_type === 'video') && message.media_url;
+
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 border-l-4 border-primary rounded-r-lg">
       <div className="flex-1 min-w-0">
@@ -54,7 +57,7 @@ export function ReplyPreview({ message, onCancel, senderName, isOwn }: ReplyPrev
           {getPreviewContent()}
         </div>
       </div>
-      {message.message_type === 'image' && message.media_url && (
+      {showThumbnail && (
         <img
           src={message.media_url}
           alt="Reply preview"
@@ -95,17 +98,29 @@ export function InlineReplyQuote({ replyMessage, senderName, isOwn, onClick }: I
     }
   };
 
+  // Show thumbnail for image and video messages
+  const showThumbnail = (replyMessage.message_type === 'image' || replyMessage.message_type === 'video') && replyMessage.media_url;
+
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-3 py-2 bg-black/10 dark:bg-white/10 rounded-lg mb-1 border-l-2 border-primary"
+      className="w-full text-left px-3 py-2 bg-black/10 dark:bg-white/10 rounded-lg mb-1 border-l-2 border-primary flex items-center gap-2"
     >
-      <p className="text-xs font-semibold opacity-80">
-        {isOwn ? 'You' : senderName || 'User'}
-      </p>
-      <p className="text-xs opacity-70 line-clamp-1">
-        {getPreviewContent()}
-      </p>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold opacity-80">
+          {isOwn ? 'You' : senderName || 'User'}
+        </p>
+        <p className="text-xs opacity-70 line-clamp-1">
+          {getPreviewContent()}
+        </p>
+      </div>
+      {showThumbnail && (
+        <img
+          src={replyMessage.media_url}
+          alt="Reply"
+          className="h-8 w-8 rounded object-cover flex-shrink-0"
+        />
+      )}
     </button>
   );
 }

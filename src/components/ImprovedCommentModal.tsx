@@ -147,28 +147,48 @@ export function ImprovedCommentModal({
     e.preventDefault();
     if (!user || !newComment.trim() || isSubmitting) return;
 
+    const commentContent = newComment.trim();
+    const parentId = replyingTo;
+    
+    // Clear input immediately for instant feedback
+    setNewComment('');
+    setReplyingTo(null);
+    
+    // Optimistic update - add comment immediately to UI
+    const optimisticComment: CommentType = {
+      id: `temp-${Date.now()}`,
+      content: commentContent,
+      userId: user.id,
+      confessionId: confessionId,
+      timestamp: Date.now(),
+      parentCommentId: parentId || undefined,
+      replies: []
+    };
+    
+    setComments(prev => [...prev, optimisticComment]);
+    setCommentTree(buildCommentTree([...comments, optimisticComment]));
+    
     setIsSubmitting(true);
     try {
       const commentData = {
         confession_id: confessionId,
         user_id: user.id,
-        content: newComment.trim(),
-        parent_comment_id: replyingTo
+        content: commentContent,
+        parent_comment_id: parentId
       };
 
       if (!navigator.onLine) {
         offlineQueue.add('comment', commentData);
-        setNewComment('');
-        setReplyingTo(null);
       } else {
         const { error } = await supabase.from('comments').insert(commentData);
         if (error) throw error;
-        setNewComment('');
-        setReplyingTo(null);
-        // No toast - comment appears in real-time via subscription
+        // Real-time subscription will update with actual data
       }
     } catch (error) {
       console.error('Error adding comment:', error);
+      // Remove optimistic comment on error
+      setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
+      setCommentTree(buildCommentTree(comments.filter(c => c.id !== optimisticComment.id)));
       toast({ variant: "destructive", description: "❌ Failed to add comment" });
     } finally {
       setIsSubmitting(false);

@@ -60,47 +60,58 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
     
     setIsLoading(true);
     try {
+      // Get followers - users who follow this user
       const { data: followersData, error: followersError } = await supabase
         .from('user_follows')
-        .select(`
-          follower_id,
-          follower:follower_id (
-            id,
-            username,
-            avatar_url,
-            bio
-          )
-        `)
+        .select('follower_id')
         .eq('following_id', userId);
 
       if (followersError) {
         console.error('Followers error:', followersError);
       }
 
+      // Get following - users this user follows
       const { data: followingData, error: followingError } = await supabase
         .from('user_follows')
-        .select(`
-          following_id,
-          following:following_id (
-            id,
-            username,
-            avatar_url,
-            bio
-          )
-        `)
+        .select('following_id')
         .eq('follower_id', userId);
 
       if (followingError) {
         console.error('Following error:', followingError);
       }
 
-      const followersList = (followersData || [])
-        .map((item: any) => item.follower || { id: item.follower_id, username: `user_${item.follower_id.slice(0, 8)}`, avatar_url: null })
-        .filter((profile: any) => profile && profile.id);
+      // Fetch profiles for followers
+      const followerIds = (followersData || []).map(f => f.follower_id);
+      const followingIds = (followingData || []).map(f => f.following_id);
 
-      const followingList = (followingData || [])
-        .map((item: any) => item.following || { id: item.following_id, username: `user_${item.following_id.slice(0, 8)}`, avatar_url: null })
-        .filter((profile: any) => profile && profile.id);
+      let followersList: FollowData[] = [];
+      let followingList: FollowData[] = [];
+
+      if (followerIds.length > 0) {
+        const { data: followerProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', followerIds);
+        
+        followersList = (followerProfiles || []).map(p => ({
+          id: p.id,
+          username: p.username || `user_${p.id.slice(0, 8)}`,
+          avatar_url: p.avatar_url
+        }));
+      }
+
+      if (followingIds.length > 0) {
+        const { data: followingProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', followingIds);
+        
+        followingList = (followingProfiles || []).map(p => ({
+          id: p.id,
+          username: p.username || `user_${p.id.slice(0, 8)}`,
+          avatar_url: p.avatar_url
+        }));
+      }
 
       setFollowers(followersList);
       setFollowing(followingList);

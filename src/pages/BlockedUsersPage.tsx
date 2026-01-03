@@ -101,7 +101,7 @@ export default function BlockedUsersPage() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={p.avatar_url || ''} />
+                    <AvatarImage src={p.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${p.id}`} />
                     <AvatarFallback>{(p.username || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">

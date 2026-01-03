@@ -6,8 +6,8 @@ import {
   Moon,
   Settings,
   LogOut,
-  Palette,
-  Ban
+  Ban,
+  BellRing
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -97,16 +97,6 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
               <span className="text-base font-medium">Blocked Users</span>
             </button>
 
-            <button
-              onClick={() => handleNavigation('/blocked')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
-            >
-              <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center">
-                <Ban className="h-5 w-5" />
-              </div>
-              <span className="text-base font-medium">Blocked Users</span>
-            </button>
-
             <div className="h-px bg-border my-3" />
 
             <button
@@ -126,6 +116,16 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
             </button>
 
             <button
+              onClick={() => handleNavigation('/notification-settings')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+            >
+              <div className="h-11 w-11 rounded-full bg-orange-500/10 flex items-center justify-center">
+                <BellRing className="h-5 w-5 text-orange-500" />
+              </div>
+              <span className="text-base font-medium">Notification Settings</span>
+            </button>
+
+            <button
               onClick={() => handleNavigation('/profile?tab=settings')}
               className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
             >
@@ -134,9 +134,6 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
               </div>
               <span className="text-base font-medium">Settings</span>
             </button>
-
-
-            <div className="h-px bg-border my-3" />
 
             <div className="h-px bg-border my-3" />
 
