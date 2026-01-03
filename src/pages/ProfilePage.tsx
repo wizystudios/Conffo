@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { LogOut } from 'lucide-react';
 import { blockUser, unblockUser, isUserBlocked } from '@/services/blockService';
 import { toast } from '@/hooks/use-toast';
+import { getCountryFlag } from '@/components/CountrySelector';
 
 interface ProfileData {
   id: string;
@@ -30,6 +31,7 @@ interface ProfileData {
   contact_email: string | null;
   contact_phone: string | null;
   is_public: boolean;
+  location: string | null;
 }
 
 export default function ProfilePage() {
@@ -78,7 +80,7 @@ export default function ProfilePage() {
       try {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
+          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location')
           .eq('id', targetUserId)
           .maybeSingle();
 
@@ -94,7 +96,8 @@ export default function ProfilePage() {
             bio: profile.bio,
             contact_email: profile.contact_email,
             contact_phone: profile.contact_phone,
-            is_public: profile.is_public ?? true
+            is_public: profile.is_public ?? true,
+            location: profile.location
           });
         } else {
           const fallbackProfile: ProfileData = {
@@ -104,7 +107,8 @@ export default function ProfilePage() {
             bio: null,
             contact_email: null,
             contact_phone: null,
-            is_public: true
+            is_public: true,
+            location: null
           };
           setProfileData(fallbackProfile);
         }
@@ -137,7 +141,8 @@ export default function ProfilePage() {
           bio: null,
           contact_email: null,
           contact_phone: null,
-          is_public: true
+          is_public: true,
+          location: null
         });
       } finally {
         setIsLoadingProfile(false);
@@ -168,7 +173,7 @@ export default function ProfilePage() {
       const targetUserId = userId || user!.id;
       supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public')
+        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location')
         .eq('id', targetUserId)
         .maybeSingle()
         .then(({ data: updatedProfile, error }) => {
@@ -185,7 +190,8 @@ export default function ProfilePage() {
               bio: updatedProfile.bio,
               contact_email: updatedProfile.contact_email,
               contact_phone: updatedProfile.contact_phone,
-              is_public: updatedProfile.is_public ?? true
+              is_public: updatedProfile.is_public ?? true,
+              location: updatedProfile.location
             });
           }
         });
@@ -253,6 +259,7 @@ export default function ProfilePage() {
 
   const username = profileData.username || 'User';
   const avatarUrl = profileData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profileData.id}`;
+  const countryFlag = getCountryFlag(profileData.location);
 
   return (
     <Layout>
@@ -262,12 +269,19 @@ export default function ProfilePage() {
           <div className="px-3 sm:px-4 py-4">
             <div className="flex flex-col gap-3">
               <div className="flex items-start gap-4">
-                <Avatar className="h-20 w-20 border-2 border-border flex-shrink-0">
-                  <AvatarImage src={avatarUrl} alt={username} />
-                  <AvatarFallback className="text-2xl">
-                    {username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative flex-shrink-0">
+                  <Avatar className="h-20 w-20 border-2 border-border">
+                    <AvatarImage src={avatarUrl} alt={username} />
+                    <AvatarFallback className="text-2xl">
+                      {username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {countryFlag && (
+                    <span className="absolute -bottom-1 -right-1 text-2xl" title="Country">
+                      {countryFlag}
+                    </span>
+                  )}
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -294,16 +308,24 @@ export default function ProfilePage() {
                   
                   <div className="flex items-center gap-4 mt-2">
                     <button 
+                      type="button"
                       className="flex items-center gap-1 hover:opacity-80 cursor-pointer"
-                      onClick={handleFollowersClick}
+                      onClick={() => {
+                        setFollowersModalTab('followers');
+                        setShowFollowersModal(true);
+                      }}
                     >
                       <span className="font-semibold text-sm">{followersCount}</span>
                       <span className="text-xs text-muted-foreground">Fans</span>
                     </button>
                     
                     <button 
+                      type="button"
                       className="flex items-center gap-1 hover:opacity-80 cursor-pointer"
-                      onClick={handleFollowingClick}
+                      onClick={() => {
+                        setFollowersModalTab('following');
+                        setShowFollowersModal(true);
+                      }}
                     >
                       <span className="font-semibold text-sm">{followingCount}</span>
                       <span className="text-xs text-muted-foreground">Crew</span>
@@ -415,14 +437,13 @@ export default function ProfilePage() {
           )}
         </div>
         
-        {userId && (
-          <FullScreenFollowersModal
-            isOpen={showFollowersModal}
-            onClose={() => setShowFollowersModal(false)}
-            userId={userId}
-            initialTab={followersModalTab}
-          />
-        )}
+        {/* Always show the modal - for own profile or viewing others */}
+        <FullScreenFollowersModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          userId={userId || user?.id || ''}
+          initialTab={followersModalTab}
+        />
       </div>
     </Layout>
   );

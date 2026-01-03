@@ -34,6 +34,7 @@ import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { UnifiedCommentModal } from '@/components/UnifiedCommentModal';
 import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 import { LikesList } from '@/components/LikesList';
+import { DoubleTapHeart } from '@/components/DoubleTapHeart';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -425,16 +426,21 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Media Carousel - no rounded corners */}
+      {/* Media Carousel with Double Tap - no rounded corners */}
       {mediaArray.length > 0 && (
-        <MediaCarouselDisplay media={mediaArray} />
+        <DoubleTapHeart 
+          onDoubleTap={() => handleReaction('heart')} 
+          isLiked={isLiked}
+        >
+          <MediaCarouselDisplay media={mediaArray} />
+        </DoubleTapHeart>
       )}
       
       {/* Content */}
       <div className="px-4 pt-3">
         <div className="mb-3">
-          <div className="flex items-start gap-2">
-            <span className="font-semibold text-sm flex-shrink-0">
+          <p className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden">
+            <span className="font-semibold mr-1.5">
               <UsernameDisplay 
                 userId={confession.userId}
                 showAvatar={false}
@@ -443,8 +449,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 showStoryIndicator={false}
               />
             </span>
-            <p className="text-sm leading-relaxed flex-1 break-words whitespace-pre-wrap overflow-hidden">{displayContent}</p>
-          </div>
+            {displayContent}
+          </p>
           {shouldTruncate && !showFullContent && (
             <button 
               onClick={() => setShowFullContent(true)}

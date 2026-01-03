@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Save, Camera } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { CountrySelector } from '@/components/CountrySelector';
 
 export function SimpleProfileForm() {
   const { user, refreshUser } = useAuth();
@@ -16,6 +17,7 @@ export function SimpleProfileForm() {
   const [bio, setBio] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [country, setCountry] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isProfilePublic, setIsProfilePublic] = useState(true);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
@@ -29,7 +31,7 @@ export function SimpleProfileForm() {
       const loadProfile = async () => {
         const { data } = await supabase
           .from('profiles')
-          .select('bio, contact_email, contact_phone, is_public')
+          .select('bio, contact_email, contact_phone, is_public, location')
           .eq('id', user.id)
           .maybeSingle();
         
@@ -38,6 +40,8 @@ export function SimpleProfileForm() {
           setContactEmail(data.contact_email || '');
           setContactPhone(data.contact_phone || '');
           setIsProfilePublic(data.is_public ?? true);
+          // Parse country from location if stored there
+          setCountry(data.location || '');
         }
       };
       loadProfile();
@@ -59,6 +63,7 @@ export function SimpleProfileForm() {
           bio: bio.trim() || null,
           contact_email: contactEmail.trim() || null,
           contact_phone: contactPhone.trim() || null,
+          location: country || null,
           is_public: isProfilePublic,
           updated_at: new Date().toISOString()
         });
@@ -229,6 +234,14 @@ export function SimpleProfileForm() {
               required
               minLength={3}
               maxLength={30}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <CountrySelector 
+              value={country}
+              onChange={setCountry}
             />
           </div>
 
