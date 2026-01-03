@@ -133,13 +133,6 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
         <div className="flex-1 min-w-0">
           <div className="bg-muted/30 rounded-lg px-2 py-1">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <UsernameDisplay 
-                userId={comment.userId} 
-                showAvatar={false} 
-                size="sm"
-                linkToProfile={true}
-                showStoryIndicator={false}
-              />
               <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(
                   typeof comment.timestamp === 'number' ? comment.timestamp : comment.timestamp,

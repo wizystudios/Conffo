@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { getUserConfessions, deleteConfession } from '@/services/supabaseDataService';
 import { Confession } from '@/types';
-import { InstagramConfessionCard } from './InstagramConfessionCard';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Trash2, Edit, Bookmark, Heart } from 'lucide-react';
+import { Trash2, Edit, Bookmark, Heart, Grid3X3, Play } from 'lucide-react';
 import { ConfessionEditDialog } from './ConfessionEditDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,7 @@ interface UserConfessionsProps {
 
 export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [savedConfessions, setSavedConfessions] = useState<Confession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,19 +65,16 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
                 .map(async (item: any) => {
                   const confession = item.confessions;
                   
-                  // Get reaction counts with proper type checking
                   const { data: reactionData } = await supabase.rpc(
                     'get_reaction_counts',
                     { confession_uuid: confession.id }
                   );
                   
-                  // Get comment count
                   const { count } = await supabase
                     .from('comments')
                     .select('id', { count: 'exact', head: true })
                     .eq('confession_id', confession.id);
                   
-                  // Get user's reactions
                   const { data: userReactionData } = await supabase
                     .from('reactions')
                     .select('type')
@@ -85,7 +83,6 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
                     
                   const userReactions = userReactionData ? userReactionData.map(r => r.type) : [];
                   
-                  // Safely parse reaction data with proper type checking
                   const reactions = {
                     like: 0,
                     laugh: 0,
@@ -166,7 +163,8 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
     );
   }
 
-  const renderConfessions = (confessionsList: Confession[]) => {
+  // Instagram-style 3-column grid for confessions
+  const renderGrid = (confessionsList: Confession[], showActions = false) => {
     if (confessionsList.length === 0) {
       return (
         <div className="text-center py-12 mx-4">
@@ -176,56 +174,108 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
     }
 
     return (
-      <div className="space-y-0">
-        {confessionsList.map(confession => (
-          <div key={confession.id} className="relative">
-            <InstagramConfessionCard 
-              confession={confession} 
-              onUpdate={onUpdate}
-            />
-            {isOwnProfile && (
-              <div className="absolute top-6 right-6 flex gap-2 bg-background/90 backdrop-blur-sm rounded-full p-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-full"
-                  onClick={() => handleEdit(confession)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Confession?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your confession.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(confession.id)}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting ? "Deleting..." : "Delete"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+      <div className="grid grid-cols-3 gap-0.5">
+        {confessionsList.map(confession => {
+          const hasMedia = confession.mediaUrl || (confession.mediaUrls && confession.mediaUrls.length > 0);
+          const isVideo = confession.mediaType === 'video' || confession.mediaTypes?.[0] === 'video';
+          const thumbnailUrl = confession.mediaUrls?.[0] || confession.mediaUrl;
+          
+          return (
+            <div 
+              key={confession.id} 
+              className="relative aspect-square bg-muted cursor-pointer group overflow-hidden"
+              onClick={() => navigate(`/confession/${confession.id}`)}
+            >
+              {hasMedia && thumbnailUrl ? (
+                <>
+                  {isVideo ? (
+                    <video 
+                      src={thumbnailUrl} 
+                      className="w-full h-full object-cover"
+                      muted
+                    />
+                  ) : (
+                    <img 
+                      src={thumbnailUrl} 
+                      alt="" 
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  {isVideo && (
+                    <div className="absolute top-2 right-2">
+                      <Play className="h-4 w-4 text-white drop-shadow-lg" fill="white" />
+                    </div>
+                  )}
+                  {confession.mediaUrls && confession.mediaUrls.length > 1 && (
+                    <div className="absolute top-2 right-2">
+                      <Grid3X3 className="h-4 w-4 text-white drop-shadow-lg" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-to-br from-primary/20 to-primary/5">
+                  <p className="text-xs text-center line-clamp-4 text-foreground/80">
+                    {confession.content}
+                  </p>
+                </div>
+              )}
+              
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+                <div className="flex items-center gap-1">
+                  <Heart className="h-4 w-4" fill="white" />
+                  <span className="text-sm font-semibold">
+                    {Object.values(confession.reactions || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0)}
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Edit/Delete actions for own profile */}
+              {showActions && isOwnProfile && (
+                <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    variant="secondary" 
+                    size="icon"
+                    className="h-7 w-7 rounded-full bg-background/80"
+                    onClick={(e) => { e.stopPropagation(); handleEdit(confession); }}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="secondary" 
+                        size="icon"
+                        className="h-7 w-7 rounded-full bg-background/80"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Confession?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(confession.id)}
+                          disabled={isDeleting}
+                          className="bg-destructive text-destructive-foreground"
+                        >
+                          {isDeleting ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -238,35 +288,33 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
           <TabsList className="grid w-full grid-cols-3 bg-background border-b border-border rounded-none h-auto p-0">
             <TabsTrigger 
               value="posts" 
-              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none py-3"
+              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none py-3"
             >
-              Confessions
+              <Grid3X3 className="h-5 w-5" />
             </TabsTrigger>
             <TabsTrigger 
               value="saved"
-              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none py-3"
+              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none py-3"
             >
-              <Bookmark className="h-4 w-4 mr-1" />
-              Saved
+              <Bookmark className="h-5 w-5" />
             </TabsTrigger>
             <TabsTrigger 
               value="liked"
-              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-none py-3"
+              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none py-3"
             >
-              <Edit className="h-4 w-4 mr-1" />
-              Liked
+              <Heart className="h-5 w-5" />
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="posts">
-            {renderConfessions(confessions)}
+          <TabsContent value="posts" className="mt-0">
+            {renderGrid(confessions, true)}
           </TabsContent>
           
-          <TabsContent value="saved">
-            {renderConfessions(savedConfessions)}
+          <TabsContent value="saved" className="mt-0">
+            {renderGrid(savedConfessions, false)}
           </TabsContent>
 
-          <TabsContent value="liked">
+          <TabsContent value="liked" className="mt-0">
             <UserLikedPostsSimple userId={user?.id} />
           </TabsContent>
         </Tabs>
@@ -283,6 +331,6 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
     );
   }
 
-  // For other users' profiles, just show their posts
-  return renderConfessions(confessions);
+  // For other users' profiles, just show their posts grid
+  return renderGrid(confessions);
 }

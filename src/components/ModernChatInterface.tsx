@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ import { hideMessageLocally, isMessageHidden, saveMessagesLocally, deleteMessage
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { MediaPreviewModal } from '@/components/MediaPreviewModal';
 import { ReplyPreview } from '@/components/ReplyPreview';
+import { MessageSearch } from '@/components/MessageSearch';
 
 interface ChatInterfaceProps {
   targetUserId: string;
@@ -72,10 +73,20 @@ export function ModernChatInterface({
   const [pendingMedia, setPendingMedia] = useState<{ file: File; previewUrl: string } | null>(null);
   const [showMediaPreview, setShowMediaPreview] = useState(false);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const navigate = useNavigate();
+  
+  const handleHighlightMessage = useCallback((messageId: string | null) => {
+    setHighlightedMessageId(messageId);
+    if (messageId && messageRefs.current[messageId]) {
+      messageRefs.current[messageId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
 
   // Mark messages as read when opening the chat
   useEffect(() => {
@@ -127,8 +138,14 @@ export function ModernChatInterface({
     }
   }, [messages, user?.id, setMessages]);
 
+  // Only scroll to bottom on initial load, not on every message update
+  const isInitialLoad = useRef(true);
+  
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isInitialLoad.current && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      isInitialLoad.current = false;
+    }
     
     if (messages.length > 0 && user) {
       markAsRead(targetUserId);
@@ -233,13 +250,11 @@ export function ModernChatInterface({
     if (!deleteMessageId || !user) return;
     try {
       await deleteMessage(deleteMessageId, true);
-      deleteMessageLocally(user.id, targetUserId, deleteMessageId);
-      setMessages(prev => prev.map(m => 
-        m.id === deleteMessageId 
-          ? { ...m, content: 'This message was deleted', message_type: 'text' as const, media_url: undefined }
-          : m
-      ));
+      // Remove from local state immediately
+      setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
     } catch (error) {
+      console.error('Failed to delete message:', error);
+      // Fallback to hiding locally
       hideMessageLocally(deleteMessageId);
       setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
     }
@@ -320,11 +335,20 @@ export function ModernChatInterface({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setShowSearch(true)}>Search Messages</DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
             <DropdownMenuItem onClick={handleClearChat} className="text-destructive">Clear Chat</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Message Search */}
+      <MessageSearch
+        messages={messages}
+        onHighlightMessage={handleHighlightMessage}
+        isOpen={showSearch}
+        onClose={() => setShowSearch(false)}
+      />
 
       {/* Messages - with proper scroll */}
       <div className="flex-1 overflow-y-auto px-4 py-2 bg-background overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -366,33 +390,39 @@ export function ModernChatInterface({
             const replyMsg = message.reply_to_message_id 
               ? messages.find(m => m.id === message.reply_to_message_id) || message.reply_to_message
               : undefined;
+            const isHighlighted = highlightedMessageId === message.id;
             
             return (
-              <ModernMessageBubble
+              <div 
                 key={message.id}
-                message={message}
-                isOwn={isOwn}
-                showAvatar={showAvatar}
-                senderAvatar={displayAvatar}
-                senderName={displayName}
-                onDelete={() => setDeleteMessageId(message.id)}
-                onEdit={() => { setEditingMessageId(message.id); setEditContent(message.content); }}
-                onForward={() => {
-                  setForwardMessage({
-                    content: message.content,
-                    type: message.message_type,
-                    mediaUrl: message.media_url
-                  });
-                  setShowForwardModal(true);
-                }}
-                onReport={() => {
-                  setReportMessageId(message.id);
-                  setShowReportDialog(true);
-                }}
-                onReply={() => setReplyToMessage(message)}
-                replyToMessage={replyMsg}
-                replyToSenderName={replyMsg?.sender_id === user?.id ? 'You' : displayName}
-              />
+                ref={(el) => { messageRefs.current[message.id] = el; }}
+                className={`transition-all duration-300 ${isHighlighted ? 'bg-primary/20 rounded-lg' : ''}`}
+              >
+                <ModernMessageBubble
+                  message={message}
+                  isOwn={isOwn}
+                  showAvatar={showAvatar}
+                  senderAvatar={displayAvatar}
+                  senderName={displayName}
+                  onDelete={() => setDeleteMessageId(message.id)}
+                  onEdit={() => { setEditingMessageId(message.id); setEditContent(message.content); }}
+                  onForward={() => {
+                    setForwardMessage({
+                      content: message.content,
+                      type: message.message_type,
+                      mediaUrl: message.media_url
+                    });
+                    setShowForwardModal(true);
+                  }}
+                  onReport={() => {
+                    setReportMessageId(message.id);
+                    setShowReportDialog(true);
+                  }}
+                  onReply={() => setReplyToMessage(message)}
+                  replyToMessage={replyMsg}
+                  replyToSenderName={replyMsg?.sender_id === user?.id ? 'You' : displayName}
+                />
+              </div>
             );
           })}
         </div>
