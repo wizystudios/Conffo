@@ -23,6 +23,7 @@ import { OnlineIndicator } from '@/components/OnlineIndicator';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { hideMessageLocally, isMessageHidden, saveMessagesLocally, deleteMessageLocally } from '@/utils/localChatStorage';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { MediaPreviewModal } from '@/components/MediaPreviewModal';
 
 interface ChatInterfaceProps {
   targetUserId: string;
@@ -67,6 +68,8 @@ export function ModernChatInterface({
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [showMediaPreview, setShowMediaPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
@@ -153,7 +156,7 @@ export function ModernChatInterface({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileSelect = (file: File) => {
     if (!file) return;
 
     const maxSize = 50 * 1024 * 1024;
@@ -170,30 +173,52 @@ export function ModernChatInterface({
     const isVideo = file.type.startsWith('video/');
     const isAudio = file.type.startsWith('audio/');
 
+    if (isImage || isVideo) {
+      // Show preview modal for images/videos
+      const previewUrl = URL.createObjectURL(file);
+      setPendingMedia({ file, previewUrl });
+      setShowMediaPreview(true);
+    } else if (isAudio) {
+      // Send audio directly
+      handleSendMedia(file, 'audio');
+    }
+  };
+
+  const handleSendMedia = async (file: File, type: 'image' | 'video' | 'audio', caption?: string) => {
+    setIsSending(true);
     try {
-      if (isImage) {
-        const url = await uploadChatMedia(file, 'image');
-        handleSendMessage(file.name, 'image', url);
-      } else if (isVideo) {
-        const url = await uploadChatMedia(file, 'video');
-        handleSendMessage(file.name, 'video', url);
-      } else if (isAudio) {
-        const url = await uploadChatMedia(file, 'audio');
-        handleSendMessage(file.name, 'audio', url);
-      }
+      const url = await uploadChatMedia(file, type);
+      const content = caption?.trim() || file.name;
+      await handleSendMessage(content, type, url);
     } catch (error) {
       toast({
         title: "Upload failed",
         variant: "destructive"
       });
+    } finally {
+      setIsSending(false);
     }
+  };
+
+  const handleMediaSend = async (caption: string) => {
+    if (!pendingMedia) return;
+    
+    const { file, previewUrl } = pendingMedia;
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    
+    await handleSendMedia(file, isImage ? 'image' : 'video', caption);
+    
+    // Clean up
+    URL.revokeObjectURL(previewUrl);
+    setPendingMedia(null);
+    setShowMediaPreview(false);
   };
 
   const handleDeleteForMe = async () => {
     if (!deleteMessageId || !user) return;
     hideMessageLocally(deleteMessageId);
     setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
-    toast({ title: "Message hidden" });
     setDeleteMessageId(null);
   };
 
@@ -207,11 +232,9 @@ export function ModernChatInterface({
           ? { ...m, content: 'This message was deleted', message_type: 'text' as const, media_url: undefined }
           : m
       ));
-      toast({ title: "Message deleted for everyone" });
     } catch (error) {
       hideMessageLocally(deleteMessageId);
       setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
-      toast({ title: "Message removed" });
     }
     setDeleteMessageId(null);
   };
@@ -393,7 +416,8 @@ export function ModernChatInterface({
                 ref={fileInputRef}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file);
+                  if (file) handleFileSelect(file);
+                  e.target.value = '';
                 }}
                 accept="image/*,video/*,audio/*"
                 className="hidden"
@@ -478,6 +502,21 @@ export function ModernChatInterface({
         onOpenChange={setShowReportDialog}
         itemId={reportMessageId || ''}
         type="confession"
+      />
+
+      <MediaPreviewModal
+        open={showMediaPreview}
+        onOpenChange={(open) => {
+          if (!open && pendingMedia) {
+            URL.revokeObjectURL(pendingMedia.previewUrl);
+            setPendingMedia(null);
+          }
+          setShowMediaPreview(open);
+        }}
+        file={pendingMedia?.file || null}
+        previewUrl={pendingMedia?.previewUrl || null}
+        onSend={handleMediaSend}
+        isSending={isSending}
       />
     </div>
   );
