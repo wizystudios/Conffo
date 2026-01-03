@@ -178,7 +178,7 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
       setUploadProgress(100);
 
       toast({
-        title: "Posted!",
+        title: "Confession shared!",
         description: "Your confession has been shared successfully.",
       });
 
@@ -187,7 +187,7 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
     } catch (error) {
       console.error('Error submitting confession:', error);
       toast({
-        title: "Failed to post",
+        title: "Failed",
         description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive"
       });
@@ -220,10 +220,10 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Posting
+              Sharing
             </>
           ) : (
-            'Post'
+            'Share'
           )}
         </Button>
       </div>

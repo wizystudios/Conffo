@@ -96,42 +96,44 @@ export function ForwardMessageModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Forward message</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-full h-full max-w-full max-h-full m-0 p-0 rounded-none sm:max-w-md sm:max-h-[80vh] sm:rounded-lg sm:m-auto sm:p-0">
+        <div className="flex flex-col h-full">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>Forward message</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="pl-10"
-            />
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="pl-10"
+              />
+            </div>
+
+            <div className="space-y-1">
+              {filteredUsers.map((user) => (
+                <div
+                  key={user.id}
+                  onClick={() => toggleUser(user.id)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} />
+                    <AvatarFallback>{user.username?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 font-medium">{user.username}</span>
+                  {selectedUsers.includes(user.id) && (
+                    <Check className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto space-y-1">
-            {filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                onClick={() => toggleUser(user.id)}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
-              >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${user.id}`} />
-                  <AvatarFallback>{user.username?.charAt(0)?.toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="flex-1 font-medium">{user.username}</span>
-                {selectedUsers.includes(user.id) && (
-                  <Check className="h-5 w-5 text-primary" />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2 pt-4 border-t">
+          <div className="flex gap-2 p-4 border-t">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}

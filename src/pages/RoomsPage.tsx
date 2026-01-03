@@ -13,7 +13,7 @@ export default function RoomsPage() {
 
   return (
     <Layout>
-      <div className="space-y-4 p-3">
+      <div className="space-y-4 p-3 pt-16">
         <div>
           <h1 className="text-lg font-bold mb-1">Confession Rooms</h1>
           <p className="text-xs text-muted-foreground">

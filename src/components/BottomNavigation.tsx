@@ -3,13 +3,18 @@ import { Home, MessageCircle, LogIn, Plus, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 export function BottomNavigation() {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { unreadCounts } = useUnreadMessages();
   
   const isActive = (path: string) => location.pathname === path;
+  
+  // Calculate total unread messages
+  const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
   
   const handleCreateNew = () => {
     if (location.pathname === '/stories') {
@@ -40,8 +45,13 @@ export function BottomNavigation() {
         )}
         
         {isAuthenticated && (
-          <Link to="/chat" className="flex flex-col items-center py-1 px-3">
+          <Link to="/chat" className="flex flex-col items-center py-1 px-3 relative">
             <MessageCircle className={`h-5 w-5 ${isActive('/chat') ? 'text-primary' : 'text-muted-foreground'}`} />
+            {totalUnread > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                {totalUnread > 9 ? '9+' : totalUnread}
+              </span>
+            )}
           </Link>
         )}
         
