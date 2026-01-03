@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Room } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { compressImages } from '@/utils/imageCompression';
+import { UploadDebugPanel, UploadStatus } from '@/components/UploadDebugPanel';
 
 interface MediaFile {
   file: File;
@@ -34,6 +35,8 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
   const [newTag, setNewTag] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatuses, setUploadStatuses] = useState<UploadStatus[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Define available rooms that match the Room type
@@ -112,17 +115,36 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
     const urls: string[] = [];
     const types: string[] = [];
     
+    // Initialize upload statuses
+    const initialStatuses: UploadStatus[] = mediaFiles.map(mf => ({
+      fileName: mf.file.name,
+      fileSize: mf.file.size,
+      status: 'pending'
+    }));
+    setUploadStatuses(initialStatuses);
+    setShowDebugPanel(true);
+    
     for (let i = 0; i < mediaFiles.length; i++) {
       const mediaFile = mediaFiles[i];
       const fileExt = mediaFile.file.name.split('.').pop();
       const fileName = `${Date.now()}_${i}.${fileExt}`;
       const filePath = `confessions/${user?.id}/${fileName}`;
 
+      // Update status to uploading
+      setUploadStatuses(prev => prev.map((s, idx) => 
+        idx === i ? { ...s, status: 'uploading' as const } : s
+      ));
+
       const { error: uploadError } = await supabase.storage
         .from('media')
         .upload(filePath, mediaFile.file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        setUploadStatuses(prev => prev.map((s, idx) => 
+          idx === i ? { ...s, status: 'error' as const, error: uploadError.message } : s
+        ));
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('media')
@@ -130,6 +152,11 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
 
       urls.push(publicUrl);
       types.push(mediaFile.type);
+      
+      setUploadStatuses(prev => prev.map((s, idx) => 
+        idx === i ? { ...s, status: 'uploaded' as const, storagePath: filePath, publicUrl } : s
+      ));
+      
       setUploadProgress(Math.round(((i + 1) / mediaFiles.length) * 80));
     }
     
@@ -186,6 +213,9 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
       }
 
       if (urls.length > 0) {
+        // Update statuses to db_inserting
+        setUploadStatuses(prev => prev.map(s => ({ ...s, status: 'db_inserting' as const })));
+        
         const rows = urls.map((url, index) => ({
           confession_id: confession.id,
           user_id: user.id,
@@ -199,9 +229,22 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
           .insert(rows);
 
         if (mediaError) {
+          setUploadStatuses(prev => prev.map(s => ({ 
+            ...s, 
+            status: 'error' as const, 
+            error: mediaError.message,
+            dbInserted: false 
+          })));
           await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
           throw mediaError;
         }
+        
+        // Mark all as complete
+        setUploadStatuses(prev => prev.map(s => ({ 
+          ...s, 
+          status: 'complete' as const,
+          dbInserted: true 
+        })));
       }
 
       toast({
@@ -216,6 +259,8 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
       setMediaFiles([]);
       setTags([]);
       setSelectedRoom('random');
+      setUploadStatuses([]);
+      setShowDebugPanel(false);
     } catch (error) {
       console.error('Error submitting confession:', error);
       toast({
@@ -294,6 +339,13 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
           <Progress value={uploadProgress} className="w-full" />
         </div>
       )}
+
+      {/* Upload Debug Panel */}
+      <UploadDebugPanel 
+        uploads={uploadStatuses} 
+        isVisible={showDebugPanel}
+        onToggle={() => setShowDebugPanel(!showDebugPanel)}
+      />
 
       {/* Tags */}
       {tags.length > 0 && (
