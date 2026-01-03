@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Message, getMessages } from '@/services/chatService';
 import { useAuth } from '@/context/AuthContext';
@@ -7,21 +7,36 @@ export const useRealTimeChat = (targetUserId: string) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const channelRef = useRef<any>(null);
+
+  const loadMessages = useCallback(async () => {
+    if (!user || !targetUserId) return;
+    try {
+      const data = await getMessages(targetUserId);
+      setMessages(data);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, targetUserId]);
+
+  const refresh = useCallback(async () => {
+    if (!user || !targetUserId) return;
+    setIsRefreshing(true);
+    try {
+      const data = await getMessages(targetUserId);
+      setMessages(data);
+    } catch (error) {
+      console.error('Error refreshing messages:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [user, targetUserId]);
 
   useEffect(() => {
     if (!user || !targetUserId) return;
-
-    const loadMessages = async () => {
-      try {
-        const data = await getMessages(targetUserId);
-        setMessages(data);
-      } catch (error) {
-        console.error('Error loading messages:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
     loadMessages();
 
@@ -82,7 +97,7 @@ export const useRealTimeChat = (targetUserId: string) => {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [user, targetUserId]);
+  }, [user, targetUserId, loadMessages]);
 
-  return { messages, isLoading, setMessages };
+  return { messages, isLoading, isRefreshing, setMessages, refresh };
 };

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -55,7 +55,7 @@ export function ModernChatInterface({
   onCall
 }: ChatInterfaceProps) {
   const { user } = useAuth();
-  const { messages, isLoading, setMessages } = useRealTimeChat(targetUserId);
+  const { messages, isLoading, isRefreshing, setMessages, refresh } = useRealTimeChat(targetUserId);
   const { markAsRead } = useUnreadMessages();
   const { isTyping: isTargetTyping, sendTypingEvent } = useTypingIndicator(targetUserId);
   const { isTargetOnline } = useOnlinePresence(targetUserId);
@@ -75,10 +75,14 @@ export function ModernChatInterface({
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const pullStartY = useRef(0);
   const navigate = useNavigate();
   
   const handleHighlightMessage = useCallback((messageId: string | null) => {
@@ -87,6 +91,29 @@ export function ModernChatInterface({
       messageRefs.current[messageId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, []);
+
+  // Pull to refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (scrollContainerRef.current?.scrollTop === 0) {
+      pullStartY.current = e.touches[0].clientY;
+      setIsPulling(true);
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling) return;
+    const currentY = e.touches[0].clientY;
+    const distance = Math.max(0, Math.min(100, currentY - pullStartY.current));
+    setPullDistance(distance);
+  }, [isPulling]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance > 60) {
+      await refresh();
+    }
+    setPullDistance(0);
+    setIsPulling(false);
+  }, [pullDistance, refresh]);
 
   // Mark messages as read when opening the chat
   useEffect(() => {
@@ -350,8 +377,30 @@ export function ModernChatInterface({
         onClose={() => setShowSearch(false)}
       />
 
-      {/* Messages - with proper scroll */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 bg-background overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* Messages - with proper scroll and pull to refresh */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-4 py-2 bg-background overscroll-contain touch-pan-y" 
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull to refresh indicator */}
+        {(pullDistance > 0 || isRefreshing) && (
+          <div 
+            className="flex items-center justify-center py-2 transition-all duration-200"
+            style={{ height: isRefreshing ? 40 : pullDistance * 0.4 }}
+          >
+            <RefreshCw 
+              className={`h-5 w-5 text-muted-foreground transition-transform ${isRefreshing ? 'animate-spin' : ''}`}
+              style={{ transform: `rotate(${pullDistance * 3.6}deg)` }}
+            />
+            <span className="ml-2 text-xs text-muted-foreground">
+              {isRefreshing ? 'Refreshing...' : pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}
+            </span>
+          </div>
+        )}
         {editingMessageId ? (
           <div className="fixed bottom-20 left-0 right-0 bg-background border-t p-4 shadow-lg z-20">
             <div className="max-w-2xl mx-auto flex gap-2">
