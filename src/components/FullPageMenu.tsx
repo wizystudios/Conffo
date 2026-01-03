@@ -7,7 +7,8 @@ import {
   Settings,
   LogOut,
   Ban,
-  BellRing
+  BellRing,
+  Sparkles
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -95,6 +96,16 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
                 <Ban className="h-5 w-5" />
               </div>
               <span className="text-base font-medium">Blocked Users</span>
+            </button>
+
+            <button
+              onClick={() => handleNavigation('/profile?tab=avatar')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+            >
+              <div className="h-11 w-11 rounded-full bg-pink-500/10 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-pink-500" />
+              </div>
+              <span className="text-base font-medium">Avatar</span>
             </button>
 
             <div className="h-px bg-border my-3" />
