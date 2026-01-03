@@ -7,6 +7,7 @@ import { useIncomingCalls } from "@/hooks/useIncomingCalls";
 import { IncomingCallModal } from "@/components/IncomingCallModal";
 import { CallInterface } from "@/components/CallInterface";
 import { WebRTCService } from "@/services/webRTCService";
+import { MessageNotification } from "@/components/MessageNotification";
 
 interface LayoutProps {
   children: ReactNode;
@@ -88,6 +89,9 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </main>
         <BottomNavigation />
+        
+        {/* Message Notification */}
+        <MessageNotification />
         
         {/* Incoming Call Modal */}
         <IncomingCallModal
