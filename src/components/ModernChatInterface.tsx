@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw, Phone, Video, Clock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +26,8 @@ import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { MediaPreviewModal } from '@/components/MediaPreviewModal';
 import { ReplyPreview } from '@/components/ReplyPreview';
 import { MessageSearch } from '@/components/MessageSearch';
+import { CallButton } from '@/components/CallButton';
+import { ScheduleMessageModal } from '@/components/ScheduleMessageModal';
 
 interface ChatInterfaceProps {
   targetUserId: string;
@@ -77,6 +79,8 @@ export function ModernChatInterface({
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [isPulling, setIsPulling] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduledMessages, setScheduledMessages] = useState<Array<{ content: string; scheduledTime: Date; timerId: NodeJS.Timeout }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -355,18 +359,22 @@ export function ModernChatInterface({
             </div>
           </button>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setShowSearch(true)}>Search Messages</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
-            <DropdownMenuItem onClick={handleClearChat} className="text-destructive">Clear Chat</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <CallButton targetUserId={targetUserId} targetUsername={displayName} targetAvatarUrl={displayAvatar} type="audio" />
+          <CallButton targetUserId={targetUserId} targetUsername={displayName} targetAvatarUrl={displayAvatar} type="video" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowSearch(true)}>Search Messages</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleClearChat} className="text-destructive">Clear Chat</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Message Search */}
@@ -551,14 +559,25 @@ export function ModernChatInterface({
               </div>
               
               {newMessage.trim() ? (
-                <Button 
-                  onClick={() => handleSendMessage(newMessage)} 
-                  disabled={isSending}
-                  size="icon"
-                  className="h-10 w-10 rounded-full"
-                >
-                  <Send className="h-5 w-5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={() => setShowScheduleModal(true)}
+                    title="Schedule message"
+                  >
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <Button 
+                    onClick={() => handleSendMessage(newMessage)} 
+                    disabled={isSending}
+                    size="icon"
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
               ) : (
                 <Button 
                   variant="ghost" 
@@ -620,6 +639,25 @@ export function ModernChatInterface({
         previewUrl={pendingMedia?.previewUrl || null}
         onSend={handleMediaSend}
         isSending={isSending}
+      />
+
+      <ScheduleMessageModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        messageContent={newMessage}
+        onSchedule={(scheduledTime) => {
+          const content = newMessage;
+          setNewMessage('');
+          
+          // Set up timer to send at scheduled time
+          const timeUntilSend = scheduledTime.getTime() - Date.now();
+          const timerId = setTimeout(() => {
+            handleSendMessage(content);
+            setScheduledMessages(prev => prev.filter(m => m.content !== content));
+          }, timeUntilSend);
+          
+          setScheduledMessages(prev => [...prev, { content, scheduledTime, timerId }]);
+        }}
       />
     </div>
   );

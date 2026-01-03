@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MoreVertical, Flag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,15 +20,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ConfessionCard } from '@/components/ConfessionCard';
-import { CommentCard } from '@/components/CommentCard';
-import { CommentForm } from '@/components/CommentForm';
+import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { Layout } from '@/components/Layout';
 import { ReportDialog } from '@/components/ReportDialog';
 import { useAuth } from '@/context/AuthContext';
-import { getConfessionById, getCommentsByConfessionId, deleteConfession } from '@/services/supabaseDataService';
+import { getConfessionById, deleteConfession } from '@/services/supabaseDataService';
 import { toast } from '@/hooks/use-toast';
-import { Confession, Comment } from '@/types';
+import { Confession } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 
 export default function ConfessionPage() {
@@ -40,22 +38,11 @@ export default function ConfessionPage() {
   // Fetch confession data
   const { 
     data: confession,
-    isLoading: isLoadingConfession,
+    isLoading,
     refetch: refetchConfession
   } = useQuery({
     queryKey: ['confession', confessionId, user?.id],
     queryFn: () => confessionId ? getConfessionById(confessionId, user?.id) : null,
-    enabled: !!confessionId,
-  });
-
-  // Fetch comments data
-  const {
-    data: comments = [],
-    isLoading: isLoadingComments,
-    refetch: refetchComments
-  } = useQuery({
-    queryKey: ['comments', confessionId],
-    queryFn: () => confessionId ? getCommentsByConfessionId(confessionId) : [],
     enabled: !!confessionId,
   });
   
@@ -78,10 +65,7 @@ export default function ConfessionPage() {
   
   const handleUpdateData = () => {
     refetchConfession();
-    refetchComments();
   };
-  
-  const isLoading = isLoadingConfession || isLoadingComments;
   
   if (isLoading) {
     return (
@@ -114,19 +98,21 @@ export default function ConfessionPage() {
   
   return (
     <Layout>
-      <div className="space-y-3 px-2">
-        <div className="flex items-center justify-between py-1">
+      <div className="space-y-0">
+        <div className="flex items-center justify-between py-2 px-4 bg-background sticky top-0 z-10 border-b border-border">
           <Link to="/">
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-              <ArrowLeft className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
+          
+          <h1 className="font-semibold">Post</h1>
           
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <MoreVertical className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -163,39 +149,11 @@ export default function ConfessionPage() {
           )}
         </div>
         
-        <ConfessionCard 
+        {/* Use the same card as home page */}
+        <InstagramConfessionCard 
           confession={confession}
-          detailed 
           onUpdate={handleUpdateData}
         />
-        
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Comments ({comments.length})</h2>
-          
-          {user ? (
-            <CommentForm confessionId={confession.id} onSuccess={handleUpdateData} />
-          ) : (
-            <p className="text-center py-4 text-sm text-muted-foreground">
-              <Link to="/auth" className="text-primary underline">Log in</Link> to leave a comment
-            </p>
-          )}
-          
-          {comments.length > 0 ? (
-            <div className="space-y-3 mt-6">
-              {comments.map((comment) => (
-                <CommentCard 
-                  key={comment.id} 
-                  comment={comment}
-                  onUpdate={handleUpdateData} 
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-center py-6 text-muted-foreground">
-              No comments yet. Be the first to comment!
-            </p>
-          )}
-        </div>
       </div>
       
       <ReportDialog 

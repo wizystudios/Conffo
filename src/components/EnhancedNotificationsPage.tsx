@@ -21,20 +21,31 @@ interface NotificationItemProps {
 }
 
 const NotificationItem = ({ notification, isSelected, onToggleSelect, onNavigateToChat }: NotificationItemProps) => {
+  const navigate = useNavigate();
+  
   const getNotificationIcon = () => {
     if (notification.type === 'message') return <MessageCircle className="h-5 w-5 text-blue-500" />;
-    if (notification.type === 'like') return <Heart className="h-5 w-5 text-red-500" />;
+    if (notification.type === 'new_reaction' || notification.type === 'like') return <Heart className="h-5 w-5 text-red-500" />;
     if (notification.type === 'follow') return <UserPlus className="h-5 w-5 text-green-500" />;
+    if (notification.type === 'new_comment') return <MessageCircle className="h-5 w-5 text-primary" />;
     return <Bell className="h-5 w-5 text-muted-foreground" />;
   };
 
   const handleClick = () => {
     if (notification.type === 'message' && notification.senderInfo?.userId) {
       onNavigateToChat(notification.senderInfo.userId);
+    } else if ((notification.type === 'new_reaction' || notification.type === 'new_comment') && notification.related_id) {
+      // Navigate to the confession/post
+      navigate(`/confession/${notification.related_id}`);
+    } else if (notification.type === 'follow' && notification.senderInfo?.userId) {
+      // Navigate to the follower's profile
+      navigate(`/profile/${notification.senderInfo.userId}`);
     }
   };
 
-  const isClickable = notification.type === 'message' && notification.senderInfo?.userId;
+  const isClickable = (notification.type === 'message' && notification.senderInfo?.userId) ||
+    ((notification.type === 'new_reaction' || notification.type === 'new_comment') && notification.related_id) ||
+    (notification.type === 'follow' && notification.senderInfo?.userId);
 
   return (
     <div 
