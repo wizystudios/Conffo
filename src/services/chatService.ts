@@ -12,6 +12,8 @@ export interface Message {
   read_at?: string;
   created_at: string;
   updated_at: string;
+  reply_to_message_id?: string;
+  reply_to_message?: Message;
 }
 
 export interface Conversation {
@@ -34,7 +36,8 @@ export const sendMessage = async (
   content: string,
   messageType: 'text' | 'image' | 'video' | 'audio' | 'file' = 'text',
   mediaUrl?: string,
-  mediaDuration?: number
+  mediaDuration?: number,
+  replyToMessageId?: string
 ): Promise<Message> => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('User not authenticated');
@@ -48,6 +51,7 @@ export const sendMessage = async (
       message_type: messageType,
       media_url: mediaUrl,
       media_duration: mediaDuration,
+      reply_to_message_id: replyToMessageId,
     })
     .select()
     .single();

@@ -309,6 +309,7 @@ export type Database = {
           message_type: string
           read_at: string | null
           receiver_id: string
+          reply_to_message_id: string | null
           sender_id: string
           updated_at: string
         }
@@ -322,6 +323,7 @@ export type Database = {
           message_type?: string
           read_at?: string | null
           receiver_id: string
+          reply_to_message_id?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -335,10 +337,19 @@ export type Database = {
           message_type?: string
           read_at?: string | null
           receiver_id?: string
+          reply_to_message_id?: string | null
           sender_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
