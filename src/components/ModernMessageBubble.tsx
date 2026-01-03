@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
-import { FileText, Copy, Forward, Trash2, Reply } from 'lucide-react';
+import { FileText, Copy, Forward, Trash2, Reply, SmilePlus } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { haptic } from '@/utils/hapticFeedback';
 import { MessageReadReceipt } from '@/components/MessageReadReceipt';
 import { InlineReplyQuote } from '@/components/ReplyPreview';
+import { MessageReactionPicker, MessageReactionDisplay } from '@/components/MessageReactionPicker';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -47,6 +48,8 @@ export function ModernMessageBubble({
 
   const [touchStart, setTouchStart] = useState(0);
   const [showContext, setShowContext] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [reactionRefreshKey, setReactionRefreshKey] = useState(0);
   
   // Swipe to reply state
   const [swipeX, setSwipeX] = useState(0);
@@ -134,7 +137,15 @@ export function ModernMessageBubble({
           !isOwn && <div className="h-9 w-9 flex-shrink-0" />
         )}
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 relative">
+          {/* Reaction picker */}
+          <MessageReactionPicker
+            messageId={message.id}
+            isOpen={showReactionPicker}
+            onClose={() => setShowReactionPicker(false)}
+            onReactionChange={() => setReactionRefreshKey(k => k + 1)}
+          />
+          
           {/* Reply quote if replying to a message */}
           {replyToMessage && (
             <InlineReplyQuote
@@ -208,6 +219,13 @@ export function ModernMessageBubble({
               />
             )}
           </div>
+          
+          {/* Reaction display */}
+          <MessageReactionDisplay 
+            messageId={message.id} 
+            isOwn={isOwn}
+            refreshKey={reactionRefreshKey}
+          />
         </div>
       </div>
 
@@ -243,6 +261,18 @@ export function ModernMessageBubble({
             >
               <Reply className="h-4 w-4" />
               Reply
+            </Button>
+            <Button
+              variant="ghost"
+              className="justify-start gap-2 h-11"
+              onClick={() => {
+                haptic.light();
+                setShowReactionPicker(true);
+                setShowContext(false);
+              }}
+            >
+              <SmilePlus className="h-4 w-4" />
+              React
             </Button>
             <Button
               variant="ghost"
