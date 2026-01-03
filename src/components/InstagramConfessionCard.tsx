@@ -31,8 +31,9 @@ import { toggleReaction, saveConfession } from '@/services/supabaseDataService';
 import { Confession, Reaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
-import { EnhancedCommentModal } from '@/components/EnhancedCommentModal';
+import { UnifiedCommentModal } from '@/components/UnifiedCommentModal';
 import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
+import { LikesList } from '@/components/LikesList';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -51,6 +52,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [confessionAuthor, setConfessionAuthor] = useState<any>(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentCommentCount, setCurrentCommentCount] = useState(confession.commentCount || 0);
+  const [showLikesList, setShowLikesList] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Prepare media array for carousel
@@ -471,7 +473,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 />
               </Button>
               {localReactions.heart > 0 && (
-                <span className="text-sm font-medium">{localReactions.heart}</span>
+                <button 
+                  onClick={() => setShowLikesList(true)}
+                  className="text-sm font-medium hover:underline cursor-pointer"
+                >
+                  {localReactions.heart}
+                </button>
               )}
             </div>
             
@@ -522,15 +529,23 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      <EnhancedCommentModal
+      <UnifiedCommentModal
         confessionId={confession.id}
         confessionContent={confession.content}
         confessionAuthor={confessionAuthor?.username || 'Anonymous'}
+        confessionAuthorId={confession.userId}
         isOpen={showCommentModal}
         onClose={() => setShowCommentModal(false)}
         onCommentSuccess={handleCommentSuccess}
         confessionMediaUrls={confession.mediaUrls}
         confessionMediaTypes={confession.mediaTypes}
+      />
+      
+      <LikesList
+        confessionId={confession.id}
+        totalLikes={localReactions.heart + localReactions.like + localReactions.laugh + localReactions.shock}
+        isOpen={showLikesList}
+        onClose={() => setShowLikesList(false)}
       />
     </div>
   );
