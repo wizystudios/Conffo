@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
-import { FileText, Copy, Forward, Trash2 } from 'lucide-react';
+import { FileText, Copy, Forward, Trash2, Reply } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { haptic } from '@/utils/hapticFeedback';
 import { MessageReadReceipt } from '@/components/MessageReadReceipt';
+import { InlineReplyQuote } from '@/components/ReplyPreview';
 
 interface ModernMessageBubbleProps {
   message: Message;
@@ -17,6 +18,9 @@ interface ModernMessageBubbleProps {
   onEdit?: () => void;
   onForward?: () => void;
   onReport?: () => void;
+  onReply?: () => void;
+  replyToMessage?: Message;
+  replyToSenderName?: string;
 }
 
 export function ModernMessageBubble({ 
@@ -28,7 +32,10 @@ export function ModernMessageBubble({
   onDelete,
   onEdit,
   onForward,
-  onReport
+  onReport,
+  onReply,
+  replyToMessage,
+  replyToSenderName
 }: ModernMessageBubbleProps) {
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString([], { 
@@ -77,6 +84,15 @@ export function ModernMessageBubble({
         )}
 
         <div className="flex flex-col gap-1">
+          {/* Reply quote if replying to a message */}
+          {replyToMessage && (
+            <InlineReplyQuote
+              replyMessage={replyToMessage}
+              senderName={replyToSenderName}
+              isOwn={replyToMessage.sender_id === message.sender_id}
+            />
+          )}
+          
           {message.message_type === 'text' ? (
             <div
               className={`px-4 py-3 ${
@@ -165,6 +181,18 @@ export function ModernMessageBubble({
                 Copy
               </Button>
             )}
+            <Button
+              variant="ghost"
+              className="justify-start gap-2 h-11"
+              onClick={() => {
+                haptic.light();
+                onReply?.();
+                setShowContext(false);
+              }}
+            >
+              <Reply className="h-4 w-4" />
+              Reply
+            </Button>
             <Button
               variant="ghost"
               className="justify-start gap-2 h-11"

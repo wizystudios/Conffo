@@ -6,7 +6,7 @@ import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertica
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { sendMessage, uploadChatMedia, deleteMessage, editMessage, clearConversation, markConversationAsRead } from '@/services/chatService';
+import { sendMessage, uploadChatMedia, deleteMessage, editMessage, clearConversation, markConversationAsRead, Message } from '@/services/chatService';
 import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +24,7 @@ import { TypingIndicator } from '@/components/TypingIndicator';
 import { hideMessageLocally, isMessageHidden, saveMessagesLocally, deleteMessageLocally } from '@/utils/localChatStorage';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { MediaPreviewModal } from '@/components/MediaPreviewModal';
+import { ReplyPreview } from '@/components/ReplyPreview';
 
 interface ChatInterfaceProps {
   targetUserId: string;
@@ -70,6 +71,7 @@ export function ModernChatInterface({
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [pendingMedia, setPendingMedia] = useState<{ file: File; previewUrl: string } | null>(null);
   const [showMediaPreview, setShowMediaPreview] = useState(false);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(messages.length);
@@ -138,12 +140,17 @@ export function ModernChatInterface({
 
     setIsSending(true);
     try {
-      const newMsg = await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration);
+      const newMsg = await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration, replyToMessage?.id);
+      // Attach reply info for UI
+      if (replyToMessage) {
+        newMsg.reply_to_message = replyToMessage;
+      }
       setMessages(prev => {
         if (prev.find(msg => msg.id === newMsg.id)) return prev;
         return [...prev, newMsg];
       });
       setNewMessage('');
+      setReplyToMessage(null);
       playSendSound();
     } catch (error) {
       toast({
@@ -356,6 +363,9 @@ export function ModernChatInterface({
           {messages.map((message, index) => {
             const isOwn = message.sender_id === user?.id;
             const showAvatar = !isOwn && (index === 0 || messages[index - 1]?.sender_id !== message.sender_id);
+            const replyMsg = message.reply_to_message_id 
+              ? messages.find(m => m.id === message.reply_to_message_id) || message.reply_to_message
+              : undefined;
             
             return (
               <ModernMessageBubble
@@ -379,6 +389,9 @@ export function ModernChatInterface({
                   setReportMessageId(message.id);
                   setShowReportDialog(true);
                 }}
+                onReply={() => setReplyToMessage(message)}
+                replyToMessage={replyMsg}
+                replyToSenderName={replyMsg?.sender_id === user?.id ? 'You' : displayName}
               />
             );
           })}
@@ -410,6 +423,17 @@ export function ModernChatInterface({
           />
         ) : (
           <>
+            {/* Reply preview */}
+            {replyToMessage && (
+              <div className="mb-2">
+                <ReplyPreview
+                  message={replyToMessage}
+                  onCancel={() => setReplyToMessage(null)}
+                  senderName={replyToMessage.sender_id === user?.id ? 'You' : displayName}
+                  isOwn={replyToMessage.sender_id === user?.id}
+                />
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <input
                 type="file"
