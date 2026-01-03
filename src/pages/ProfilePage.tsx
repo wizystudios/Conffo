@@ -15,8 +15,9 @@ import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal'
 import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
 import { RealImageVerification } from '@/components/RealImageVerification';
-import { ProfileInfoSection } from '@/components/ProfileInfoSection';
+import { ProfileDetailsSection } from '@/components/ProfileDetailsSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { LogOut } from 'lucide-react';
 import { blockUser, unblockUser, isUserBlocked } from '@/services/blockService';
 import { toast } from '@/hooks/use-toast';
@@ -255,10 +256,10 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="w-full">
+      <div className="w-full max-w-2xl mx-auto">
         {/* Profile Header */}
         <div className="w-full bg-background">
-          <div className="max-w-lg mx-auto px-3 py-4">
+          <div className="px-3 sm:px-4 py-4">
             <div className="flex flex-col gap-3">
               <div className="flex items-start gap-4">
                 <Avatar className="h-20 w-20 border-2 border-border flex-shrink-0">
@@ -269,13 +270,26 @@ export default function ProfilePage() {
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold truncate">{username}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold truncate">{username}</h2>
+                    {isBlocked && (
+                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+                        <Ban className="h-3 w-3 mr-0.5" />
+                        Blocked
+                      </Badge>
+                    )}
+                  </div>
                   
                   {/* Bio - Shown prominently */}
                   {profileData.bio && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {profileData.bio}
                     </p>
+                  )}
+                  
+                  {/* Profile Details - shown for other users */}
+                  {!isOwnProfile && userId && (
+                    <ProfileDetailsSection userId={userId} isBlocked={isBlocked} />
                   )}
                   
                   <div className="flex items-center gap-4 mt-2">
@@ -326,7 +340,7 @@ export default function ProfilePage() {
         </div>
         
         {/* Content - Own profile shows only posts, settings accessed via menu */}
-        <div className="max-w-lg mx-auto">
+        <div className="w-full">
           {isOwnProfile ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               {/* Hidden tabs for settings/avatar/verify - accessed via menu */}
@@ -398,11 +412,10 @@ export default function ProfilePage() {
             </Tabs>
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-background rounded-none">
+              <TabsList className="grid w-full grid-cols-3 bg-background rounded-none">
                 <TabsTrigger value="posts">Posts</TabsTrigger>
                 <TabsTrigger value="saved">Saved</TabsTrigger>
                 <TabsTrigger value="liked">Liked</TabsTrigger>
-                <TabsTrigger value="info">Info</TabsTrigger>
               </TabsList>
               
               <TabsContent value="posts">
@@ -415,10 +428,6 @@ export default function ProfilePage() {
               
               <TabsContent value="liked">
                 <UserLikedPosts userId={userId} />
-              </TabsContent>
-              
-              <TabsContent value="info">
-                <ProfileInfoSection userId={userId!} isOwnProfile={false} />
               </TabsContent>
             </Tabs>
           )}

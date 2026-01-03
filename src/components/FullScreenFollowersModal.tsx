@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Users, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus, Search, Ban } from 'lucide-react';
 import { FollowButton } from '@/components/FollowButton';
+import { getBlockedUsers, getBlockedByUsers } from '@/services/blockService';
 
 interface FullScreenFollowersModalProps {
   isOpen: boolean;
@@ -25,21 +27,39 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
   const { user, isAuthenticated } = useAuth();
   const [followers, setFollowers] = useState<FollowData[]>([]);
   const [following, setFollowing] = useState<FollowData[]>([]);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (isOpen && userId) {
       fetchFollowData();
+      fetchBlockedUsers();
     }
   }, [isOpen, userId]);
+
+  const fetchBlockedUsers = async () => {
+    try {
+      const [blocked, blockedBy] = await Promise.all([
+        getBlockedUsers(),
+        getBlockedByUsers()
+      ]);
+      const allBlockedIds = new Set([
+        ...blocked.map(b => b.blocked_id),
+        ...blockedBy.map(b => b.blocker_id)
+      ]);
+      setBlockedIds(allBlockedIds);
+    } catch (error) {
+      console.error('Error fetching blocked users:', error);
+    }
+  };
 
   const fetchFollowData = async () => {
     if (!userId) return;
     
     setIsLoading(true);
     try {
-      // Fetch followers with profile data
       const { data: followersData, error: followersError } = await supabase
         .from('user_follows')
         .select(`
@@ -57,7 +77,6 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
         console.error('Followers error:', followersError);
       }
 
-      // Fetch following with profile data
       const { data: followingData, error: followingError } = await supabase
         .from('user_follows')
         .select(`
@@ -75,12 +94,10 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
         console.error('Following error:', followingError);
       }
 
-      // Process followers
       const followersList = (followersData || [])
         .map((item: any) => item.follower || { id: item.follower_id, username: `user_${item.follower_id.slice(0, 8)}`, avatar_url: null })
         .filter((profile: any) => profile && profile.id);
 
-      // Process following
       const followingList = (followingData || [])
         .map((item: any) => item.following || { id: item.following_id, username: `user_${item.following_id.slice(0, 8)}`, avatar_url: null })
         .filter((profile: any) => profile && profile.id);
@@ -93,6 +110,19 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
       setIsLoading(false);
     }
   };
+
+  // Filter out blocked users and apply search
+  const filterUsers = (users: FollowData[]) => {
+    return users
+      .filter(u => !blockedIds.has(u.id))
+      .filter(u => 
+        !searchQuery || 
+        u.username?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  };
+
+  const filteredFollowers = filterUsers(followers);
+  const filteredFollowing = filterUsers(following);
 
   const handleTabChange = (value: string) => {
     if (value === 'followers' || value === 'following') {
@@ -123,11 +153,11 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
     return (
       <div className="space-y-1">
         {users.map((userData) => (
-          <div key={userData.id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors rounded-lg">
+          <div key={userData.id} className="flex items-center justify-between p-3 hover:bg-muted/20 transition-colors rounded-lg">
             <UsernameDisplay 
               userId={userData.id}
               showAvatar={true}
-              size="md"
+              size="sm"
               linkToProfile={isAuthenticated}
             />
             {isAuthenticated && userData.id !== user?.id && (
@@ -160,39 +190,51 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
             <div className="w-9" /> {/* Spacer for center alignment */}
           </div>
 
+          {/* Search Bar */}
+          <div className="p-3 border-b border-border bg-background">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm"
+              />
+            </div>
+          </div>
+
           {/* Tabs */}
-          <div className="border-b border-border bg-background">
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-12 bg-transparent rounded-none border-none">
+          <div className="flex-1 overflow-hidden">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 h-11 bg-transparent rounded-none border-b border-border">
                 <TabsTrigger 
                   value="followers" 
                   className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                 >
                   <Users className="h-4 w-4" />
-                  <span className="font-medium">{followers.length}</span>
-                  <span className="text-sm text-muted-foreground">Fans</span>
+                  <span className="font-medium">{filteredFollowers.length}</span>
+                  <span className="text-xs text-muted-foreground">Fans</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
                   className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                 >
                   <UserPlus className="h-4 w-4" />
-                  <span className="font-medium">{following.length}</span>
-                  <span className="text-sm text-muted-foreground">Crew</span>
+                  <span className="font-medium">{filteredFollowing.length}</span>
+                  <span className="text-xs text-muted-foreground">Crew</span>
                 </TabsTrigger>
               </TabsList>
               
-              {/* Content */}
-              <div className="h-full overflow-auto">
+              <div className="flex-1 overflow-auto">
                 <TabsContent value="followers" className="mt-0 h-full">
                   <div className="px-2 py-2">
-                    {renderUserList(followers, "No fans yet")}
+                    {renderUserList(filteredFollowers, searchQuery ? "No matching fans" : "No fans yet")}
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="following" className="mt-0 h-full">
                   <div className="px-2 py-2">
-                    {renderUserList(following, "No crew members yet")}
+                    {renderUserList(filteredFollowing, searchQuery ? "No matching crew" : "No crew members yet")}
                   </div>
                 </TabsContent>
               </div>
