@@ -58,13 +58,13 @@ export function NavBar() {
             <button className="flex items-center gap-1 hover:opacity-80 transition-opacity">
               <img 
                 src="/lovable-uploads/ce53fd65-dc4f-4335-984b-567f5fbae96d.png" 
-                alt="Logo" 
-                className="h-7 w-7 object-contain block dark:hidden"
+                alt="Conffo" 
+                className="h-10 w-auto object-contain block dark:hidden"
               />
               <img 
                 src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
-                alt="Logo" 
-                className="h-7 w-7 object-contain hidden dark:block"
+                alt="Conffo" 
+                className="h-10 w-auto object-contain hidden dark:block"
               />
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </button>
@@ -107,7 +107,9 @@ export function NavBar() {
             </Button>
           ) : (
             <Link to="/auth">
-              <Button variant="ghost" size="sm">Sign In</Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Bell className="h-5 w-5" />
+              </Button>
             </Link>
           )}
         </div>

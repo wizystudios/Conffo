@@ -157,13 +157,13 @@ export function ModernMessageBubble({
           
           {message.message_type === 'text' ? (
             <div
-              className={`px-4 py-3 ${
+              className={`px-3 py-2 ${
                 isOwn
                   ? 'bg-[#007AFF] text-white rounded-[20px] rounded-br-[4px]'
                   : 'bg-[#E5E5EA] text-gray-900 rounded-[20px] rounded-bl-[4px]'
               }`}
             >
-              <p className="text-base leading-relaxed break-words">{message.content}</p>
+              <p className="text-xs leading-relaxed break-words">{message.content}</p>
             </div>
           ) : message.message_type === 'image' ? (
             <a 

@@ -239,7 +239,7 @@ export default function EnhancedNotificationsPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate('/notification-settings')}
                 className="rounded-full hover:bg-muted/50"
               >
                 <Settings className="h-5 w-5" />

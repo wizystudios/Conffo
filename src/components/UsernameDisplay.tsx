@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Star, Users, MessageCircle, BadgeCheck } from 'lucide-react';
 import { ProfileHoverCard } from '@/components/ProfileHoverCard';
+import { getCountryFlag } from '@/components/CountrySelector';
 
 interface UsernameDisplayProps {
   userId: string;
@@ -15,6 +16,7 @@ interface UsernameDisplayProps {
   linkToProfile?: boolean;
   showStoryIndicator?: boolean;
   showRelationshipBadge?: boolean;
+  showCountryFlag?: boolean;
 }
 
 export function UsernameDisplay({ 
@@ -23,12 +25,14 @@ export function UsernameDisplay({
   size = 'sm',
   linkToProfile = true,
   showStoryIndicator = true,
-  showRelationshipBadge = true
+  showRelationshipBadge = true,
+  showCountryFlag = true
 }: UsernameDisplayProps) {
   const { user, isAuthenticated } = useAuth();
   const [username, setUsername] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFan, setIsFan] = useState(false); // They follow you
   const [isCrew, setIsCrew] = useState(false); // You follow them
@@ -48,7 +52,7 @@ export function UsernameDisplay({
         // Fetch from profiles table
         const { data: profileData, error } = await supabase
           .from('profiles')
-          .select('username, avatar_url, is_verified')
+          .select('username, avatar_url, is_verified, location')
           .eq('id', userId)
           .maybeSingle();
         
@@ -60,6 +64,7 @@ export function UsernameDisplay({
           setUsername(fallbackUsername);
           setAvatarUrl(null);
           setIsVerified(false);
+          setCountryCode(null);
         } else if (profileData) {
           // Use profile data
           const displayName = profileData.username || `user_${userId.slice(0, 8)}`;
@@ -67,6 +72,7 @@ export function UsernameDisplay({
           setUsername(displayName);
           setAvatarUrl(profileData.avatar_url);
           setIsVerified(profileData.is_verified || false);
+          setCountryCode(profileData.location);
         } else {
           // No profile found, use fallback
           const fallbackUsername = `user_${userId.slice(0, 8)}`;
@@ -74,6 +80,7 @@ export function UsernameDisplay({
           setUsername(fallbackUsername);
           setAvatarUrl(null);
           setIsVerified(false);
+          setCountryCode(null);
         }
       } catch (error) {
         console.error('UsernameDisplay: Error in fetchUserData:', error);
@@ -81,6 +88,7 @@ export function UsernameDisplay({
         setUsername(fallbackUsername);
         setAvatarUrl(null);
         setIsVerified(false);
+        setCountryCode(null);
       } finally {
         setIsLoading(false);
       }
@@ -155,13 +163,20 @@ export function UsernameDisplay({
     );
   }
 
+  const countryFlag = getCountryFlag(countryCode);
+
   const content = (
     <div className="flex items-center gap-2">
       {showAvatar && (
-        <Avatar className={avatarSizeClass[size]}>
-          <AvatarImage src={avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`} alt={username} />
-          <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className={avatarSizeClass[size]}>
+            <AvatarImage src={avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`} alt={username} />
+            <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          {showCountryFlag && countryFlag && (
+            <span className="absolute -bottom-0.5 -right-0.5 text-[10px]">{countryFlag}</span>
+          )}
+        </div>
       )}
       <div className="flex items-center gap-1">
         <span className={`${textSizeClass[size]} font-medium`}>
