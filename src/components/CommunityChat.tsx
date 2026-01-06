@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, Mic, Image, MoreVertical, Users, UserPlus } from 'lucide-react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { ArrowLeft, Send, Mic, Image, Video, MoreVertical, Users, UserPlus, X, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,12 +16,12 @@ import {
   CommunityMessage, 
   getCommunityMessages, 
   sendCommunityMessage,
-  getCommunityMembers,
-  CommunityMember
+  getCommunityMembers
 } from '@/services/communityService';
 import { formatDistanceToNow } from 'date-fns';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { toast } from '@/hooks/use-toast';
+import { haptic } from '@/utils/hapticFeedback';
 
 interface CommunityChatProps {
   community: Community;
@@ -37,7 +37,10 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
   const [isLoading, setIsLoading] = useState(true);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<{ url: string; type: 'image' | 'video'; file: File } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isCreator = community.creatorId === user?.id;
 
   useEffect(() => {
@@ -102,7 +105,15 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
   };
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !user) return;
+    if (!user) return;
+    
+    // If there's media preview, send media message
+    if (mediaPreview) {
+      await handleSendMedia();
+      return;
+    }
+    
+    if (!newMessage.trim()) return;
     
     const content = newMessage.trim();
     setNewMessage('');
@@ -110,6 +121,70 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
     const result = await sendCommunityMessage(community.id, content);
     if (!result) {
       toast({ variant: 'destructive', description: 'Failed to send message' });
+    } else {
+      haptic.light();
+    }
+  };
+
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    
+    if (!isImage && !isVideo) {
+      toast({ variant: 'destructive', description: 'Only images and videos are supported' });
+      return;
+    }
+    
+    // Check file size (max 50MB for video, 10MB for image)
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ variant: 'destructive', description: `File too large. Max ${isVideo ? '50MB' : '10MB'}` });
+      return;
+    }
+    
+    const url = URL.createObjectURL(file);
+    setMediaPreview({ url, type: isImage ? 'image' : 'video', file });
+    
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSendMedia = async () => {
+    if (!user || !mediaPreview) return;
+    
+    setIsUploading(true);
+    
+    try {
+      const ext = mediaPreview.file.name.split('.').pop() || (mediaPreview.type === 'image' ? 'jpg' : 'mp4');
+      const fileName = `${community.id}/${user.id}/${Date.now()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(fileName, mediaPreview.file, { 
+          contentType: mediaPreview.file.type,
+          cacheControl: '3600'
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage.from('chat-media').getPublicUrl(fileName);
+      
+      const caption = newMessage.trim() || (mediaPreview.type === 'image' ? '📷 Photo' : '🎬 Video');
+      
+      await sendCommunityMessage(community.id, caption, mediaPreview.type, publicUrl);
+      
+      URL.revokeObjectURL(mediaPreview.url);
+      setMediaPreview(null);
+      setNewMessage('');
+      haptic.success();
+    } catch (error) {
+      console.error('Error sending media:', error);
+      toast({ variant: 'destructive', description: 'Failed to send media' });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -129,9 +204,17 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
       
       await sendCommunityMessage(community.id, '🎤 Voice message', 'audio', publicUrl, Math.round(duration));
       setShowVoiceRecorder(false);
+      haptic.success();
     } catch (error) {
       console.error('Error sending voice message:', error);
       toast({ variant: 'destructive', description: 'Failed to send voice message' });
+    }
+  };
+
+  const cancelMediaPreview = () => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview.url);
+      setMediaPreview(null);
     }
   };
 
@@ -208,15 +291,43 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
                     <p className="text-xs text-muted-foreground mb-0.5 ml-1">{msg.senderName}</p>
                   )}
                   
-                  <div className={`rounded-2xl px-3 py-2 ${
-                    isOwn 
-                      ? 'bg-primary text-primary-foreground rounded-br-sm' 
-                      : 'bg-muted rounded-bl-sm'
+                  <div className={`rounded-2xl overflow-hidden ${
+                    msg.messageType === 'image' || msg.messageType === 'video' 
+                      ? '' 
+                      : `px-3 py-2 ${isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'}`
                   }`}>
                     {msg.messageType === 'audio' && msg.mediaUrl ? (
-                      <audio src={msg.mediaUrl} controls className="h-8 max-w-[200px]" />
+                      <div className={`px-3 py-2 ${isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'} rounded-2xl`}>
+                        <audio src={msg.mediaUrl} controls className="h-8 max-w-[200px]" />
+                      </div>
                     ) : msg.messageType === 'image' && msg.mediaUrl ? (
-                      <img src={msg.mediaUrl} alt="" className="rounded-lg max-w-[200px]" />
+                      <div className="relative">
+                        <img 
+                          src={msg.mediaUrl} 
+                          alt="" 
+                          className="rounded-2xl max-w-[250px] max-h-[300px] object-cover cursor-pointer"
+                          onClick={() => window.open(msg.mediaUrl, '_blank')}
+                        />
+                        {msg.content && !msg.content.startsWith('📷') && (
+                          <div className={`px-3 py-1.5 text-sm ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            {msg.content}
+                          </div>
+                        )}
+                      </div>
+                    ) : msg.messageType === 'video' && msg.mediaUrl ? (
+                      <div className="relative">
+                        <video 
+                          src={msg.mediaUrl} 
+                          className="rounded-2xl max-w-[250px] max-h-[300px] object-cover"
+                          controls
+                          playsInline
+                        />
+                        {msg.content && !msg.content.startsWith('🎬') && (
+                          <div className={`px-3 py-1.5 text-sm ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            {msg.content}
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                     )}
@@ -233,6 +344,37 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Media Preview */}
+      {mediaPreview && (
+        <div className="p-3 border-t border-border bg-muted/50">
+          <div className="relative inline-block">
+            {mediaPreview.type === 'image' ? (
+              <img 
+                src={mediaPreview.url} 
+                alt="Preview" 
+                className="h-20 w-20 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="relative h-20 w-20">
+                <video 
+                  src={mediaPreview.url} 
+                  className="h-20 w-20 object-cover rounded-lg"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+                  <Play className="h-6 w-6 text-white" fill="white" />
+                </div>
+              </div>
+            )}
+            <button
+              onClick={cancelMediaPreview}
+              className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-3 border-t border-border bg-background">
         {showVoiceRecorder ? (
@@ -242,31 +384,55 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
           />
         ) : (
           <div className="flex items-center gap-2">
+            {/* Media upload button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="h-10 w-10 rounded-full flex-shrink-0"
+            >
+              <Image className="h-5 w-5" />
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Message..."
+              placeholder={mediaPreview ? "Add a caption..." : "Message..."}
               className="flex-1 rounded-full bg-muted border-0"
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             />
             
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowVoiceRecorder(true)}
-              className="h-10 w-10 rounded-full"
-            >
-              <Mic className="h-5 w-5" />
-            </Button>
+            {!mediaPreview && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowVoiceRecorder(true)}
+                className="h-10 w-10 rounded-full flex-shrink-0"
+              >
+                <Mic className="h-5 w-5" />
+              </Button>
+            )}
             
             <Button
               variant="default"
               size="icon"
               onClick={handleSend}
-              disabled={!newMessage.trim()}
-              className="h-10 w-10 rounded-full"
+              disabled={(!newMessage.trim() && !mediaPreview) || isUploading}
+              className="h-10 w-10 rounded-full flex-shrink-0"
             >
-              <Send className="h-5 w-5" />
+              {isUploading ? (
+                <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
             </Button>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, MessageCircle, LogIn, Plus, Search, User } from 'lucide-react';
+import { Home, MessageCircle, LogIn, Plus, Search, User, Users } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -45,6 +45,13 @@ export function BottomNavigation() {
           >
             <Plus className="h-6 w-6 text-primary-foreground" />
           </Button>
+        )}
+        
+        {/* Communities */}
+        {isAuthenticated && (
+          <Link to="/communities" className="flex flex-col items-center py-1 px-3">
+            <Users className={`h-5 w-5 ${isActive('/communities') ? 'text-primary' : 'text-muted-foreground'}`} />
+          </Link>
         )}
         
         {isAuthenticated && (
