@@ -30,9 +30,9 @@ export default function MultiStepAuthPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   
-  // Validation
+  // Validation - stricter email validation requiring proper TLD
   const isPhone = (value: string) => /^\+?[\d\s-]{10,}$/.test(value.replace(/\s/g, ''));
-  const emailValid = email && /\S+@\S+\.\S+/.test(email);
+  const emailValid = email && /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
   const phoneValid = isPhone(phoneNumber);
   const identifierValid = signinMethod === 'email' ? emailValid : phoneValid;
   const passwordValid = password.length >= 6;
@@ -250,51 +250,51 @@ export default function MultiStepAuthPage() {
               </Button>
             </div>
 
-            {/* Email input */}
+            {/* Email input - smaller, no box */}
             {signinMethod === 'email' && (
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                 <Input 
                   type="email" 
                   placeholder="Email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
                   autoFocus
                 />
-                {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {emailValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
               </div>
             )}
 
-            {/* Phone input */}
+            {/* Phone input - smaller, no box */}
             {signinMethod === 'phone' && (
               <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Phone className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                 <Input 
                   type="tel" 
                   placeholder="Phone number" 
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
                   autoFocus
                 />
-                {phoneValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {phoneValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
               </div>
             )}
 
-            {/* Password - shows when identifier is valid */}
+            {/* Password - shows when identifier is valid - smaller, no box */}
             {identifierValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                 <Input 
                   type="password" 
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
                   autoFocus
                 />
-                {loading && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
+                {loading && <Loader2 className="absolute right-2 top-2.5 h-3 w-3 animate-spin text-muted-foreground" />}
               </div>
             )}
 

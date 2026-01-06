@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, TrendingUp, Hash, Users, X } from 'lucide-react';
@@ -8,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { BottomNavigation } from '@/components/BottomNavigation';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,8 +62,8 @@ export default function SearchPage() {
   });
 
   return (
-    <Layout>
-      <div className="w-full max-w-full p-2 space-y-2">
+    <div className="min-h-screen bg-background pb-14">
+      <div className="w-full max-w-2xl mx-auto p-2 pt-4 space-y-2">
         {/* Search Input */}
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -250,6 +250,7 @@ export default function SearchPage() {
           </div>
         )}
       </div>
-    </Layout>
+      <BottomNavigation />
+    </div>
   );
 }

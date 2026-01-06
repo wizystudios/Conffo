@@ -79,16 +79,6 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
             </button>
 
             <button
-              onClick={() => handleNavigation('/notifications')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
-            >
-              <div className="h-11 w-11 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <Bell className="h-5 w-5 text-blue-500" />
-              </div>
-              <span className="text-base font-medium">Notifications</span>
-            </button>
-
-            <button
               onClick={() => handleNavigation('/blocked')}
               className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
             >
@@ -124,16 +114,6 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
               <span className="text-base font-medium">
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </span>
-            </button>
-
-            <button
-              onClick={() => handleNavigation('/notification-settings')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
-            >
-              <div className="h-11 w-11 rounded-full bg-orange-500/10 flex items-center justify-center">
-                <BellRing className="h-5 w-5 text-orange-500" />
-              </div>
-              <span className="text-base font-medium">Notification Settings</span>
             </button>
 
             <button
