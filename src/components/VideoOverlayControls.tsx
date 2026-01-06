@@ -1,5 +1,4 @@
 import { Heart, MessageCircle, Share2, Bookmark, Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface VideoOverlayControlsProps {
   isLiked: boolean;
@@ -12,6 +11,7 @@ interface VideoOverlayControlsProps {
   onSave: () => void;
   isPaused?: boolean;
   onTogglePlay?: () => void;
+  isFullscreen?: boolean; // Only show Reels-style on fullscreen/large videos
 }
 
 export function VideoOverlayControls({
@@ -24,8 +24,29 @@ export function VideoOverlayControls({
   onShare,
   onSave,
   isPaused,
-  onTogglePlay
+  onTogglePlay,
+  isFullscreen = false
 }: VideoOverlayControlsProps) {
+  // Only show Reels-style overlay for fullscreen videos
+  if (!isFullscreen) {
+    return (
+      <>
+        {/* Center play indicator when paused - minimal for non-fullscreen */}
+        {isPaused && onTogglePlay && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-black/10 cursor-pointer"
+            onClick={onTogglePlay}
+          >
+            <div className="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center">
+              <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+  
+  // Fullscreen Reels-style overlay
   return (
     <>
       {/* Center play indicator when paused */}
@@ -40,7 +61,7 @@ export function VideoOverlayControls({
         </div>
       )}
       
-      {/* Right side floating controls */}
+      {/* Right side floating controls - Reels style */}
       <div className="absolute right-3 bottom-16 flex flex-col items-center gap-5">
         {/* Like */}
         <button

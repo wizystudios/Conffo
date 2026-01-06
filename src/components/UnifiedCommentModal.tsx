@@ -442,11 +442,9 @@ export function UnifiedCommentModal({
             
             {showAudioRecorder ? (
               <AudioCommentRecorder
-                onRecordingComplete={async (audioBlob, duration) => {
+                onRecordingComplete={async (audioBlob, duration, waveformData) => {
                   try {
-                    // Generate waveform data (simplified: random for now, can be replaced with real analysis)
-                    const waveformData = Array.from({ length: 30 }, () => Math.random() * 0.6 + 0.2);
-                    
+                    // Use real waveform data captured during recording
                     // Upload audio to correct bucket (comment_audio)
                     const fileName = `${user!.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.webm`;
                     const { data: uploadData, error: uploadError } = await supabase.storage
