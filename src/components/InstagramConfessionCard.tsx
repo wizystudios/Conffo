@@ -35,6 +35,7 @@ import { UnifiedCommentModal } from '@/components/UnifiedCommentModal';
 import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 import { LikesList } from '@/components/LikesList';
 import { DoubleTapHeart } from '@/components/DoubleTapHeart';
+import { VideoOverlayControls } from '@/components/VideoOverlayControls';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -54,6 +55,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentCommentCount, setCurrentCommentCount] = useState(confession.commentCount || 0);
   const [showLikesList, setShowLikesList] = useState(false);
+  const [isVideoPaused, setIsVideoPaused] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Prepare media array for carousel
@@ -364,10 +366,31 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   const isLiked = localUserReactions.includes('heart');
   
-  const shouldTruncate = confession.content.length > 150;
+  // Check if post has video content
+  const hasVideoContent = mediaArray.some(m => m.type === 'video');
+  
+  // Caption: show first line only, then "see more"
+  const getFirstLine = (text: string) => {
+    const firstLine = text.split('\n')[0];
+    return firstLine.length > 80 ? firstLine.substring(0, 80) + '...' : firstLine;
+  };
+  
+  const shouldTruncate = confession.content.length > 80 || confession.content.includes('\n');
   const displayContent = shouldTruncate && !showFullContent 
-    ? confession.content.substring(0, 150) + '...'
+    ? getFirstLine(confession.content)
     : confession.content;
+
+  const handleVideoTap = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(console.error);
+        setIsVideoPaused(false);
+      } else {
+        videoRef.current.pause();
+        setIsVideoPaused(true);
+      }
+    }
+  };
   
   return (
     <div className="w-full bg-background mb-0 border-b border-border">
@@ -425,18 +448,20 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Caption ABOVE media - Like Facebook style with larger text */}
+      {/* Caption ABOVE media - Ultra-small Glacial Indifference, 1-line clamp + see more */}
       {confession.content && (
-        <div className="px-4 pb-3">
-          <p className="text-base leading-relaxed break-words overflow-hidden">
+        <div className="px-4 pb-2">
+          <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "'Glacial Indifference', sans-serif" }}>
+            <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
             {displayContent}
           </p>
-          {shouldTruncate && !showFullContent && (
+          {shouldTruncate && (
             <button 
-              onClick={() => setShowFullContent(true)}
-              className="text-primary text-sm mt-1 hover:underline font-medium"
+              onClick={() => setShowFullContent(!showFullContent)}
+              className="text-muted-foreground text-[10px] mt-0.5 hover:text-foreground"
+              style={{ fontFamily: "'Glacial Indifference', sans-serif" }}
             >
-              See more
+              {showFullContent ? 'see less' : 'see more'}
             </button>
           )}
         </div>
@@ -449,14 +474,34 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       </div>
       
-      {/* Media Carousel with Double Tap - no rounded corners */}
+      {/* Media Carousel with Double Tap - Reels-style overlay for videos */}
       {mediaArray.length > 0 && (
-        <DoubleTapHeart 
-          onDoubleTap={() => handleReaction('heart')} 
-          isLiked={isLiked}
-        >
-          <MediaCarouselDisplay media={mediaArray} />
-        </DoubleTapHeart>
+        <div className="relative">
+          <DoubleTapHeart 
+            onDoubleTap={() => handleReaction('heart')} 
+            isLiked={isLiked}
+          >
+            {hasVideoContent ? (
+              <div className="relative" onClick={handleVideoTap}>
+                <MediaCarouselDisplay media={mediaArray} />
+                <VideoOverlayControls
+                  isLiked={isLiked}
+                  isSaved={isSaved}
+                  likesCount={localReactions.heart}
+                  commentsCount={currentCommentCount}
+                  onLike={() => handleReaction('heart')}
+                  onComment={handleCommentClick}
+                  onShare={handleShare}
+                  onSave={handleSave}
+                  isPaused={isVideoPaused}
+                  onTogglePlay={handleVideoTap}
+                />
+              </div>
+            ) : (
+              <MediaCarouselDisplay media={mediaArray} />
+            )}
+          </DoubleTapHeart>
+        </div>
       )}
       
       {/* Actions */}

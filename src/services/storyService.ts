@@ -93,20 +93,39 @@ export async function uploadStoryMedia(file: File, userId: string) {
  */
 export async function getUserStories(userId: string, viewerId?: string): Promise<Story[]> {
   try {
-    // Query stories directly from the stories table to ensure persistence
-    const { data, error } = await supabase
-      .from('stories')
-      .select('*')
-      .eq('user_id', userId)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false });
+    // Use RPC function for server-side time filtering to avoid client clock issues
+    const { data, error } = await supabase.rpc('get_active_stories', {
+      user_uuid: viewerId || userId
+    });
 
     if (error) {
-      console.error('Error fetching user stories:', error);
-      return [];
+      console.error('Error fetching user stories via RPC:', error);
+      // Fallback to direct query
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('stories')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (fallbackError) return [];
+      
+      return (fallbackData || []).map((story: any) => ({
+        id: story.id,
+        userId: story.user_id,
+        mediaUrl: story.media_url,
+        mediaType: story.media_type,
+        caption: story.caption,
+        effects: story.effects,
+        createdAt: story.created_at,
+        expiresAt: story.expires_at,
+        isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
+      }));
     }
 
-    return (data || []).map((story: any) => ({
+    // Filter to specific user if needed
+    const userStories = (data || []).filter((story: any) => story.user_id === userId);
+
+    return userStories.map((story: any) => ({
       id: story.id,
       userId: story.user_id,
       mediaUrl: story.media_url,
@@ -115,7 +134,7 @@ export async function getUserStories(userId: string, viewerId?: string): Promise
       effects: story.effects,
       createdAt: story.created_at,
       expiresAt: story.expires_at,
-      isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
+      isViewed: story.is_viewed || false,
     }));
   } catch (error) {
     console.error('Error in getUserStories:', error);
@@ -128,16 +147,32 @@ export async function getUserStories(userId: string, viewerId?: string): Promise
  */
 export async function getActiveStories(viewerId?: string): Promise<Story[]> {
   try {
-    // Query stories directly from the stories table
-    const { data, error } = await supabase
-      .from('stories')
-      .select('*')
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false });
+    // Use RPC function for server-side time filtering to avoid client clock issues
+    const { data, error } = await supabase.rpc('get_active_stories', {
+      user_uuid: viewerId || '00000000-0000-0000-0000-000000000000'
+    });
 
     if (error) {
-      console.error('Error fetching active stories:', error);
-      return [];
+      console.error('Error fetching active stories via RPC:', error);
+      // Fallback to direct query
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('stories')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (fallbackError) return [];
+      
+      return (fallbackData || []).map((story: any) => ({
+        id: story.id,
+        userId: story.user_id,
+        mediaUrl: story.media_url,
+        mediaType: story.media_type,
+        caption: story.caption,
+        effects: story.effects,
+        createdAt: story.created_at,
+        expiresAt: story.expires_at,
+        isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
+      }));
     }
 
     return (data || []).map((story: any) => ({
@@ -149,7 +184,7 @@ export async function getActiveStories(viewerId?: string): Promise<Story[]> {
       effects: story.effects,
       createdAt: story.created_at,
       expiresAt: story.expires_at,
-      isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
+      isViewed: story.is_viewed || false,
     }));
   } catch (error) {
     console.error('Error in getActiveStories:', error);
@@ -162,18 +197,26 @@ export async function getActiveStories(viewerId?: string): Promise<Story[]> {
  */
 export async function hasActiveStory(userId: string): Promise<boolean> {
   try {
-    const { count, error } = await supabase
-      .from('stories')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gt('expires_at', new Date().toISOString());
+    // Use RPC for server-side time check to avoid client clock issues
+    const { data, error } = await supabase.rpc('get_active_stories', {
+      user_uuid: userId
+    });
 
     if (error) {
-      console.error('Error checking active stories:', error);
-      return false;
+      console.error('Error checking active stories via RPC:', error);
+      // Fallback to direct query
+      const { count, error: fallbackError } = await supabase
+        .from('stories')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      if (fallbackError) return false;
+      return (count || 0) > 0;
     }
 
-    return (count || 0) > 0;
+    // Filter to specific user
+    const userStories = (data || []).filter((story: any) => story.user_id === userId);
+    return userStories.length > 0;
   } catch (error) {
     console.error('Error in hasActiveStory:', error);
     return false;

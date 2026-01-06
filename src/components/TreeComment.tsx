@@ -19,12 +19,19 @@ import { deleteComment } from '@/services/supabaseDataService';
 import { Comment } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { AudioWaveformPlayer } from './AudioWaveformPlayer';
+
+interface ExtendedComment extends Comment {
+  audioUrl?: string;
+  audioDuration?: number;
+  audioWaveform?: number[];
+}
 
 interface TreeCommentProps {
-  comment: Comment;
+  comment: ExtendedComment;
   onUpdate?: () => void;
   depth?: number;
-  replies?: Comment[];
+  replies?: ExtendedComment[];
   onReply?: (commentId: string) => void;
 }
 
@@ -140,7 +147,22 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
                 )}
               </span>
             </div>
-            <p className="text-xs whitespace-pre-wrap break-words">{comment.content}</p>
+            
+            {/* Audio waveform player if comment has audio */}
+            {comment.audioUrl && (
+              <div className="mt-1 mb-1">
+                <AudioWaveformPlayer 
+                  audioUrl={comment.audioUrl}
+                  duration={comment.audioDuration || 0}
+                  waveform={comment.audioWaveform}
+                />
+              </div>
+            )}
+            
+            {/* Text content */}
+            {comment.content && !comment.content.startsWith('🎤') && (
+              <p className="text-xs whitespace-pre-wrap break-words">{comment.content}</p>
+            )}
           </div>
             
           <div className="flex items-center gap-2 mt-1 text-xs">
