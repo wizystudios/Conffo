@@ -28,6 +28,7 @@ import { ReplyPreview } from '@/components/ReplyPreview';
 import { MessageSearch } from '@/components/MessageSearch';
 import { CallButton } from '@/components/CallButton';
 import { ScheduleMessageModal } from '@/components/ScheduleMessageModal';
+import { QuickReplies } from '@/components/QuickReplies';
 
 interface ChatInterfaceProps {
   targetUserId: string;
@@ -336,40 +337,41 @@ export function ModernChatInterface({
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header - Clean Instagram style */}
-      <div className="flex items-center justify-between px-3 py-2 bg-background border-b border-border">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-9 w-9">
-            <ArrowLeft className="h-5 w-5" />
+      {/* Header - Profile centered at top */}
+      <div className="flex flex-col items-center pt-4 pb-2 bg-background border-b border-border">
+        {/* Centered profile */}
+        <button 
+          className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
+          onClick={() => navigate(`/user/${targetUserId}`)}
+        >
+          <div className="relative">
+            <Avatar className="h-14 w-14 border-2 border-border">
+              <AvatarImage src={displayAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${targetUserId}`} />
+              <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />
+          </div>
+          <h3 className="font-semibold text-sm">{displayName}</h3>
+          {isTargetOnline && <span className="text-[10px] text-green-500">Active now</span>}
+        </button>
+        
+        {/* Action icons below profile */}
+        <div className="flex items-center gap-4 mt-2">
+          <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-8 w-8">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <button 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" 
-            onClick={() => navigate(`/user/${targetUserId}`)}
-          >
-            <div className="relative">
-              <Avatar className="h-10 w-10 border border-border">
-                <AvatarImage src={displayAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${targetUserId}`} />
-                <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-sm">{displayName}</h3>
-              {isTargetOnline && <span className="text-xs text-green-500">Active now</span>}
-            </div>
-          </button>
-        </div>
-        <div className="flex items-center gap-1">
           <CallButton targetUserId={targetUserId} targetUsername={displayName} targetAvatarUrl={displayAvatar} type="audio" />
           <CallButton targetUserId={targetUserId} targetUsername={displayName} targetAvatarUrl={displayAvatar} type="video" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSearch(true)}>
+            <Search className="h-4 w-4" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-5 w-5" />
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowSearch(true)}>Search Messages</DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
               <DropdownMenuItem onClick={handleClearChat} className="text-destructive">Clear Chat</DropdownMenuItem>
             </DropdownMenuContent>
@@ -534,9 +536,10 @@ export function ModernChatInterface({
                 className="hidden"
               />
               
-              <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => fileInputRef.current?.click()}>
-                  <ImageIcon className="h-5 w-5 text-primary" />
+              <div className="flex-1 flex items-center gap-1 bg-muted rounded-full px-3 py-1.5">
+                <QuickReplies onSelect={(reply) => setNewMessage(reply)} />
+                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => fileInputRef.current?.click()}>
+                  <ImageIcon className="h-4 w-4 text-primary" />
                 </Button>
                 <Input
                   value={newMessage}
@@ -545,7 +548,7 @@ export function ModernChatInterface({
                     sendTypingEvent();
                   }}
                   placeholder="Message..."
-                  className="flex-1 border-0 bg-transparent h-8 focus-visible:ring-0 px-0"
+                  className="flex-1 border-0 bg-transparent h-7 text-sm focus-visible:ring-0 px-0"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -553,8 +556,8 @@ export function ModernChatInterface({
                     }
                   }}
                 />
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                  <Smile className="h-5 w-5 text-muted-foreground" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                  <Smile className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </div>
               

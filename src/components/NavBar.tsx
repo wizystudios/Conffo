@@ -10,6 +10,12 @@ import { getUserNotifications } from "@/utils/notificationUtils";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { haptic } from "@/utils/hapticFeedback";
 import { FullPageMenu } from "@/components/FullPageMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function NavBar() {
   const { user, isAuthenticated } = useAuth();
@@ -43,19 +49,34 @@ export function NavBar() {
   return (
     <div className={`bg-background fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="container mx-auto flex justify-between items-center px-3 py-2">
-        {/* Logo */}
-        <Link to="/" className="flex items-center">
-          <img 
-            src="/lovable-uploads/ce53fd65-dc4f-4335-984b-567f5fbae96d.png" 
-            alt="Logo" 
-            className="h-7 w-7 object-contain block dark:hidden"
-          />
-          <img 
-            src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
-            alt="Logo" 
-            className="h-7 w-7 object-contain hidden dark:block"
-          />
-        </Link>
+        {/* Left spacer */}
+        <div className="w-9" />
+        
+        {/* Center Logo with dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+              <img 
+                src="/lovable-uploads/ce53fd65-dc4f-4335-984b-567f5fbae96d.png" 
+                alt="Logo" 
+                className="h-7 w-7 object-contain block dark:hidden"
+              />
+              <img 
+                src="/lovable-uploads/d4fd9efb-43e0-4330-ab14-b265b0098be2.png" 
+                alt="Logo" 
+                className="h-7 w-7 object-contain hidden dark:block"
+              />
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="min-w-[120px]">
+            <DropdownMenuItem className="justify-center font-bold text-lg">
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                ✨ 2026 ✨
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         
         {/* Right side - Notifications and Menu */}
         <div className="flex items-center gap-1">

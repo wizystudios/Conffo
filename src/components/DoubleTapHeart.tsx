@@ -14,12 +14,29 @@ export function DoubleTapHeart({ children, onDoubleTap, isLiked }: DoubleTapHear
   const lastTapRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Track if this was a navigation tap (on arrows/dots)
+  const isNavigationTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // Check if the click is on navigation buttons, video controls, or indicator dots
+    return target.closest('button') !== null || 
+           target.closest('[role="button"]') !== null ||
+           target.tagName === 'BUTTON';
+  };
+
   const handleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    // Don't trigger double-tap on navigation elements
+    if (isNavigationTap(e)) {
+      return;
+    }
+
     const now = Date.now();
     const DOUBLE_TAP_THRESHOLD = 300;
 
     if (now - lastTapRef.current < DOUBLE_TAP_THRESHOLD) {
-      // Double tap detected
+      // Double tap detected - prevent default to avoid navigation
+      e.preventDefault();
+      e.stopPropagation();
+      
       haptic.heavy();
       
       // Get position for heart animation
@@ -48,6 +65,10 @@ export function DoubleTapHeart({ children, onDoubleTap, isLiked }: DoubleTapHear
       if (!isLiked && onDoubleTap) {
         onDoubleTap();
       }
+      
+      // Reset to prevent triple-tap issues
+      lastTapRef.current = 0;
+      return;
     }
     
     lastTapRef.current = now;
@@ -57,8 +78,7 @@ export function DoubleTapHeart({ children, onDoubleTap, isLiked }: DoubleTapHear
     <div 
       ref={containerRef}
       className="relative"
-      onClick={handleTap}
-      onTouchEnd={handleTap}
+      onDoubleClick={handleTap}
     >
       {children}
       

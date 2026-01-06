@@ -5,28 +5,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Mail, Lock, User, Calendar, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Calendar, Check, Loader2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
 
 type AuthMode = 'signin' | 'signup';
+type SigninMethod = 'email' | 'phone';
 
 export default function MultiStepAuthPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
+  const [signinMethod, setSigninMethod] = useState<SigninMethod>('email');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [username, setUsername] = useState('');
   const [birthdate, setBirthdate] = useState('');
   const [gender, setGender] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-
-  // Track which fields are complete
+  
+  // Validation
+  const isPhone = (value: string) => /^\+?[\d\s-]{10,}$/.test(value.replace(/\s/g, ''));
   const emailValid = email && /\S+@\S+\.\S+/.test(email);
+  const phoneValid = isPhone(phoneNumber);
+  const identifierValid = signinMethod === 'email' ? emailValid : phoneValid;
   const passwordValid = password.length >= 6;
   const usernameValid = username.length >= 3 && username.length <= 30;
   const birthdateValid = birthdate && validateAge(birthdate) >= 13;
@@ -159,6 +167,7 @@ export default function MultiStepAuthPage() {
   const resetForm = () => {
     setEmail('');
     setPassword('');
+    setPhoneNumber('');
     setUsername('');
     setBirthdate('');
     setGender('');
@@ -223,22 +232,58 @@ export default function MultiStepAuthPage() {
         {/* Sign In Flow */}
         {authMode === 'signin' && (
           <div className="space-y-4">
-            {/* Email */}
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="email" 
-                placeholder="Email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 h-11 bg-transparent border-muted-foreground/30"
-                autoFocus
-              />
-              {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+            {/* Toggle between email/phone */}
+            <div className="flex gap-2 justify-center mb-2">
+              <Button 
+                variant={signinMethod === 'email' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setSigninMethod('email')}
+              >
+                <Mail className="h-4 w-4 mr-1" /> Email
+              </Button>
+              <Button 
+                variant={signinMethod === 'phone' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setSigninMethod('phone')}
+              >
+                <Phone className="h-4 w-4 mr-1" /> Phone
+              </Button>
             </div>
 
-            {/* Password - shows when email is valid */}
-            {emailValid && (
+            {/* Email input */}
+            {signinMethod === 'email' && (
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="email" 
+                  placeholder="Email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  autoFocus
+                />
+                {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+              </div>
+            )}
+
+            {/* Phone input */}
+            {signinMethod === 'phone' && (
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="tel" 
+                  placeholder="Phone number" 
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  autoFocus
+                />
+                {phoneValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+              </div>
+            )}
+
+            {/* Password - shows when identifier is valid */}
+            {identifierValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -251,6 +296,16 @@ export default function MultiStepAuthPage() {
                 />
                 {loading && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
+            )}
+
+            {/* Forgot password link */}
+            {identifierValid && (
+              <button
+                onClick={() => setShowForgotPassword(true)}
+                className="text-xs text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
             )}
           </div>
         )}
@@ -379,6 +434,12 @@ export default function MultiStepAuthPage() {
           By continuing, you agree to our Terms and Privacy Policy
         </p>
       </div>
+      
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   );
 }

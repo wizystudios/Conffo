@@ -5,7 +5,7 @@ import { UserConfessions } from '@/components/UserConfessions';
 import { UserSavedPosts } from '@/components/UserSavedPosts';
 import { UserLikedPosts } from '@/components/UserLikedPosts';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Ban, UserMinus } from 'lucide-react';
+import { MessageSquare, Ban, UserMinus, BadgeCheck } from 'lucide-react';
 import { Navigate, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,8 @@ import { LogOut } from 'lucide-react';
 import { blockUser, unblockUser, isUserBlocked } from '@/services/blockService';
 import { toast } from '@/hooks/use-toast';
 import { getCountryFlag } from '@/components/CountrySelector';
+import { StoryHighlights } from '@/components/StoryHighlights';
+import { VerificationBadgeRequest } from '@/components/VerificationBadgeRequest';
 
 interface ProfileData {
   id: string;
@@ -49,6 +51,7 @@ export default function ProfilePage() {
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
   const [isBlocked, setIsBlocked] = useState(false);
   const [isBlockLoading, setIsBlockLoading] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   // Handle tab from URL params
   useEffect(() => {
@@ -361,6 +364,9 @@ export default function ProfilePage() {
           </div>
         </div>
         
+        {/* Story Highlights */}
+        <StoryHighlights userId={userId || user?.id || ''} isOwnProfile={isOwnProfile} />
+        
         {/* Content - Own profile shows only posts, settings accessed via menu */}
         <div className="w-full">
           {isOwnProfile ? (
@@ -443,6 +449,12 @@ export default function ProfilePage() {
           onClose={() => setShowFollowersModal(false)}
           userId={userId || user?.id || ''}
           initialTab={followersModalTab}
+        />
+        
+        {/* Verification Request Modal */}
+        <VerificationBadgeRequest 
+          isOpen={showVerificationModal} 
+          onClose={() => setShowVerificationModal(false)} 
         />
       </div>
     </Layout>

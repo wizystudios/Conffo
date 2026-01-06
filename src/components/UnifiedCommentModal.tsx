@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, X, Heart, Reply, Users } from 'lucide-react';
+import { Send, MessageCircle, X, Heart, Reply, Users, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { haptic } from '@/utils/hapticFeedback';
 import { useNavigate } from 'react-router-dom';
+import { AudioCommentRecorder } from '@/components/AudioCommentRecorder';
+import { TreeComment } from '@/components/TreeComment';
 
 interface CommentWithProfile extends CommentType {
   username?: string;
@@ -59,6 +61,7 @@ export function UnifiedCommentModal({
   const [replyingTo, setReplyingTo] = useState<{ id: string; username: string } | null>(null);
   const [swipeY, setSwipeY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const dragStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -84,13 +87,38 @@ export function UnifiedCommentModal({
     }
   }, [isOpen, confessionId]);
 
+  // Build comment tree structure for nested replies
+  const buildCommentTree = (flatComments: CommentWithProfile[]): CommentWithProfile[] => {
+    const commentMap = new Map<string, CommentWithProfile>();
+    const roots: CommentWithProfile[] = [];
+
+    // First pass: create a map of all comments
+    flatComments.forEach(comment => {
+      commentMap.set(comment.id, { ...comment, replies: [] });
+    });
+
+    // Second pass: build tree structure
+    flatComments.forEach(comment => {
+      const mappedComment = commentMap.get(comment.id)!;
+      if (comment.parentCommentId && commentMap.has(comment.parentCommentId)) {
+        const parent = commentMap.get(comment.parentCommentId)!;
+        parent.replies = parent.replies || [];
+        parent.replies.push(mappedComment);
+      } else {
+        roots.push(mappedComment);
+      }
+    });
+
+    return roots;
+  };
+
   const fetchComments = async () => {
     try {
       const { data: commentsData, error } = await supabase
         .from('comments')
         .select('id, content, created_at, user_id, parent_comment_id')
         .eq('confession_id', confessionId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true }); // Ascending for proper tree building
 
       if (error) throw error;
 
@@ -158,7 +186,9 @@ export function UnifiedCommentModal({
         })
       );
 
-      setComments(commentsWithProfiles);
+      // Build tree and set comments
+      const commentTree = buildCommentTree(commentsWithProfiles);
+      setComments(commentTree);
       
       if (onCommentCountChange) {
         onCommentCountChange(commentsWithProfiles.length);
@@ -339,8 +369,8 @@ export function UnifiedCommentModal({
           </div>
         )}
 
-        {/* Comments List */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+        {/* Comments List - Tree Structure */}
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -353,63 +383,43 @@ export function UnifiedCommentModal({
             </div>
           ) : (
             comments.map((comment) => (
-              <div key={comment.id} className="bg-card rounded-xl p-3 shadow-sm border border-border/50">
-                <p className="text-sm mb-2">{comment.content}</p>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(comment.timestamp, { addSuffix: true })}
-                    </span>
-                    <Avatar 
-                      className="h-6 w-6 cursor-pointer" 
-                      onClick={() => navigate(`/profile/${comment.userId}`)}
-                    >
-                      <AvatarImage src={comment.avatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${comment.userId}`} />
-                      <AvatarFallback>{(comment.username || 'U').charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span 
-                      className="text-sm font-medium cursor-pointer hover:underline"
-                      onClick={() => navigate(`/profile/${comment.userId}`)}
-                    >
-                      {comment.username}
-                    </span>
-                    
-                    {/* Fan/Crew badges */}
-                    {(comment as any).isFollower && (
-                      <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 text-amber-600 border-amber-500/30">
-                        ⭐ Fan
-                      </Badge>
-                    )}
-                    {(comment as any).isFollowing && (
-                      <Badge variant="outline" className="text-[10px] h-5 bg-blue-500/10 text-blue-600 border-blue-500/30">
-                        <Users className="h-2.5 w-2.5 mr-0.5" /> Crew
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleLikeComment(comment.id)}
-                      className={`flex items-center gap-1 text-xs transition-colors ${
-                        comment.isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
-                      }`}
-                    >
-                      <Heart className={`h-4 w-4 ${comment.isLiked ? 'fill-current' : ''}`} />
-                      {(comment.likesCount || 0) > 0 && <span>{comment.likesCount}</span>}
-                    </button>
-                    
-                    {isAuthenticated && (
-                      <button
-                        onClick={() => setReplyingTo({ id: comment.id, username: comment.username || 'User' })}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-                      >
-                        <Reply className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <TreeComment
+                key={comment.id}
+                comment={{
+                  id: comment.id,
+                  content: comment.content,
+                  userId: comment.userId,
+                  confessionId: comment.confessionId,
+                  timestamp: comment.timestamp,
+                  parentCommentId: comment.parentCommentId,
+                  replies: comment.replies?.map(r => ({
+                    id: r.id,
+                    content: r.content,
+                    userId: r.userId,
+                    confessionId: r.confessionId,
+                    timestamp: r.timestamp,
+                    parentCommentId: r.parentCommentId,
+                    replies: r.replies
+                  }))
+                }}
+                onUpdate={fetchComments}
+                onReply={(commentId) => {
+                  const targetComment = comments.find(c => c.id === commentId) || 
+                    comments.flatMap(c => c.replies || []).find(r => r.id === commentId);
+                  if (targetComment) {
+                    setReplyingTo({ id: commentId, username: (targetComment as CommentWithProfile).username || 'User' });
+                  }
+                }}
+                replies={comment.replies?.map(r => ({
+                  id: r.id,
+                  content: r.content,
+                  userId: r.userId,
+                  confessionId: r.confessionId,
+                  timestamp: r.timestamp,
+                  parentCommentId: r.parentCommentId,
+                  replies: r.replies
+                })) || []}
+              />
             ))
           )}
         </div>
