@@ -31,6 +31,7 @@ const RecentPage = lazy(() => import("./pages/RecentPage"));
 const CreatePostPage = lazy(() => import("./pages/CreatePostPage"));
 const BlockedUsersPage = lazy(() => import("./pages/BlockedUsersPage"));
 const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
+const CommunitiesPage = lazy(() => import("./pages/CommunitiesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Import the LoadingFallback component
@@ -106,6 +107,7 @@ const App = () => {
                   <Route path="/create-post" element={<CreatePostPage />} />
                   <Route path="/blocked" element={<BlockedUsersPage />} />
                   <Route path="/notification-settings" element={<NotificationSettingsPage />} />
+                  <Route path="/communities" element={<CommunitiesPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />
