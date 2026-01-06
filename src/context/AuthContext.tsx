@@ -179,6 +179,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userWithProfile = await fetchUserProfile(session.user.id);
           setUser(userWithProfile);
           setIsLoading(false);
+          
+          // Dispatch auth-restored event for stories/moments refetch
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            window.dispatchEvent(new CustomEvent('auth-restored', { 
+              detail: { userId: session.user.id } 
+            }));
+          }
         }, 0);
       } else {
         setUser(null);

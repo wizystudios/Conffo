@@ -116,7 +116,7 @@ export function UnifiedCommentModal({
     try {
       const { data: commentsData, error } = await supabase
         .from('comments')
-        .select('id, content, created_at, user_id, parent_comment_id')
+        .select('id, content, created_at, user_id, parent_comment_id, audio_url, audio_duration_seconds, audio_waveform')
         .eq('confession_id', confessionId)
         .order('created_at', { ascending: true }); // Ascending for proper tree building
 
@@ -181,7 +181,10 @@ export function UnifiedCommentModal({
             likesCount: likesCount || 0,
             isLiked,
             isFollower,
-            isFollowing
+            isFollowing,
+            audioUrl: comment.audio_url,
+            audioDuration: comment.audio_duration_seconds,
+            audioWaveform: comment.audio_waveform as number[] | undefined
           };
         })
       );
@@ -441,28 +444,35 @@ export function UnifiedCommentModal({
               <AudioCommentRecorder
                 onRecordingComplete={async (audioBlob, duration) => {
                   try {
-                    // Upload audio to storage
-                    const fileName = `audio-comments/${Date.now()}-${Math.random().toString(36).substring(7)}.webm`;
+                    // Generate waveform data (simplified: random for now, can be replaced with real analysis)
+                    const waveformData = Array.from({ length: 30 }, () => Math.random() * 0.6 + 0.2);
+                    
+                    // Upload audio to correct bucket (comment_audio)
+                    const fileName = `${user!.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.webm`;
                     const { data: uploadData, error: uploadError } = await supabase.storage
-                      .from('stories')
+                      .from('comment_audio')
                       .upload(fileName, audioBlob, { contentType: 'audio/webm' });
                     
                     if (uploadError) throw uploadError;
                     
-                    const { data: { publicUrl } } = supabase.storage.from('stories').getPublicUrl(fileName);
+                    const { data: { publicUrl } } = supabase.storage.from('comment_audio').getPublicUrl(fileName);
                     
-                    // Create comment with audio reference
+                    // Create comment with structured audio fields
                     const { error } = await supabase.from('comments').insert({
                       confession_id: confessionId,
                       user_id: user!.id,
-                      content: `🎤 Voice comment (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}) - ${publicUrl}`,
-                      parent_comment_id: replyingTo?.id
+                      content: '🎤 Voice comment',
+                      parent_comment_id: replyingTo?.id,
+                      audio_url: publicUrl,
+                      audio_duration_seconds: Math.round(duration),
+                      audio_waveform: waveformData
                     });
                     
                     if (error) throw error;
                     
                     setShowAudioRecorder(false);
                     setReplyingTo(null);
+                    fetchComments(); // Refresh to show new audio comment
                     haptic.success();
                     if (onCommentSuccess) onCommentSuccess();
                   } catch (error) {
