@@ -9,6 +9,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { FishSuccessAnimation } from "./components/FishSuccessAnimation";
 import { useSuccessAnimation } from "./hooks/useSuccessAnimation";
+import { SplashScreen } from "./components/SplashScreen";
 import HomePage from "./pages/HomePage";
 
 // Use lazy loading for non-critical pages
@@ -37,6 +38,7 @@ import { LoadingFallback } from "./components/LoadingFallback";
 
 const App = () => {
   const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
+  const [showSplash, setShowSplash] = useState(true);
 
   // Create a new QueryClient instance with error handling
   const [queryClient] = useState(() => 
@@ -60,6 +62,19 @@ const App = () => {
     window.addEventListener('conffo-success', handleSuccess as EventListener);
     return () => window.removeEventListener('conffo-success', handleSuccess as EventListener);
   }, [triggerSuccess]);
+
+  // Check if splash was already shown this session
+  useEffect(() => {
+    const splashShown = sessionStorage.getItem('splashShown');
+    if (splashShown) {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    sessionStorage.setItem('splashShown', 'true');
+    setShowSplash(false);
+  };
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -69,6 +84,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <AuthProvider>
+              {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
               <Suspense fallback={null}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />

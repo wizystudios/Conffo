@@ -3,11 +3,14 @@ import { ReactNode, Component, useState } from 'react';
 import { NavBar } from './NavBar';
 import { Footer } from './Footer';
 import { BottomNavigation } from './BottomNavigation';
+import { DesktopSidebar } from './DesktopSidebar';
+import { DesktopRightSidebar } from './DesktopRightSidebar';
 import { useIncomingCalls } from "@/hooks/useIncomingCalls";
 import { IncomingCallModal } from "@/components/IncomingCallModal";
 import { CallInterface } from "@/components/CallInterface";
 import { WebRTCService } from "@/services/webRTCService";
 import { MessageNotification } from "@/components/MessageNotification";
+import { useAuth } from "@/context/AuthContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -51,8 +54,9 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}
   }
 }
 
-export function Layout({ children }: LayoutProps) {
+function LayoutContent({ children }: LayoutProps) {
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
+  const { isAuthenticated } = useAuth();
   const [activeCall, setActiveCall] = useState<{
     webRTCService: WebRTCService;
     targetUserId: string;
@@ -80,37 +84,59 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Desktop Layout - unique 3-column design */}
+      <div className="hidden lg:block">
+        {isAuthenticated && <DesktopSidebar />}
+        <div className={`${isAuthenticated ? 'ml-64 xl:mr-80' : ''}`}>
+          <main className="min-h-screen py-4">
+            <div className="w-full max-w-2xl mx-auto px-4">
+              {children}
+            </div>
+          </main>
+        </div>
+        {isAuthenticated && <DesktopRightSidebar />}
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden">
         <NavBar />
-        <main className="flex-grow pt-11 pb-12 md:pb-2">
-          <div className="w-full max-w-2xl mx-auto px-0 sm:px-4 lg:px-6">
+        <main className="flex-grow pt-11 pb-12">
+          <div className="w-full max-w-2xl mx-auto px-0 sm:px-4">
             {children}
           </div>
         </main>
         <BottomNavigation />
-        
-        {/* Message Notification */}
-        <MessageNotification />
-        
-        {/* Incoming Call Modal */}
-        <IncomingCallModal
-          callSignal={incomingCall}
-          onAccept={handleAcceptCall}
-          onDecline={handleDeclineCall}
-        />
-
-        {/* Active Call Interface */}
-        {activeCall && (
-          <CallInterface
-            isOpen={true}
-            onClose={handleEndCall}
-            callType={activeCall.callType}
-            targetUserId={activeCall.targetUserId}
-            targetUsername={activeCall.targetUsername}
-          />
-        )}
       </div>
+      
+      {/* Message Notification */}
+      <MessageNotification />
+      
+      {/* Incoming Call Modal */}
+      <IncomingCallModal
+        callSignal={incomingCall}
+        onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall}
+      />
+
+      {/* Active Call Interface */}
+      {activeCall && (
+        <CallInterface
+          isOpen={true}
+          onClose={handleEndCall}
+          callType={activeCall.callType}
+          targetUserId={activeCall.targetUserId}
+          targetUsername={activeCall.targetUsername}
+        />
+      )}
+    </div>
+  );
+}
+
+export function Layout({ children }: LayoutProps) {
+  return (
+    <ErrorBoundary>
+      <LayoutContent>{children}</LayoutContent>
     </ErrorBoundary>
   );
 }

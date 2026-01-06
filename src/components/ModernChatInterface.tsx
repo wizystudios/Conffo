@@ -355,13 +355,11 @@ export function ModernChatInterface({
           {isTargetOnline && <span className="text-[10px] text-green-500">Active now</span>}
         </button>
         
-        {/* Action icons below profile - no border/line */}
+        {/* Action icons below profile - no border/line, no call buttons */}
         <div className="flex items-center gap-4 mt-2">
           <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-8 w-8">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <CallButton targetUserId={targetUserId} targetUsername={displayName} targetAvatarUrl={displayAvatar} type="audio" />
-          <CallButton targetUserId={targetUserId} targetUsername={displayName} targetAvatarUrl={displayAvatar} type="video" />
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSearch(true)}>
             <Search className="h-4 w-4" />
           </Button>
