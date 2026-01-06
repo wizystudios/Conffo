@@ -338,7 +338,7 @@ export function ModernChatInterface({
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header - Profile centered at top */}
-      <div className="flex flex-col items-center pt-4 pb-2 bg-background border-b border-border">
+      <div className="flex flex-col items-center pt-4 pb-2 bg-background">
         {/* Centered profile */}
         <button 
           className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
@@ -351,11 +351,11 @@ export function ModernChatInterface({
             </Avatar>
             <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />
           </div>
-          <h3 className="font-semibold text-sm">{displayName}</h3>
+          <h3 className="font-semibold text-xs">{displayName}</h3>
           {isTargetOnline && <span className="text-[10px] text-green-500">Active now</span>}
         </button>
         
-        {/* Action icons below profile */}
+        {/* Action icons below profile - no border/line */}
         <div className="flex items-center gap-4 mt-2">
           <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-8 w-8">
             <ArrowLeft className="h-4 w-4" />
@@ -548,7 +548,7 @@ export function ModernChatInterface({
                     sendTypingEvent();
                   }}
                   placeholder="Message..."
-                  className="flex-1 border-0 bg-transparent h-7 text-sm focus-visible:ring-0 px-0"
+                  className="flex-1 border-0 bg-transparent h-7 text-xs focus-visible:ring-0 px-0"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();

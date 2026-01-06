@@ -244,35 +244,7 @@ const HomePage = () => {
     }
   }, [pullDistance, isRefreshing, refetchRecent, refetchFans]);
 
-  // Swipe gesture handlers for tabs
-  const handleSwipeStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleSwipeMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleSwipeEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      if (activeTab === 'fans') setActiveTab('all');
-      else if (activeTab === 'all') setActiveTab('crew');
-    }
-    
-    if (isRightSwipe) {
-      if (activeTab === 'crew') setActiveTab('all');
-      else if (activeTab === 'all') setActiveTab('fans');
-    }
-
-    setTouchStart(0);
-    setTouchEnd(0);
-  };
+  // Removed swipe gesture handlers for tabs - users can use tab buttons instead
 
   const handleManualRefresh = async () => {
     haptic.medium();
@@ -311,9 +283,9 @@ const HomePage = () => {
       />
       
       <div
-        onTouchStart={(e) => { handlePullTouchStart(e); handleSwipeStart(e); }}
-        onTouchMove={(e) => { handlePullTouchMove(e); handleSwipeMove(e); }}
-        onTouchEnd={() => { handlePullTouchEnd(); handleSwipeEnd(); }}
+        onTouchStart={handlePullTouchStart}
+        onTouchMove={handlePullTouchMove}
+        onTouchEnd={handlePullTouchEnd}
       >
         {/* Tab bar */}
         <div className="px-2 py-1.5">

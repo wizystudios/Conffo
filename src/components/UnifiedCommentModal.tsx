@@ -321,6 +321,7 @@ export function UnifiedCommentModal({
         style={{ transform: `translateY(${swipeY}px)` }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Prevent scrolling to other posts - this modal is isolated */}
         {/* Drag handle */}
         <div 
           className="py-3 flex justify-center cursor-grab active:cursor-grabbing"
