@@ -239,8 +239,26 @@ export default function ProfilePage() {
   if (isLoading || isLoadingProfile) {
     return (
       <Layout>
-        <div className="flex justify-center items-center py-12">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-full max-w-2xl mx-auto">
+          {/* Profile Header Skeleton */}
+          <div className="px-3 sm:px-4 py-4">
+            <div className="flex items-start gap-4 animate-pulse">
+              <div className="h-20 w-20 rounded-full bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-24 bg-muted rounded" />
+                <div className="h-4 w-48 bg-muted rounded" />
+                <div className="flex gap-4 mt-2">
+                  <div className="h-4 w-16 bg-muted rounded" />
+                  <div className="h-4 w-16 bg-muted rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Content Skeleton */}
+          <div className="px-3 space-y-3 animate-pulse">
+            <div className="h-32 bg-muted rounded-lg" />
+            <div className="h-32 bg-muted rounded-lg" />
+          </div>
         </div>
       </Layout>
     );

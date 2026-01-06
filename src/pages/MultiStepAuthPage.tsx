@@ -232,22 +232,20 @@ export default function MultiStepAuthPage() {
         {/* Sign In Flow */}
         {authMode === 'signin' && (
           <div className="space-y-4">
-            {/* Toggle between email/phone */}
-            <div className="flex gap-2 justify-center mb-2">
-              <Button 
-                variant={signinMethod === 'email' ? 'default' : 'outline'} 
-                size="sm"
+            {/* Toggle between email/phone - text only, no buttons */}
+            <div className="flex gap-4 justify-center mb-2">
+              <button 
                 onClick={() => setSigninMethod('email')}
+                className={`text-sm flex items-center gap-1 ${signinMethod === 'email' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
               >
-                <Mail className="h-4 w-4 mr-1" /> Email
-              </Button>
-              <Button 
-                variant={signinMethod === 'phone' ? 'default' : 'outline'} 
-                size="sm"
+                <Mail className="h-3 w-3" /> Email
+              </button>
+              <button 
                 onClick={() => setSigninMethod('phone')}
+                className={`text-sm flex items-center gap-1 ${signinMethod === 'phone' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
               >
-                <Phone className="h-4 w-4 mr-1" /> Phone
-              </Button>
+                <Phone className="h-3 w-3" /> Phone
+              </button>
             </div>
 
             {/* Email input - smaller, no box */}
@@ -310,83 +308,118 @@ export default function MultiStepAuthPage() {
           </div>
         )}
 
-        {/* Sign Up Flow */}
+        {/* Sign Up Flow - matching signin design */}
         {authMode === 'signup' && (
           <div className="space-y-4">
-            {/* Email */}
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="email" 
-                placeholder="Email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 h-11 bg-transparent border-muted-foreground/30"
-                autoFocus={signupStep === 'email'}
-                disabled={signupStep !== 'email'}
-              />
-              {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+            {/* Toggle between email/phone - text only, no buttons */}
+            <div className="flex gap-4 justify-center mb-2">
+              <button 
+                onClick={() => setSigninMethod('email')}
+                className={`text-sm flex items-center gap-1 ${signinMethod === 'email' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+              >
+                <Mail className="h-3 w-3" /> Email
+              </button>
+              <button 
+                onClick={() => setSigninMethod('phone')}
+                className={`text-sm flex items-center gap-1 ${signinMethod === 'phone' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+              >
+                <Phone className="h-3 w-3" /> Phone
+              </button>
             </div>
 
-            {/* Password */}
-            {emailValid && (
+            {/* Email - smaller, no box */}
+            {signinMethod === 'email' && (
+              <div className="relative">
+                <Mail className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Input 
+                  type="email" 
+                  placeholder="Email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  autoFocus={signupStep === 'email'}
+                  disabled={signupStep !== 'email'}
+                />
+                {emailValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+              </div>
+            )}
+
+            {/* Phone - smaller, no box */}
+            {signinMethod === 'phone' && (
+              <div className="relative">
+                <Phone className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Input 
+                  type="tel" 
+                  placeholder="Phone number" 
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  autoFocus={signupStep === 'email'}
+                  disabled={signupStep !== 'email'}
+                />
+                {phoneValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+              </div>
+            )}
+
+            {/* Password - smaller, no box */}
+            {(emailValid || phoneValid) && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                 <Input 
                   type="password" 
                   placeholder="Password (6+ characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
                   autoFocus={signupStep === 'password'}
                   disabled={signupStep !== 'password'}
                 />
-                {passwordValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {passwordValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
               </div>
             )}
 
-            {/* Username */}
+            {/* Username - smaller, no box */}
             {passwordValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                 <Input 
                   type="text" 
                   placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
                   autoFocus={signupStep === 'username'}
                   disabled={signupStep !== 'username'}
                   minLength={3}
                   maxLength={30}
                 />
-                {usernameValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {usernameValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
               </div>
             )}
 
-            {/* Birthdate */}
+            {/* Birthdate - smaller, no box */}
             {usernameValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Calendar className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
                 <Input 
                   type="date" 
                   placeholder="Date of birth"
                   value={birthdate}
                   onChange={(e) => setBirthdate(e.target.value)}
-                  className="pl-10 h-11 bg-transparent border-muted-foreground/30"
+                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
                   autoFocus={signupStep === 'birthdate'}
                   disabled={signupStep !== 'birthdate'}
                   max={new Date(Date.now() - 13 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                 />
-                {birthdateValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {birthdateValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
               </div>
             )}
 
-            {/* Gender */}
+            {/* Gender - smaller, styled to match */}
             {birthdateValid && (
               <div className="animate-in fade-in slide-in-from-bottom-2">
                 <Select value={gender} onValueChange={setGender} disabled={signupStep !== 'gender'}>
-                  <SelectTrigger className="h-11 bg-transparent border-muted-foreground/30">
+                  <SelectTrigger className="h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -398,7 +431,7 @@ export default function MultiStepAuthPage() {
                 </Select>
                 {loading && (
                   <div className="flex items-center justify-center mt-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
               </div>
