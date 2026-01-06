@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, MessageCircle, LogIn, Plus, Search } from 'lucide-react';
+import { Home, MessageCircle, LogIn, Plus, Search, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,9 +31,12 @@ export function BottomNavigation() {
           <Home className={`h-5 w-5 ${isActive('/') ? 'text-primary' : 'text-muted-foreground'}`} />
         </Link>
         
-        <Link to="/search" className="flex flex-col items-center py-1 px-3">
-          <Search className={`h-5 w-5 ${isActive('/search') ? 'text-primary' : 'text-muted-foreground'}`} />
-        </Link>
+        {/* Only show search when logged in */}
+        {isAuthenticated && (
+          <Link to="/search" className="flex flex-col items-center py-1 px-3">
+            <Search className={`h-5 w-5 ${isActive('/search') ? 'text-primary' : 'text-muted-foreground'}`} />
+          </Link>
+        )}
         
         {isAuthenticated && (
           <Button 

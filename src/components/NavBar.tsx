@@ -78,39 +78,35 @@ export function NavBar() {
           </DropdownMenuContent>
         </DropdownMenu>
         
-        {/* Right side - Notifications and Menu */}
+        {/* Right side - Notifications and Menu (only when authenticated) */}
         <div className="flex items-center gap-1">
-          {isAuthenticated && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="relative h-9 w-9"
-              onClick={() => navigate('/notifications')}
-            >
-              {showNotificationBadge ? (
-                <>
-                  <BellDot className="h-5 w-5" />
-                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary text-[10px]">
-                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                  </Badge>
-                </>
-              ) : (
-                <Bell className="h-5 w-5" />
-              )}
-            </Button>
-          )}
-          
-          {/* Menu Button */}
           {isAuthenticated ? (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleMenuToggle}>
-              <ChevronDown className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Link to="/auth">
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <Bell className="h-5 w-5" />
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative h-9 w-9"
+                onClick={() => navigate('/notifications')}
+              >
+                {showNotificationBadge ? (
+                  <>
+                    <BellDot className="h-5 w-5" />
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary text-[10px]">
+                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                    </Badge>
+                  </>
+                ) : (
+                  <Bell className="h-5 w-5" />
+                )}
               </Button>
-            </Link>
+              
+              {/* Menu Button */}
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleMenuToggle}>
+                <ChevronDown className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <div className="w-9" /> 
           )}
         </div>
       </div>

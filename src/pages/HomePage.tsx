@@ -287,8 +287,8 @@ const HomePage = () => {
         onTouchMove={handlePullTouchMove}
         onTouchEnd={handlePullTouchEnd}
       >
-        {/* Tab bar */}
-        <div className="px-2 py-1.5">
+        {/* Tab bar with more spacing from logo */}
+        <div className="px-2 py-1.5 mt-2">
           <div className="flex items-center justify-center gap-1">
             <Button
               variant="ghost"
