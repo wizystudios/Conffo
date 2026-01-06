@@ -436,11 +436,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DoubleTapHeart>
       )}
       
-      {/* Content */}
+      {/* Content - Caption starts right after username, no line break */}
       <div className="px-4 pt-3">
         <div className="mb-3">
-          <p className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden">
-            <span className="font-semibold mr-1.5">
+          <p className="text-sm leading-relaxed break-words overflow-hidden">
+            <span className="font-semibold mr-1">
               <UsernameDisplay 
                 userId={confession.userId}
                 showAvatar={false}
@@ -448,15 +448,14 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 linkToProfile={true}
                 showStoryIndicator={false}
               />
-            </span>
-            {displayContent}
+            </span>{displayContent}
           </p>
           {shouldTruncate && !showFullContent && (
             <button 
               onClick={() => setShowFullContent(true)}
               className="text-muted-foreground text-sm mt-1 hover:text-foreground"
             >
-              Show more
+              more
             </button>
           )}
         </div>

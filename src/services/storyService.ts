@@ -93,9 +93,12 @@ export async function uploadStoryMedia(file: File, userId: string) {
  */
 export async function getUserStories(userId: string, viewerId?: string): Promise<Story[]> {
   try {
+    // Query stories directly from the stories table to ensure persistence
     const { data, error } = await supabase
-      .rpc('get_active_stories', { user_uuid: viewerId || null })
+      .from('stories')
+      .select('*')
       .eq('user_id', userId)
+      .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -103,7 +106,7 @@ export async function getUserStories(userId: string, viewerId?: string): Promise
       return [];
     }
 
-    return data.map((story: any) => ({
+    return (data || []).map((story: any) => ({
       id: story.id,
       userId: story.user_id,
       mediaUrl: story.media_url,
@@ -112,7 +115,7 @@ export async function getUserStories(userId: string, viewerId?: string): Promise
       effects: story.effects,
       createdAt: story.created_at,
       expiresAt: story.expires_at,
-      isViewed: story.is_viewed,
+      isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
     }));
   } catch (error) {
     console.error('Error in getUserStories:', error);
@@ -125,8 +128,11 @@ export async function getUserStories(userId: string, viewerId?: string): Promise
  */
 export async function getActiveStories(viewerId?: string): Promise<Story[]> {
   try {
+    // Query stories directly from the stories table
     const { data, error } = await supabase
-      .rpc('get_active_stories', { user_uuid: viewerId || null })
+      .from('stories')
+      .select('*')
+      .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -134,7 +140,7 @@ export async function getActiveStories(viewerId?: string): Promise<Story[]> {
       return [];
     }
 
-    return data.map((story: any) => ({
+    return (data || []).map((story: any) => ({
       id: story.id,
       userId: story.user_id,
       mediaUrl: story.media_url,
@@ -143,7 +149,7 @@ export async function getActiveStories(viewerId?: string): Promise<Story[]> {
       effects: story.effects,
       createdAt: story.created_at,
       expiresAt: story.expires_at,
-      isViewed: story.is_viewed,
+      isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
     }));
   } catch (error) {
     console.error('Error in getActiveStories:', error);
