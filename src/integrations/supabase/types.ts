@@ -116,6 +116,9 @@ export type Database = {
       }
       comments: {
         Row: {
+          audio_duration_seconds: number | null
+          audio_url: string | null
+          audio_waveform: Json | null
           confession_id: string
           content: string
           created_at: string
@@ -124,6 +127,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          audio_duration_seconds?: number | null
+          audio_url?: string | null
+          audio_waveform?: Json | null
           confession_id: string
           content: string
           created_at?: string
@@ -132,6 +138,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          audio_duration_seconds?: number | null
+          audio_url?: string | null
+          audio_waveform?: Json | null
           confession_id?: string
           content?: string
           created_at?: string
