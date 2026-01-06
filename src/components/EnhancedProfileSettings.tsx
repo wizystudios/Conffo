@@ -170,8 +170,10 @@ export function EnhancedProfileSettings() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center p-8">
-        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="space-y-4 animate-pulse">
+        <div className="h-48 bg-muted rounded-lg" />
+        <div className="h-32 bg-muted rounded-lg" />
+        <div className="h-24 bg-muted rounded-lg" />
       </div>
     );
   }
@@ -258,6 +260,9 @@ export function EnhancedProfileSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Contact Information</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            These can be used as alternative login methods for your account
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -269,6 +274,7 @@ export function EnhancedProfileSettings() {
               onChange={(e) => setFormData(prev => ({ ...prev, contact_email: e.target.value }))}
               placeholder="contact@email.com"
             />
+            <p className="text-xs text-muted-foreground mt-1">Can be used to sign in to your account</p>
           </div>
           <div>
             <Label htmlFor="contact_phone">Contact Phone</Label>
@@ -278,6 +284,7 @@ export function EnhancedProfileSettings() {
               onChange={(e) => setFormData(prev => ({ ...prev, contact_phone: e.target.value }))}
               placeholder="+1 (555) 123-4567"
             />
+            <p className="text-xs text-muted-foreground mt-1">Can be used to sign in to your account</p>
           </div>
         </CardContent>
       </Card>
