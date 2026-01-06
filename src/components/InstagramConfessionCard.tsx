@@ -495,6 +495,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                   onSave={handleSave}
                   isPaused={isVideoPaused}
                   onTogglePlay={handleVideoTap}
+                  isFullscreen={false}
                 />
               </div>
             ) : (
