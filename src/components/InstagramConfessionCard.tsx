@@ -371,12 +371,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   return (
     <div className="w-full bg-background mb-0 border-b border-border">
-      {/* Header - no rounded corners */}
+      {/* Header - Username, Room Tag, and Time */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-3">
-          <div className="bg-primary/10 text-primary px-2 py-1 text-xs font-medium">
-            #{confession.room}
-          </div>
           <UsernameDisplay 
             userId={confession.userId}
             showAvatar={true}
@@ -384,9 +381,11 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             linkToProfile={true}
             showStoryIndicator={true}
           />
+          <span className="text-muted-foreground text-sm">·</span>
+          <span className="text-muted-foreground text-sm">{formatTimeShort(new Date(confession.timestamp))}</span>
           {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
             <>
-              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground">·</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -426,6 +425,30 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
+      {/* Caption ABOVE media - Like Facebook style with larger text */}
+      {confession.content && (
+        <div className="px-4 pb-3">
+          <p className="text-base leading-relaxed break-words overflow-hidden">
+            {displayContent}
+          </p>
+          {shouldTruncate && !showFullContent && (
+            <button 
+              onClick={() => setShowFullContent(true)}
+              className="text-primary text-sm mt-1 hover:underline font-medium"
+            >
+              See more
+            </button>
+          )}
+        </div>
+      )}
+      
+      {/* Room Tag */}
+      <div className="px-4 pb-2">
+        <div className="inline-block bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium rounded-full">
+          #{confession.room}
+        </div>
+      </div>
+      
       {/* Media Carousel with Double Tap - no rounded corners */}
       {mediaArray.length > 0 && (
         <DoubleTapHeart 
@@ -435,31 +458,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           <MediaCarouselDisplay media={mediaArray} />
         </DoubleTapHeart>
       )}
-      
-      {/* Content - Caption starts right after username, no line break */}
-      <div className="px-4 pt-3">
-        <div className="mb-3">
-          <p className="text-sm leading-relaxed break-words overflow-hidden">
-            <span className="font-semibold mr-1">
-              <UsernameDisplay 
-                userId={confession.userId}
-                showAvatar={false}
-                size="sm"
-                linkToProfile={true}
-                showStoryIndicator={false}
-              />
-            </span>{displayContent}
-          </p>
-          {shouldTruncate && !showFullContent && (
-            <button 
-              onClick={() => setShowFullContent(true)}
-              className="text-muted-foreground text-sm mt-1 hover:text-foreground"
-            >
-              more
-            </button>
-          )}
-        </div>
-      </div>
       
       {/* Actions */}
       <div className="px-4 pt-1 pb-3">

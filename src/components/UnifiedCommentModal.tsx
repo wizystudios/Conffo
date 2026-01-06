@@ -436,23 +436,70 @@ export function UnifiedCommentModal({
                 </Button>
               </div>
             )}
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Textarea 
-                value={newComment} 
-                onChange={(e) => setNewComment(e.target.value)} 
-                placeholder={replyingTo ? "Write a reply..." : "Add a comment..."} 
-                className="min-h-[40px] text-sm resize-none rounded-xl" 
-                rows={1} 
+            
+            {showAudioRecorder ? (
+              <AudioCommentRecorder
+                onRecordingComplete={async (audioBlob, duration) => {
+                  try {
+                    // Upload audio to storage
+                    const fileName = `audio-comments/${Date.now()}-${Math.random().toString(36).substring(7)}.webm`;
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                      .from('stories')
+                      .upload(fileName, audioBlob, { contentType: 'audio/webm' });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: { publicUrl } } = supabase.storage.from('stories').getPublicUrl(fileName);
+                    
+                    // Create comment with audio reference
+                    const { error } = await supabase.from('comments').insert({
+                      confession_id: confessionId,
+                      user_id: user!.id,
+                      content: `🎤 Voice comment (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}) - ${publicUrl}`,
+                      parent_comment_id: replyingTo?.id
+                    });
+                    
+                    if (error) throw error;
+                    
+                    setShowAudioRecorder(false);
+                    setReplyingTo(null);
+                    haptic.success();
+                    if (onCommentSuccess) onCommentSuccess();
+                  } catch (error) {
+                    console.error('Error uploading audio:', error);
+                    toast({ variant: "destructive", description: "Failed to upload audio" });
+                  }
+                }}
+                onCancel={() => setShowAudioRecorder(false)}
               />
-              <Button 
-                type="submit" 
-                disabled={!newComment.trim() || isSubmitting} 
-                size="icon"
-                className="h-10 w-10 rounded-xl"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowAudioRecorder(true)}
+                  className="h-10 w-10 rounded-xl flex-shrink-0"
+                >
+                  <Mic className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <Textarea 
+                  value={newComment} 
+                  onChange={(e) => setNewComment(e.target.value)} 
+                  placeholder={replyingTo ? "Write a reply..." : "Add a comment..."} 
+                  className="min-h-[40px] text-sm resize-none rounded-xl flex-1" 
+                  rows={1} 
+                />
+                <Button 
+                  type="submit" 
+                  disabled={!newComment.trim() || isSubmitting} 
+                  size="icon"
+                  className="h-10 w-10 rounded-xl flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            )}
           </div>
         ) : (
           <div className="border-t border-border p-3 text-center">
