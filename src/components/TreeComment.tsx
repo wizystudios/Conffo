@@ -151,6 +151,10 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
             {/* Audio waveform player if comment has audio */}
             {comment.audioUrl && (
               <div className="mt-1 mb-1">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <span>🎤</span>
+                  <span>Voice comment</span>
+                </div>
                 <AudioWaveformPlayer 
                   audioUrl={comment.audioUrl}
                   duration={comment.audioDuration || 0}
@@ -159,8 +163,8 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
               </div>
             )}
             
-            {/* Text content */}
-            {comment.content && !comment.content.startsWith('🎤') && (
+            {/* Text content - only show if there's actual text and no audio */}
+            {comment.content && !comment.content.startsWith('🎤') && !comment.audioUrl && (
               <p className="text-xs whitespace-pre-wrap break-words">{comment.content}</p>
             )}
           </div>

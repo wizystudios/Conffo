@@ -62,6 +62,29 @@ export async function markAllNotificationsAsRead(userId: string) {
 }
 
 /**
+ * Marks a single notification as read
+ * @param notificationId The ID of the notification
+ */
+export async function markNotificationAsRead(notificationId: string) {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in markNotificationAsRead:', error);
+    return false;
+  }
+}
+
+/**
  * Deletes a notification by ID
  * @param notificationId The ID of the notification to delete
  */
