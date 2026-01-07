@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { ArrowLeft, Send, Mic, Image, Video, MoreVertical, Users, UserPlus, X, Play } from 'lucide-react';
+import { ArrowLeft, Send, Mic, Image, MoreVertical, Users, UserPlus, X, Play, Reply, Shield, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,7 +7,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +17,9 @@ import {
   CommunityMessage, 
   getCommunityMessages, 
   sendCommunityMessage,
-  getCommunityMembers
+  getCommunityMembers,
+  getJoinRequests,
+  JoinRequest
 } from '@/services/communityService';
 import { formatDistanceToNow } from 'date-fns';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
@@ -28,9 +31,10 @@ interface CommunityChatProps {
   onBack: () => void;
   onShowMembers: () => void;
   onAddMembers: () => void;
+  onShowRequests?: () => void;
 }
 
-export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }: CommunityChatProps) {
+export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, onShowRequests }: CommunityChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -39,6 +43,8 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
   const [memberCount, setMemberCount] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: 'image' | 'video'; file: File } | null>(null);
+  const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isCreator = community.creatorId === user?.id;
@@ -46,6 +52,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
   useEffect(() => {
     loadMessages();
     loadMemberCount();
+    if (isCreator) loadPendingRequests();
     
     // Subscribe to real-time messages
     const channel = supabase
@@ -104,10 +111,14 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
     setMemberCount(members.length);
   };
 
+  const loadPendingRequests = async () => {
+    const requests = await getJoinRequests(community.id);
+    setPendingRequestsCount(requests.length);
+  };
+
   const handleSend = async () => {
     if (!user) return;
     
-    // If there's media preview, send media message
     if (mediaPreview) {
       await handleSendMedia();
       return;
@@ -117,8 +128,10 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
     
     const content = newMessage.trim();
     setNewMessage('');
+    const replyId = replyTo?.id;
+    setReplyTo(null);
     
-    const result = await sendCommunityMessage(community.id, content);
+    const result = await sendCommunityMessage(community.id, content, 'text', undefined, undefined, replyId);
     if (!result) {
       toast({ variant: 'destructive', description: 'Failed to send message' });
     } else {
@@ -138,7 +151,6 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
       return;
     }
     
-    // Check file size (max 50MB for video, 10MB for image)
     const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({ variant: 'destructive', description: `File too large. Max ${isVideo ? '50MB' : '10MB'}` });
@@ -148,7 +160,6 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
     const url = URL.createObjectURL(file);
     setMediaPreview({ url, type: isImage ? 'image' : 'video', file });
     
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -173,8 +184,10 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
       const { data: { publicUrl } } = supabase.storage.from('chat-media').getPublicUrl(fileName);
       
       const caption = newMessage.trim() || (mediaPreview.type === 'image' ? '📷 Photo' : '🎬 Video');
+      const replyId = replyTo?.id;
+      setReplyTo(null);
       
-      await sendCommunityMessage(community.id, caption, mediaPreview.type, publicUrl);
+      await sendCommunityMessage(community.id, caption, mediaPreview.type, publicUrl, undefined, replyId);
       
       URL.revokeObjectURL(mediaPreview.url);
       setMediaPreview(null);
@@ -192,7 +205,6 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
     if (!user) return;
     
     try {
-      // Upload audio
       const fileName = `${community.id}/${user.id}/${Date.now()}.webm`;
       const { error: uploadError } = await supabase.storage
         .from('chat-media')
@@ -201,8 +213,10 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
       if (uploadError) throw uploadError;
       
       const { data: { publicUrl } } = supabase.storage.from('chat-media').getPublicUrl(fileName);
+      const replyId = replyTo?.id;
+      setReplyTo(null);
       
-      await sendCommunityMessage(community.id, '🎤 Voice message', 'audio', publicUrl, Math.round(duration));
+      await sendCommunityMessage(community.id, '🎤 Voice message', 'audio', publicUrl, Math.round(duration), replyId);
       setShowVoiceRecorder(false);
       haptic.success();
     } catch (error) {
@@ -216,6 +230,11 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
       URL.revokeObjectURL(mediaPreview.url);
       setMediaPreview(null);
     }
+  };
+
+  const handleReply = (msg: CommunityMessage) => {
+    setReplyTo(msg);
+    haptic.light();
   };
 
   return (
@@ -240,8 +259,13 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Button variant="ghost" size="icon" className="h-9 w-9 relative">
               <MoreVertical className="h-5 w-5" />
+              {isCreator && pendingRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {pendingRequestsCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -250,10 +274,23 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
               View Members
             </DropdownMenuItem>
             {isCreator && (
-              <DropdownMenuItem onClick={onAddMembers}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Members
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem onClick={onAddMembers}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Members
+                </DropdownMenuItem>
+                {onShowRequests && (
+                  <DropdownMenuItem onClick={onShowRequests}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Join Requests
+                    {pendingRequestsCount > 0 && (
+                      <span className="ml-auto text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+                        {pendingRequestsCount}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                )}
+              </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -276,7 +313,11 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
             const isOwn = msg.senderId === user?.id;
             
             return (
-              <div key={msg.id} className={`flex gap-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <div 
+                key={msg.id} 
+                className={`flex gap-2 ${isOwn ? 'justify-end' : 'justify-start'}`}
+                onClick={() => !isOwn && handleReply(msg)}
+              >
                 {!isOwn && (
                   <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={msg.senderAvatar} />
@@ -289,6 +330,16 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
                 <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
                   {!isOwn && (
                     <p className="text-xs text-muted-foreground mb-0.5 ml-1">{msg.senderName}</p>
+                  )}
+                  
+                  {/* Reply quote */}
+                  {msg.replyToMessage && (
+                    <div className={`text-xs px-2 py-1 mb-1 rounded-lg border-l-2 border-primary/50 ${
+                      isOwn ? 'bg-primary/10' : 'bg-muted/50'
+                    }`}>
+                      <p className="text-[10px] text-primary font-medium">{msg.replyToMessage.senderName}</p>
+                      <p className="text-muted-foreground line-clamp-1">{msg.replyToMessage.content}</p>
+                    </div>
                   )}
                   
                   <div className={`rounded-2xl overflow-hidden ${
@@ -306,7 +357,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
                           src={msg.mediaUrl} 
                           alt="" 
                           className="rounded-2xl max-w-[250px] max-h-[300px] object-cover cursor-pointer"
-                          onClick={() => window.open(msg.mediaUrl, '_blank')}
+                          onClick={(e) => { e.stopPropagation(); window.open(msg.mediaUrl, '_blank'); }}
                         />
                         {msg.content && !msg.content.startsWith('📷') && (
                           <div className={`px-3 py-1.5 text-sm ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
@@ -321,6 +372,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
                           className="rounded-2xl max-w-[250px] max-h-[300px] object-cover"
                           controls
                           playsInline
+                          onClick={(e) => e.stopPropagation()}
                         />
                         {msg.content && !msg.content.startsWith('🎬') && (
                           <div className={`px-3 py-1.5 text-sm ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
@@ -333,9 +385,19 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
                     )}
                   </div>
                   
-                  <p className="text-[10px] text-muted-foreground mt-0.5 ml-1">
-                    {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 ml-1">
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                    </p>
+                    {!isOwn && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleReply(msg); }}
+                        className="text-[10px] text-primary hover:underline"
+                      >
+                        Reply
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -343,6 +405,20 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Reply Preview */}
+      {replyTo && (
+        <div className="px-3 py-2 border-t border-border bg-muted/50 flex items-center gap-2">
+          <Reply className="h-4 w-4 text-primary" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-primary">{replyTo.senderName}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">{replyTo.content}</p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyTo(null)}>
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
 
       {/* Media Preview */}
       {mediaPreview && (
@@ -384,7 +460,6 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
           />
         ) : (
           <div className="flex items-center gap-2">
-            {/* Media upload button */}
             <Button
               variant="ghost"
               size="icon"
@@ -405,7 +480,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers }
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={mediaPreview ? "Add a caption..." : "Message..."}
+              placeholder={mediaPreview ? "Add a caption..." : replyTo ? `Reply to ${replyTo.senderName}...` : "Message..."}
               className="flex-1 rounded-full bg-muted border-0"
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             />

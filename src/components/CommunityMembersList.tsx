@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
-import { X, Crown, Shield, UserMinus, Check } from 'lucide-react';
+import { X, Crown, Shield, UserMinus, Check, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { 
   getCommunityMembers, 
   removeCommunityMember, 
   CommunityMember,
   getConnectionsForCommunity,
-  addCommunityMember
+  addCommunityMember,
+  updateMemberRole
 } from '@/services/communityService';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -54,7 +61,6 @@ export function CommunityMembersList({
       
       setMembers(membersData);
       
-      // Filter out existing members
       const memberIds = new Set(membersData.map(m => m.userId));
       const availableConnections = connectionsData.filter(c => !memberIds.has(c.id));
       setConnections(availableConnections);
@@ -76,6 +82,32 @@ export function CommunityMembersList({
       toast({ description: 'Member removed' });
     } else {
       toast({ variant: 'destructive', description: 'Failed to remove member' });
+    }
+  };
+
+  const handlePromote = async (userId: string) => {
+    const success = await updateMemberRole(communityId, userId, 'admin');
+    if (success) {
+      setMembers(prev => prev.map(m => 
+        m.userId === userId ? { ...m, role: 'admin' } : m
+      ));
+      haptic.success();
+      toast({ description: 'Member promoted to admin' });
+    } else {
+      toast({ variant: 'destructive', description: 'Failed to promote member' });
+    }
+  };
+
+  const handleDemote = async (userId: string) => {
+    const success = await updateMemberRole(communityId, userId, 'member');
+    if (success) {
+      setMembers(prev => prev.map(m => 
+        m.userId === userId ? { ...m, role: 'member' } : m
+      ));
+      haptic.light();
+      toast({ description: 'Member demoted' });
+    } else {
+      toast({ variant: 'destructive', description: 'Failed to demote member' });
     }
   };
 
@@ -107,6 +139,8 @@ export function CommunityMembersList({
       toast({ description: `✅ Added ${successCount} member${successCount > 1 ? 's' : ''}` });
       setSelectedIds(new Set());
       await loadData();
+    } else {
+      toast({ variant: 'destructive', description: 'Failed to add members' });
     }
     
     setIsAdding(false);
@@ -204,14 +238,33 @@ export function CommunityMembersList({
                   </div>
                   
                   {isCreator && member.role !== 'creator' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveMember(member.id, member.userId)}
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <UserMinus className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <span className="text-xs">Manage</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {member.role === 'member' ? (
+                          <DropdownMenuItem onClick={() => handlePromote(member.userId)}>
+                            <ChevronUp className="h-4 w-4 mr-2" />
+                            Promote to Admin
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleDemote(member.userId)}>
+                            <ChevronDown className="h-4 w-4 mr-2" />
+                            Demote to Member
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem 
+                          onClick={() => handleRemoveMember(member.id, member.userId)}
+                          className="text-destructive"
+                        >
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
               ))}
