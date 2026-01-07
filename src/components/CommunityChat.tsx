@@ -41,6 +41,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
   const [isLoading, setIsLoading] = useState(true);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: 'image' | 'video'; file: File } | null>(null);
   const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
@@ -48,6 +49,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isCreator = community.creatorId === user?.id;
+  const canManageRequests = isCreator || isAdmin;
 
   useEffect(() => {
     loadMessages();
@@ -109,6 +111,16 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
   const loadMemberCount = async () => {
     const members = await getCommunityMembers(community.id);
     setMemberCount(members.length);
+
+    const me = members.find((m) => m.userId === user?.id);
+    const admin = me?.role === 'creator' || me?.role === 'admin';
+    setIsAdmin(!!admin);
+
+    if (admin) {
+      await loadPendingRequests();
+    } else {
+      setPendingRequestsCount(0);
+    }
   };
 
   const loadPendingRequests = async () => {
@@ -261,7 +273,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9 relative">
               <MoreVertical className="h-5 w-5" />
-              {isCreator && pendingRequestsCount > 0 && (
+              {canManageRequests && pendingRequestsCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                   {pendingRequestsCount}
                 </span>
@@ -273,24 +285,24 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
               <Users className="h-4 w-4 mr-2" />
               View Members
             </DropdownMenuItem>
+
             {isCreator && (
-              <>
-                <DropdownMenuItem onClick={onAddMembers}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Members
-                </DropdownMenuItem>
-                {onShowRequests && (
-                  <DropdownMenuItem onClick={onShowRequests}>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Join Requests
-                    {pendingRequestsCount > 0 && (
-                      <span className="ml-auto text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                        {pendingRequestsCount}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
+              <DropdownMenuItem onClick={onAddMembers}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Members
+              </DropdownMenuItem>
+            )}
+
+            {canManageRequests && onShowRequests && (
+              <DropdownMenuItem onClick={onShowRequests}>
+                <Shield className="h-4 w-4 mr-2" />
+                Join Requests
+                {pendingRequestsCount > 0 && (
+                  <span className="ml-auto text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+                    {pendingRequestsCount}
+                  </span>
                 )}
-              </>
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
