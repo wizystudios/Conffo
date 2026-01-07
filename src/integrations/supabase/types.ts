@@ -327,6 +327,50 @@ export type Database = {
           },
         ]
       }
+      community_topics: {
+        Row: {
+          community_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          title: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          title: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_topics_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confession_media: {
         Row: {
           confession_id: string
@@ -601,6 +645,7 @@ export type Database = {
           is_public: boolean | null
           is_verified: boolean | null
           location: string | null
+          onboarding_completed: boolean | null
           privacy_settings: Json | null
           updated_at: string
           username: string | null
@@ -624,6 +669,7 @@ export type Database = {
           is_public?: boolean | null
           is_verified?: boolean | null
           location?: string | null
+          onboarding_completed?: boolean | null
           privacy_settings?: Json | null
           updated_at?: string
           username?: string | null
@@ -647,6 +693,7 @@ export type Database = {
           is_public?: boolean | null
           is_verified?: boolean | null
           location?: string | null
+          onboarding_completed?: boolean | null
           privacy_settings?: Json | null
           updated_at?: string
           username?: string | null
@@ -970,6 +1017,7 @@ export type Database = {
         Args: { info_type: string; target_user_id: string; viewer_id: string }
         Returns: boolean
       }
+      check_expired_topics: { Args: never; Returns: undefined }
       check_if_following: {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: boolean
