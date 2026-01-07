@@ -40,7 +40,7 @@ export function TreeComment({ comment, onUpdate, depth = 0, replies = [], onRepl
   const [isDeleting, setIsDeleting] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
-  const [showReplies, setShowReplies] = useState(true);
+  const [showReplies, setShowReplies] = useState(false); // Hidden by default
   
   const isAuthor = user?.id === comment.userId;
   const canDelete = isAuthor || isAdmin;

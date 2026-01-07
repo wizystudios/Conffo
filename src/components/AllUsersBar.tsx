@@ -198,13 +198,14 @@ export function AllUsersBar() {
                 </Link>
               )}
               
-              {/* Connect button - Conffo unique pill style at bottom */}
+              {/* Connect button - Conffo unique icon style */}
               {!userData.isFollowing && (
                 <button
                   onClick={() => handleFollow(userData.id)}
-                  className="conffo-btn-connect absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                  className="conffo-btn-connect absolute -bottom-1 left-1/2 -translate-x-1/2"
+                  title="Connect"
                 >
-                  Connect
+                  <Plus className="h-3 w-3" />
                 </button>
               )}
               
