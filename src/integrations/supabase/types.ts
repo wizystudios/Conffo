@@ -206,6 +206,41 @@ export type Database = {
           },
         ]
       }
+      community_join_requests: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_join_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_members: {
         Row: {
           community_id: string
@@ -992,6 +1027,10 @@ export type Database = {
       unfollow_user: {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: undefined
+      }
+      update_community_member_role: {
+        Args: { p_community_id: string; p_new_role: string; p_user_id: string }
+        Returns: boolean
       }
       user_liked_comment: {
         Args: { comment_uuid: string; user_uuid: string }

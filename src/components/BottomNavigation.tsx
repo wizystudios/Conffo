@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, MessageCircle, LogIn, Plus, Search, User, Users } from 'lucide-react';
+import { Home, MessageCircle, LogIn, Plus, Search, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +13,6 @@ export function BottomNavigation() {
   
   const isActive = (path: string) => location.pathname === path;
   
-  // Calculate total unread messages
   const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
   
   const handleCreateNew = () => {
@@ -25,13 +24,12 @@ export function BottomNavigation() {
   };
   
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background z-40 pb-safe">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background z-40 pb-safe border-t border-border">
       <div className="flex items-center justify-around py-1.5">
         <Link to="/" className="flex flex-col items-center py-1 px-3">
           <Home className={`h-5 w-5 ${isActive('/') ? 'text-primary' : 'text-muted-foreground'}`} />
         </Link>
         
-        {/* Only show search when logged in */}
         {isAuthenticated && (
           <Link to="/search" className="flex flex-col items-center py-1 px-3">
             <Search className={`h-5 w-5 ${isActive('/search') ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -45,13 +43,6 @@ export function BottomNavigation() {
           >
             <Plus className="h-6 w-6 text-primary-foreground" />
           </Button>
-        )}
-        
-        {/* Communities */}
-        {isAuthenticated && (
-          <Link to="/communities" className="flex flex-col items-center py-1 px-3">
-            <Users className={`h-5 w-5 ${isActive('/communities') ? 'text-primary' : 'text-muted-foreground'}`} />
-          </Link>
         )}
         
         {isAuthenticated && (

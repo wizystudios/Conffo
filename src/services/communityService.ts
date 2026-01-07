@@ -9,6 +9,9 @@ export interface Community {
   creatorId: string;
   createdAt: string;
   memberCount?: number;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount?: number;
 }
 
 export interface CommunityMember {
@@ -30,9 +33,20 @@ export interface CommunityMessage {
   mediaUrl?: string;
   mediaDuration?: number;
   replyToMessageId?: string;
+  replyToMessage?: CommunityMessage;
   createdAt: string;
   senderName?: string;
   senderAvatar?: string;
+}
+
+export interface JoinRequest {
+  id: string;
+  communityId: string;
+  userId: string;
+  status: 'pending' | 'approved' | 'declined';
+  createdAt: string;
+  username?: string;
+  avatarUrl?: string;
 }
 
 // Create a new community
@@ -120,7 +134,7 @@ export async function getCommunitiesByRoom(roomId: string): Promise<Community[]>
   return communities;
 }
 
-// Get user's communities
+// Get user's communities with last message info
 export async function getUserCommunities(): Promise<Community[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -145,15 +159,182 @@ export async function getUserCommunities(): Promise<Community[]> {
     return [];
   }
 
-  return data.map(c => ({
-    id: c.id,
-    roomId: c.room_id,
-    name: c.name,
-    description: c.description,
-    imageUrl: c.image_url,
-    creatorId: c.creator_id,
-    createdAt: c.created_at
-  }));
+  // Get last message and member count for each community
+  const communities = await Promise.all(
+    data.map(async (c) => {
+      const [{ count }, { data: lastMsg }] = await Promise.all([
+        supabase
+          .from('community_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('community_id', c.id),
+        supabase
+          .from('community_messages')
+          .select('content, message_type, created_at')
+          .eq('community_id', c.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+      ]);
+
+      let lastMessage = '';
+      if (lastMsg?.[0]) {
+        const msg = lastMsg[0];
+        if (msg.message_type === 'text') lastMessage = msg.content;
+        else if (msg.message_type === 'image') lastMessage = '📷 Photo';
+        else if (msg.message_type === 'video') lastMessage = '🎬 Video';
+        else if (msg.message_type === 'audio') lastMessage = '🎤 Voice message';
+      }
+
+      return {
+        id: c.id,
+        roomId: c.room_id,
+        name: c.name,
+        description: c.description,
+        imageUrl: c.image_url,
+        creatorId: c.creator_id,
+        createdAt: c.created_at,
+        memberCount: count || 0,
+        lastMessage,
+        lastMessageTime: lastMsg?.[0]?.created_at
+      };
+    })
+  );
+
+  // Sort by last message time
+  return communities.sort((a, b) => {
+    if (!a.lastMessageTime && !b.lastMessageTime) return 0;
+    if (!a.lastMessageTime) return 1;
+    if (!b.lastMessageTime) return -1;
+    return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
+  });
+}
+
+// Search communities (for join requests)
+export async function searchCommunities(query: string): Promise<Community[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('communities')
+    .select('*')
+    .ilike('name', `%${query}%`)
+    .limit(20);
+
+  if (error) {
+    console.error('Error searching communities:', error);
+    return [];
+  }
+
+  // Get membership status
+  const { data: memberData } = await supabase
+    .from('community_members')
+    .select('community_id')
+    .eq('user_id', user.id);
+
+  const memberCommunityIds = new Set(memberData?.map(m => m.community_id) || []);
+
+  // Filter out communities user is already in
+  return data
+    .filter(c => !memberCommunityIds.has(c.id))
+    .map(c => ({
+      id: c.id,
+      roomId: c.room_id,
+      name: c.name,
+      description: c.description,
+      imageUrl: c.image_url,
+      creatorId: c.creator_id,
+      createdAt: c.created_at
+    }));
+}
+
+// Request to join a community
+export async function requestToJoinCommunity(communityId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from('community_join_requests')
+    .insert({
+      community_id: communityId,
+      user_id: user.id
+    });
+
+  if (error) {
+    console.error('Error requesting to join:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Get pending join requests for creator
+export async function getJoinRequests(communityId: string): Promise<JoinRequest[]> {
+  const { data, error } = await supabase
+    .from('community_join_requests')
+    .select('*')
+    .eq('community_id', communityId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching join requests:', error);
+    return [];
+  }
+
+  // Get profile info
+  const requests = await Promise.all(
+    data.map(async (r) => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', r.user_id)
+        .maybeSingle();
+
+      return {
+        id: r.id,
+        communityId: r.community_id,
+        userId: r.user_id,
+        status: r.status as 'pending' | 'approved' | 'declined',
+        createdAt: r.created_at,
+        username: profile?.username || 'Anonymous',
+        avatarUrl: profile?.avatar_url
+      };
+    })
+  );
+
+  return requests;
+}
+
+// Approve or decline join request
+export async function respondToJoinRequest(
+  requestId: string, 
+  approve: boolean
+): Promise<boolean> {
+  const { data: request, error: fetchError } = await supabase
+    .from('community_join_requests')
+    .select('*')
+    .eq('id', requestId)
+    .single();
+
+  if (fetchError || !request) return false;
+
+  // Update request status
+  await supabase
+    .from('community_join_requests')
+    .update({ status: approve ? 'approved' : 'declined', updated_at: new Date().toISOString() })
+    .eq('id', requestId);
+
+  // If approved, add as member
+  if (approve) {
+    await supabase
+      .from('community_members')
+      .insert({
+        community_id: request.community_id,
+        user_id: request.user_id,
+        role: 'member'
+      });
+  }
+
+  return true;
 }
 
 // Get community members
@@ -198,15 +379,16 @@ export async function addCommunityMember(communityId: string, userId: string): P
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  // Check if user is connected (fan or crew)
-  const { data: following } = await supabase
-    .from('user_follows')
+  // Check if already a member
+  const { data: existing } = await supabase
+    .from('community_members')
     .select('id')
-    .or(`and(follower_id.eq.${user.id},following_id.eq.${userId}),and(follower_id.eq.${userId},following_id.eq.${user.id})`)
-    .limit(1);
+    .eq('community_id', communityId)
+    .eq('user_id', userId)
+    .maybeSingle();
 
-  if (!following?.length) {
-    console.error('Can only add connections (fans/crew) to community');
+  if (existing) {
+    console.log('User is already a member');
     return false;
   }
 
@@ -242,6 +424,26 @@ export async function removeCommunityMember(communityId: string, userId: string)
   return true;
 }
 
+// Promote/demote member
+export async function updateMemberRole(
+  communityId: string, 
+  userId: string, 
+  newRole: 'admin' | 'member'
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc('update_community_member_role', {
+    p_community_id: communityId,
+    p_user_id: userId,
+    p_new_role: newRole
+  });
+
+  if (error) {
+    console.error('Error updating member role:', error);
+    return false;
+  }
+
+  return data;
+}
+
 // Get community messages
 export async function getCommunityMessages(communityId: string, limit = 50): Promise<CommunityMessage[]> {
   const { data, error } = await supabase
@@ -256,7 +458,7 @@ export async function getCommunityMessages(communityId: string, limit = 50): Pro
     return [];
   }
 
-  // Get sender info
+  // Get sender info and reply messages
   const messages = await Promise.all(
     data.map(async (m) => {
       const { data: profile } = await supabase
@@ -264,6 +466,34 @@ export async function getCommunityMessages(communityId: string, limit = 50): Pro
         .select('username, avatar_url')
         .eq('id', m.sender_id)
         .maybeSingle();
+
+      let replyToMessage: CommunityMessage | undefined;
+      if (m.reply_to_message_id) {
+        const { data: replyMsg } = await supabase
+          .from('community_messages')
+          .select('*')
+          .eq('id', m.reply_to_message_id)
+          .maybeSingle();
+        
+        if (replyMsg) {
+          const { data: replyProfile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', replyMsg.sender_id)
+            .maybeSingle();
+          
+          replyToMessage = {
+            id: replyMsg.id,
+            communityId: replyMsg.community_id,
+            senderId: replyMsg.sender_id,
+            content: replyMsg.content,
+            messageType: replyMsg.message_type as any,
+            mediaUrl: replyMsg.media_url,
+            createdAt: replyMsg.created_at,
+            senderName: replyProfile?.username || 'Anonymous'
+          };
+        }
+      }
 
       return {
         id: m.id,
@@ -274,6 +504,7 @@ export async function getCommunityMessages(communityId: string, limit = 50): Pro
         mediaUrl: m.media_url,
         mediaDuration: m.media_duration,
         replyToMessageId: m.reply_to_message_id,
+        replyToMessage,
         createdAt: m.created_at,
         senderName: profile?.username || 'Anonymous',
         senderAvatar: profile?.avatar_url
@@ -314,6 +545,12 @@ export async function sendCommunityMessage(
     console.error('Error sending community message:', error);
     return null;
   }
+
+  // Update community's updated_at
+  await supabase
+    .from('communities')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', communityId);
 
   const { data: profile } = await supabase
     .from('profiles')

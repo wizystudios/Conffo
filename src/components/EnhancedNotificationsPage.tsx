@@ -3,42 +3,36 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Bell, Check, Trash2, ArrowLeft, MessageCircle, Heart, UserPlus, Settings } from 'lucide-react';
+import { Bell, Check, Trash2, ArrowLeft, MessageCircle, Heart, UserPlus, Settings, Clock, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { markAllNotificationsAsRead, getUserNotifications, deleteNotification, getNotificationSender } from '@/utils/notificationUtils';
-import { UsernameDisplay } from '@/components/UsernameDisplay';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface NotificationItemProps {
   notification: any;
-  isSelected: boolean;
-  onToggleSelect: () => void;
   onNavigateToChat: (userId: string) => void;
 }
 
-const NotificationItem = ({ notification, isSelected, onToggleSelect, onNavigateToChat }: NotificationItemProps) => {
+const NotificationItem = ({ notification, onNavigateToChat }: NotificationItemProps) => {
   const navigate = useNavigate();
   
   const getNotificationIcon = () => {
-    if (notification.type === 'message') return <MessageCircle className="h-5 w-5 text-blue-500" />;
-    if (notification.type === 'new_reaction' || notification.type === 'like') return <Heart className="h-5 w-5 text-red-500" />;
-    if (notification.type === 'follow') return <UserPlus className="h-5 w-5 text-green-500" />;
-    if (notification.type === 'new_comment') return <MessageCircle className="h-5 w-5 text-primary" />;
-    return <Bell className="h-5 w-5 text-muted-foreground" />;
+    if (notification.type === 'message') return <MessageCircle className="h-4 w-4 text-white" />;
+    if (notification.type === 'new_reaction' || notification.type === 'like') return <Heart className="h-4 w-4 text-white" />;
+    if (notification.type === 'follow') return <UserPlus className="h-4 w-4 text-white" />;
+    if (notification.type === 'new_comment') return <MessageCircle className="h-4 w-4 text-white" />;
+    return <Bell className="h-4 w-4 text-white" />;
   };
 
   const handleClick = () => {
     if (notification.type === 'message' && notification.senderInfo?.userId) {
       onNavigateToChat(notification.senderInfo.userId);
     } else if ((notification.type === 'new_reaction' || notification.type === 'new_comment') && notification.related_id) {
-      // Navigate to the confession/post
       navigate(`/confession/${notification.related_id}`);
     } else if (notification.type === 'follow' && notification.senderInfo?.userId) {
-      // Navigate to the follower's profile
       navigate(`/profile/${notification.senderInfo.userId}`);
     }
   };
@@ -47,60 +41,67 @@ const NotificationItem = ({ notification, isSelected, onToggleSelect, onNavigate
     ((notification.type === 'new_reaction' || notification.type === 'new_comment') && notification.related_id) ||
     (notification.type === 'follow' && notification.senderInfo?.userId);
 
+  const getTypeLabel = () => {
+    if (notification.type === 'message') return 'NEW MESSAGE';
+    if (notification.type === 'new_reaction' || notification.type === 'like') return 'NEW LIKE';
+    if (notification.type === 'follow') return 'NEW FOLLOWER';
+    if (notification.type === 'new_comment') return 'NEW COMMENT';
+    return 'NOTIFICATION';
+  };
+
   return (
     <div 
-      className={`p-3 hover:bg-muted/50 relative transition-colors ${
-        !notification.is_read ? 'bg-primary/5 border-l-2 border-l-primary' : ''
-      } ${isClickable ? 'cursor-pointer' : ''}`}
+      className={`mx-4 my-3 rounded-2xl overflow-hidden shadow-sm transition-all duration-200 hover:shadow-md ${
+        isClickable ? 'cursor-pointer active:scale-[0.98]' : ''
+      }`}
+      style={{
+        background: 'linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--background)) 100%)'
+      }}
       onClick={isClickable ? handleClick : undefined}
     >
-      <div className="flex items-start gap-2">
-        <div className="flex-shrink-0">
-          <Checkbox 
-            checked={isSelected}
-            onCheckedChange={onToggleSelect}
-            onClick={(e) => e.stopPropagation()}
-            className="h-4 w-4"
-          />
-        </div>
-        
-        <div className="flex-shrink-0">
-          {notification.senderInfo?.userId ? (
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${notification.senderInfo.userId}`} />
-              <AvatarFallback className="text-xs">
-                {(notification.senderInfo.username || 'U').charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-              {getNotificationIcon()}
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          {/* Icon */}
+          <div className="relative flex-shrink-0">
+            <div className="h-10 w-10 rounded-full bg-muted-foreground/20 flex items-center justify-center">
+              <Bell className="h-5 w-5 text-muted-foreground" />
             </div>
-          )}
-        </div>
-        
-        <div className="flex-grow min-w-0">
-          <p className="text-xs break-words line-clamp-2">
-            {notification.senderInfo?.username && notification.senderInfo.username !== 'Someone' ? (
-              <>
-                <span className="font-semibold">{notification.senderInfo.username}</span>
-                {' '}
-                {notification.type === 'new_reaction' && 'reacted to your confession'}
-                {notification.type === 'new_comment' && 'commented on your confession'}
-                {notification.type === 'follow' && 'started following you'}
-                {notification.type === 'message' && notification.content}
-              </>
-            ) : (
-              notification.content
-            )}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1">
-            <p className="text-[10px] text-muted-foreground">
-              {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-            </p>
             {!notification.is_read && (
-              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full border-2 border-background" />
             )}
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-sm text-foreground">
+                {notification.senderInfo?.username && notification.senderInfo.username !== 'Someone' 
+                  ? notification.senderInfo.username 
+                  : 'New Message'}
+              </h3>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span className="text-[10px]">
+                  {formatDistanceToNow(new Date(notification.created_at), { addSuffix: false })}
+                </span>
+              </div>
+            </div>
+            
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+              {notification.type === 'new_reaction' && 'reacted to your post'}
+              {notification.type === 'new_comment' && 'commented on your post'}
+              {notification.type === 'follow' && 'started following you'}
+              {notification.type === 'message' && 'You have a new message'}
+              {!['new_reaction', 'new_comment', 'follow', 'message'].includes(notification.type) && notification.content}
+            </p>
+            
+            {/* Badge */}
+            <Badge 
+              variant="secondary" 
+              className="text-[10px] px-2 py-0.5 bg-foreground text-background rounded-full font-semibold"
+            >
+              {getTypeLabel()}
+            </Badge>
           </div>
         </div>
       </div>
@@ -111,7 +112,6 @@ const NotificationItem = ({ notification, isSelected, onToggleSelect, onNavigate
 export default function EnhancedNotificationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Fetch notifications
@@ -122,7 +122,6 @@ export default function EnhancedNotificationsPage() {
       
       const notifs = await getUserNotifications(user.id, false);
       
-      // Enhance with sender info if available
       const enhancedNotifs = await Promise.all(notifs.map(async (notification) => {
         const senderInfo = await getNotificationSender(notification);
         return {
@@ -131,15 +130,13 @@ export default function EnhancedNotificationsPage() {
         };
       }));
       
-      // Sort by created_at desc
       return enhancedNotifs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user?.id,
-    refetchInterval: 10000, // Check for new notifications every 10 seconds
+    refetchInterval: 10000,
   });
   
   useEffect(() => {
-    // Smooth entrance animation
     if (containerRef.current) {
       containerRef.current.style.transform = 'translateY(-20px)';
       containerRef.current.style.opacity = '0';
@@ -166,29 +163,6 @@ export default function EnhancedNotificationsPage() {
     
     refetchNotifications();
   };
-
-  const handleDeleteSelectedNotifications = async () => {
-    if (selectedNotifications.length === 0) return;
-    
-    for (const notificationId of selectedNotifications) {
-      await deleteNotification(notificationId);
-    }
-    
-    toast({
-      description: `Deleted ${selectedNotifications.length} notification${selectedNotifications.length > 1 ? 's' : ''}`
-    });
-    
-    setSelectedNotifications([]);
-    refetchNotifications();
-  };
-
-  const toggleNotificationSelection = (id: string) => {
-    setSelectedNotifications(prev => 
-      prev.includes(id) 
-        ? prev.filter(notifId => notifId !== id)
-        : [...prev, id]
-    );
-  };
   
   const handleDeleteAllNotifications = async () => {
     if (!user?.id || notifications.length === 0) return;
@@ -210,99 +184,68 @@ export default function EnhancedNotificationsPage() {
 
   return (
     <Layout>
-      <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-background to-background/95">
+      <div ref={containerRef} className="min-h-screen bg-background">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-lg border-b border-border/50">
-          <div className="max-w-lg mx-auto px-4 py-4">
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => navigate(-1)}
-                className="rounded-full hover:bg-muted/50"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              
-              <div className="flex items-center gap-3 flex-1">
-                <div className="relative">
-                  <Bell className="h-6 w-6 text-primary" />
-                  {unreadNotificationsCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs animate-pulse">
-                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
-                    </Badge>
-                  )}
-                </div>
-                <h1 className="text-xl font-bold">Notifications</h1>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/notification-settings')}
-                className="rounded-full hover:bg-muted/50"
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-            </div>
+        <div className="sticky top-0 z-10 bg-background border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             
-            {notifications.length > 0 && (
-              <div className="flex items-center gap-2 mt-3">
-                {unreadNotificationsCount > 0 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleMarkNotificationsAsRead}
-                    className="h-8 px-3 text-xs rounded-full"
-                  >
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                    Mark all read
-                  </Button>
-                )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleDeleteAllNotifications}
-                  className="h-8 px-3 text-xs rounded-full"
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Clear all
-                </Button>
-              </div>
-            )}
+            <h1 className="text-lg font-bold">Notifications</h1>
             
-            {selectedNotifications.length > 0 && (
-              <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
-                <span className="text-sm text-muted-foreground">
-                  {selectedNotifications.length} selected
-                </span>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={handleDeleteSelectedNotifications}
-                  className="h-7 text-xs rounded-full"
-                >
-                  Delete selected
-                </Button>
-              </div>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9"
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </div>
         </div>
         
+        {/* Actions */}
+        {notifications.length > 0 && (
+          <div className="flex items-center justify-end gap-2 px-4 py-2">
+            {unreadNotificationsCount > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleMarkNotificationsAsRead}
+                className="h-8 text-xs"
+              >
+                <Check className="h-3.5 w-3.5 mr-1" />
+                Mark all read
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleDeleteAllNotifications}
+              className="h-8 text-xs text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Clear all
+            </Button>
+          </div>
+        )}
+        
         {/* Content */}
-        <div className="max-w-lg mx-auto">
+        <div className="pb-20">
           {notifications.length > 0 ? (
-            <div className="divide-y divide-border/50">
-              {notifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  isSelected={selectedNotifications.includes(notification.id)}
-                  onToggleSelect={() => toggleNotificationSelection(notification.id)}
-                  onNavigateToChat={handleNavigateToChat}
-                />
-              ))}
-            </div>
+            notifications.map((notification) => (
+              <NotificationItem
+                key={notification.id}
+                notification={notification}
+                onNavigateToChat={handleNavigateToChat}
+              />
+            ))
           ) : (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <div className="relative mb-6">
