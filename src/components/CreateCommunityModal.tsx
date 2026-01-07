@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { X, Users, Camera } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Users, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { createCommunity } from '@/services/communityService';
 import { toast } from '@/hooks/use-toast';
 import { haptic } from '@/utils/hapticFeedback';
+import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/utils/imageCompression';
 
 interface CreateCommunityModalProps {
   isOpen: boolean;
@@ -18,8 +20,65 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Compress the image
+    try {
+      const compressed = await compressImage(file, 0.5);
+      setImageFile(compressed);
+    } catch (error) {
+      setImageFile(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+
+    setIsUploading(true);
+    try {
+      const fileName = `community_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+      const filePath = `community-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      return urlData?.publicUrl || null;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -30,13 +89,24 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
     setIsCreating(true);
     
     try {
-      const community = await createCommunity(roomId, name.trim(), description.trim() || undefined);
+      // Upload image first if selected
+      let imageUrl: string | undefined;
+      if (imageFile) {
+        const uploadedUrl = await uploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
+      const community = await createCommunity(roomId, name.trim(), description.trim() || undefined, imageUrl);
       
       if (community) {
         haptic.success();
         toast({ description: '✅ Community created!' });
         setName('');
         setDescription('');
+        setImageFile(null);
+        setImagePreview(null);
         onCreated();
         onClose();
       } else {
@@ -69,14 +139,36 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
           </Button>
         </div>
 
-        {/* Community Icon */}
+        {/* Community Icon with Upload */}
         <div className="flex justify-center mb-6">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-              <Users className="h-10 w-10 text-primary" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            <div 
+              className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {imagePreview ? (
+                <img src={imagePreview} alt="Community" className="w-full h-full object-cover" />
+              ) : (
+                <Users className="h-10 w-10 text-primary" />
+              )}
             </div>
-            <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-              <Camera className="h-4 w-4 text-primary-foreground" />
+            <button 
+              className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4 text-primary-foreground" />
+              )}
             </button>
           </div>
         </div>
@@ -109,10 +201,15 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
           <div className="pt-2">
             <Button
               onClick={handleCreate}
-              disabled={!name.trim() || isCreating}
-              className="w-full h-12 rounded-xl font-semibold"
+              disabled={!name.trim() || isCreating || isUploading}
+              className="w-full h-12 rounded-xl font-semibold conffo-ripple"
             >
-              {isCreating ? 'Creating...' : 'Create Community'}
+              {isCreating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : 'Create Community'}
             </Button>
           </div>
 

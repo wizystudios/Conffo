@@ -1,21 +1,14 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Bell, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { getUserNotifications } from "@/utils/notificationUtils";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { haptic } from "@/utils/hapticFeedback";
 import { FullPageMenu } from "@/components/FullPageMenu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function NavBar() {
   const { user, isAuthenticated } = useAuth();
@@ -79,26 +72,12 @@ export function NavBar() {
         {/* Center spacer */}
         <div className="flex-1" />
         
-        {/* Right side - Text Logo with dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 hover:opacity-80 transition-opacity">
-              <span className="text-xl font-bold tracking-tight">Conffo</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[120px]">
-            <DropdownMenuItem className="justify-center font-bold text-lg">
-              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                ✨ 2026 ✨
-              </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Center - Logo */}
+        <span className="text-xl font-bold tracking-tight absolute left-1/2 -translate-x-1/2">Conffo</span>
         
-        {/* Menu Button (only when authenticated) */}
+        {/* Right side - Menu Button (only when authenticated) */}
         {isAuthenticated && (
-          <Button variant="ghost" size="icon" className="h-9 w-9 ml-1" onClick={handleMenuToggle}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleMenuToggle}>
             <ChevronDown className="h-5 w-5" />
           </Button>
         )}
