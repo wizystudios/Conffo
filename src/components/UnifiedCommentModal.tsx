@@ -21,6 +21,9 @@ interface CommentWithProfile extends CommentType {
   avatarUrl?: string;
   likesCount?: number;
   isLiked?: boolean;
+  audioUrl?: string;
+  audioDuration?: number;
+  audioWaveform?: number[];
 }
 
 interface UnifiedCommentModalProps {
@@ -396,6 +399,9 @@ export function UnifiedCommentModal({
                   confessionId: comment.confessionId,
                   timestamp: comment.timestamp,
                   parentCommentId: comment.parentCommentId,
+                  audioUrl: comment.audioUrl,
+                  audioDuration: comment.audioDuration,
+                  audioWaveform: comment.audioWaveform,
                   replies: comment.replies?.map(r => ({
                     id: r.id,
                     content: r.content,
@@ -403,6 +409,9 @@ export function UnifiedCommentModal({
                     confessionId: r.confessionId,
                     timestamp: r.timestamp,
                     parentCommentId: r.parentCommentId,
+                    audioUrl: (r as any).audioUrl,
+                    audioDuration: (r as any).audioDuration,
+                    audioWaveform: (r as any).audioWaveform,
                     replies: r.replies
                   }))
                 }}
@@ -421,6 +430,9 @@ export function UnifiedCommentModal({
                   confessionId: r.confessionId,
                   timestamp: r.timestamp,
                   parentCommentId: r.parentCommentId,
+                  audioUrl: (r as any).audioUrl,
+                  audioDuration: (r as any).audioDuration,
+                  audioWaveform: (r as any).audioWaveform,
                   replies: r.replies
                 })) || []}
               />
