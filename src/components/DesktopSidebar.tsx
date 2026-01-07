@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PlusCircle, Heart, User, MessageCircle, LogOut, Bookmark, Flame } from 'lucide-react';
+import { Home, Search, PlusCircle, Heart, User, MessageCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -48,10 +48,9 @@ export function DesktopSidebar() {
 
   const navItems = [
     { path: '/', icon: Home, label: 'Feed' },
-    { path: '/trending', icon: Flame, label: 'Trending' },
-    { path: '/search', icon: Search, label: 'Discover' },
+    { path: '/search', icon: Search, label: 'Search' },
     { path: '/chat', icon: MessageCircle, label: 'Messages' },
-    { path: '/notifications', icon: Heart, label: 'Activity', badge: unreadCount },
+    { path: '/notifications', icon: Heart, label: 'Notification', badge: unreadCount },
   ];
 
   return (
@@ -112,20 +111,8 @@ export function DesktopSidebar() {
         })}
       </nav>
 
-      {/* Saved & Profile Section */}
+      {/* Me Section */}
       <div className="px-3 py-4 space-y-1 border-t border-border/50">
-        <Link
-          to="/saved"
-          className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all ${
-            location.pathname === '/saved' 
-              ? 'bg-primary/10 text-primary' 
-              : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Bookmark className="h-5 w-5" />
-          <span className="text-sm font-medium">Saved Posts</span>
-        </Link>
-        
         {isAuthenticated && profile && (
           <Link
             to={`/user/${user?.id}`}
@@ -136,7 +123,7 @@ export function DesktopSidebar() {
             }`}
           >
             <User className="h-5 w-5" />
-            <span className="text-sm font-medium">My Profile</span>
+            <span className="text-sm font-medium">Me</span>
           </Link>
         )}
       </div>

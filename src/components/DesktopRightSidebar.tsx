@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Hash, Users } from 'lucide-react';
+import { Hash, Users } from 'lucide-react';
 
 export function DesktopRightSidebar() {
   const { user } = useAuth();
@@ -56,11 +56,11 @@ export function DesktopRightSidebar() {
 
   return (
     <div className="fixed right-0 top-0 h-full w-80 bg-gradient-to-b from-background to-muted/10 border-l border-border/50 py-6 px-5 hidden xl:flex flex-col">
-      {/* Trending Topics Card */}
+      {/* Confessions Rooms */}
       <div className="bg-muted/30 rounded-2xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold">Trending Rooms</h3>
+          <Hash className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">Confessions</h3>
         </div>
         <div className="space-y-3">
           {trendingRooms.slice(0, 4).map((room: any) => (
@@ -79,13 +79,13 @@ export function DesktopRightSidebar() {
         </div>
       </div>
 
-      {/* People You May Know */}
+      {/* Create Connections */}
       {suggestedUsers.length > 0 && (
         <div className="bg-muted/30 rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-sm">People You May Know</h3>
+              <h3 className="font-semibold text-sm">Create Connections</h3>
             </div>
             <Link to="/search" className="text-xs text-primary font-medium hover:underline">
               See All
@@ -119,7 +119,7 @@ export function DesktopRightSidebar() {
                   onClick={() => handleFollow(profile.id)}
                   className="h-8 px-4 rounded-xl text-xs font-semibold border-primary/30 hover:bg-primary hover:text-primary-foreground"
                 >
-                  Follow
+                  Connect
                 </Button>
               </div>
             ))}

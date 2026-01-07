@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MediaItem {
   url: string;
@@ -15,10 +16,18 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   if (!media || media.length === 0) return null;
+
+  // Reset loaded state when index changes
+  useEffect(() => {
+    setIsImageLoaded(false);
+    setIsVideoLoaded(false);
+  }, [currentIndex]);
 
   // Auto-play/pause video based on scroll visibility
   useEffect(() => {
@@ -74,45 +83,67 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const currentMedia = media[currentIndex];
 
   return (
-    <div ref={containerRef} className="relative w-full bg-black">
-      {/* Media Display */}
+    <div ref={containerRef} className="relative w-full bg-muted/20">
+      {/* Fixed aspect ratio container to prevent layout shifts */}
       <div className="relative aspect-square">
         {currentMedia.type === 'image' ? (
-          <img
-            src={currentMedia.url}
-            alt=""
-            className="w-full h-full object-contain"
-          />
+          <>
+            {/* Skeleton placeholder while loading */}
+            {!isImageLoaded && (
+              <Skeleton className="absolute inset-0 w-full h-full" />
+            )}
+            <img
+              src={currentMedia.url}
+              alt=""
+              className={`w-full h-full object-contain transition-opacity duration-200 ${
+                isImageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              loading="lazy"
+              onLoad={() => setIsImageLoaded(true)}
+              onError={() => setIsImageLoaded(true)}
+            />
+          </>
         ) : currentMedia.type === 'video' ? (
           <div className="relative w-full h-full">
+            {/* Skeleton placeholder while loading */}
+            {!isVideoLoaded && (
+              <Skeleton className="absolute inset-0 w-full h-full" />
+            )}
             <video
               ref={videoRef}
               src={currentMedia.url}
-              className="w-full h-full object-contain"
+              className={`w-full h-full object-contain transition-opacity duration-200 ${
+                isVideoLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
               loop
               muted={isMuted}
               playsInline
+              preload="metadata"
               onClick={togglePlay}
+              onLoadedData={() => setIsVideoLoaded(true)}
+              onCanPlay={() => setIsVideoLoaded(true)}
             />
-            {/* Video Controls */}
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePlay}
-                className="h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70"
-              >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMute}
-                className="h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70"
-              >
-                {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-              </Button>
-            </div>
+            {/* Video Controls - only show when loaded */}
+            {isVideoLoaded && (
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={togglePlay}
+                  className="h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70"
+                >
+                  {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMute}
+                  className="h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70"
+                >
+                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted">

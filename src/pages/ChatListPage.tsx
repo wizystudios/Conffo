@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
-import { FollowersModal } from '@/components/FollowersModal';
+import { ConnectionsPickerModal } from '@/components/ConnectionsPickerModal';
 
 interface ChatUser {
   id: string;
@@ -350,13 +350,10 @@ export default function ChatListPage() {
       />
 
       {/* New Message Modal - Select from connections */}
-      {showNewMessage && (
-        <FollowersModal
-          isOpen={showNewMessage}
-          onClose={() => setShowNewMessage(false)}
-          userId={user?.id || ''}
-        />
-      )}
+      <ConnectionsPickerModal
+        isOpen={showNewMessage}
+        onClose={() => setShowNewMessage(false)}
+      />
     </div>
   );
 }
