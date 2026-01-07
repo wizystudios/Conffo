@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { ArrowLeft, Send, Mic, Image, MoreVertical, Users, UserPlus, X, Play, Reply, Shield, Crown } from 'lucide-react';
+import { ArrowLeft, Send, Mic, Image, MoreVertical, Users, UserPlus, X, Play, Reply, Shield, Crown, Edit, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,6 +25,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { toast } from '@/hooks/use-toast';
 import { haptic } from '@/utils/hapticFeedback';
+import { CommunityEditModal } from '@/components/CommunityEditModal';
+import { CommunityTopicsModal } from '@/components/CommunityTopicsModal';
 
 interface CommunityChatProps {
   community: Community;
@@ -46,6 +48,9 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: 'image' | 'video'; file: File } | null>(null);
   const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showTopicsModal, setShowTopicsModal] = useState(false);
+  const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isCreator = community.creatorId === user?.id;
@@ -54,6 +59,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
   useEffect(() => {
     loadMessages();
     loadMemberCount();
+    loadActiveTopic();
     if (isCreator) loadPendingRequests();
     
     // Subscribe to real-time messages
@@ -126,6 +132,17 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
   const loadPendingRequests = async () => {
     const requests = await getJoinRequests(community.id);
     setPendingRequestsCount(requests.length);
+  };
+
+  const loadActiveTopic = async () => {
+    const { data } = await supabase
+      .from('community_topics')
+      .select('title')
+      .eq('community_id', community.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    
+    setActiveTopic(data?.title || null);
   };
 
   const handleSend = async () => {
@@ -266,7 +283,9 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
         
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold text-sm truncate">{community.name}</h2>
-          <p className="text-xs text-muted-foreground">{memberCount} members</p>
+          <p className="text-xs text-muted-foreground">
+            {memberCount} members{activeTopic && ` • 📌 ${activeTopic}`}
+          </p>
         </div>
         
         <DropdownMenu>
@@ -286,11 +305,25 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
               View Members
             </DropdownMenuItem>
 
-            {isCreator && (
-              <DropdownMenuItem onClick={onAddMembers}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Members
-              </DropdownMenuItem>
+            {canManageRequests && (
+              <>
+                <DropdownMenuItem onClick={onAddMembers}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Members
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Community
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Manage Topics
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+              </>
             )}
 
             {canManageRequests && onShowRequests && (
@@ -323,6 +356,18 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
         ) : (
           messages.map((msg) => {
             const isOwn = msg.senderId === user?.id;
+            const isSystemMessage = (msg.messageType as string) === 'system';
+            
+            // System message rendering
+            if (isSystemMessage) {
+              return (
+                <div key={msg.id} className="flex justify-center">
+                  <div className="px-3 py-1.5 rounded-full bg-muted/50 text-xs text-muted-foreground">
+                    {msg.content}
+                  </div>
+                </div>
+              );
+            }
             
             return (
               <div 
@@ -524,6 +569,21 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
           </div>
         )}
       </div>
+      
+      {/* Edit Community Modal */}
+      <CommunityEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        community={community}
+        onUpdated={() => {}}
+      />
+      
+      {/* Topics Modal */}
+      <CommunityTopicsModal
+        isOpen={showTopicsModal}
+        onClose={() => setShowTopicsModal(false)}
+        communityId={community.id}
+      />
     </div>
   );
 }
