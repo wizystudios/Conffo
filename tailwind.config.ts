@@ -18,7 +18,10 @@ export default {
 				'2xl': '1400px'
 			}
 		},
-		extend: {
+	extend: {
+			fontFamily: {
+				'glacial': ['Glacial Indifference', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+			},
 			screens: {
 				'xs': '480px',
 			},

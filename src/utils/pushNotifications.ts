@@ -117,3 +117,18 @@ export function showFollowNotification(
     }
   });
 }
+
+export function showCommunityMessageNotification(
+  senderName: string,
+  communityName: string,
+  messageContent: string,
+  communityId: string
+): void {
+  showNotification(`${communityName}`, {
+    body: `${senderName}: ${messageContent.length > 40 ? messageContent.slice(0, 40) + '...' : messageContent}`,
+    tag: `community-${communityId}`,
+    onClick: () => {
+      window.location.href = `/messages`;
+    }
+  });
+}

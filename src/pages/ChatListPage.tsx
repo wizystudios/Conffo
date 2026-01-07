@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, MessageCircle, ArrowLeft, Users } from 'lucide-react';
+import { Search, MessageCircle, ArrowLeft, Users, Plus, ChevronRight, UserPlus, Crown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +14,14 @@ import { getUserCommunities, Community } from '@/services/communityService';
 import { CommunityChat } from '@/components/CommunityChat';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { JoinRequestsModal } from '@/components/JoinRequestsModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CreateCommunityModal } from '@/components/CreateCommunityModal';
+import { FollowersModal } from '@/components/FollowersModal';
 
 interface ChatUser {
   id: string;
@@ -25,6 +33,7 @@ interface ChatUser {
   isOnline?: boolean;
   type: 'user' | 'community';
   community?: Community;
+  isCreator?: boolean;
 }
 
 export default function ChatListPage() {
@@ -36,6 +45,8 @@ export default function ChatListPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
+  const [showCreateCommunity, setShowCreateCommunity] = useState(false);
+  const [showNewMessage, setShowNewMessage] = useState(false);
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ['blocked-users', user?.id],
@@ -123,7 +134,8 @@ export default function ChatListPage() {
       lastMessage: c.lastMessage,
       lastMessageTime: c.lastMessageTime ? new Date(c.lastMessageTime) : undefined,
       type: 'community' as const,
-      community: c
+      community: c,
+      isCreator: c.creatorId === user?.id
     })),
     ...followedUsers
   ].sort((a, b) => {
@@ -132,6 +144,10 @@ export default function ChatListPage() {
     if (!b.lastMessageTime) return -1;
     return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
   });
+
+  const refetchCommunities = () => {
+    // Refetch communities after creating one
+  };
 
   const filteredChats = allChats.filter(c =>
     c.username?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -181,14 +197,14 @@ export default function ChatListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
+    <div className="min-h-screen bg-background pb-20">
+      <div className="sticky top-0 z-10 bg-background">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold">Messages</h1>
+            <h1 className="text-lg font-semibold">Messages</h1>
           </div>
         </div>
 
@@ -199,13 +215,13 @@ export default function ChatListPage() {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-0 rounded-xl"
+              className="pl-10 bg-muted/50 border-0 rounded-xl h-9 text-sm"
             />
           </div>
         </div>
       </div>
 
-      <div className="divide-y divide-border/30">
+      <div>
         {isLoading ? (
           <div className="flex justify-center py-8">
             <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -213,8 +229,8 @@ export default function ChatListPage() {
         ) : filteredChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4">
             <div className="text-4xl mb-4">💬</div>
-            <h3 className="font-semibold text-lg mb-2">No conversations yet</h3>
-            <p className="text-muted-foreground text-center text-sm mb-4">
+            <h3 className="font-semibold text-base mb-2">No conversations yet</h3>
+            <p className="text-muted-foreground text-center text-[11px] mb-4">
               Follow people or join communities to start chatting
             </p>
           </div>
@@ -224,7 +240,7 @@ export default function ChatListPage() {
               <button 
                 key={`community-${chat.id}`}
                 onClick={() => setSelectedCommunity(chat.community!)}
-                className="w-full flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left border-b border-border/30"
               >
                 <div className="relative">
                   <Avatar className="h-12 w-12">
@@ -239,24 +255,31 @@ export default function ChatListPage() {
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-semibold text-sm">{chat.username}</span>
-                    {chat.lastMessageTime && (
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(chat.lastMessageTime, { addSuffix: false })}
-                      </span>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-semibold text-[13px]">{chat.username}</span>
+                    {chat.isCreator && (
+                      <Crown className="h-3 w-3 text-yellow-500" />
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {chat.lastMessage || 'Start a conversation'}
                   </p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {chat.lastMessageTime && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(chat.lastMessageTime, { addSuffix: false })}
+                    </span>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </button>
             ) : (
               <Link 
                 key={chat.id} 
                 to={`/chat/${chat.id}`}
-                className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/30"
               >
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={chat.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${chat.id}`} />
@@ -265,30 +288,75 @@ export default function ChatListPage() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-semibold text-sm">{chat.username}</span>
-                    {chat.lastMessageTime && (
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(chat.lastMessageTime, { addSuffix: false })}
-                      </span>
-                    )}
+                    <span className="font-semibold text-[13px]">{chat.username}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {chat.lastMessage || 'Start a conversation'}
                   </p>
                 </div>
 
-                {chat.unreadCount && chat.unreadCount > 0 && (
-                  <div className="h-5 min-w-5 px-1.5 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-xs font-bold text-primary-foreground">
-                      {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                <div className="flex items-center gap-2">
+                  {chat.lastMessageTime && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(chat.lastMessageTime, { addSuffix: false })}
                     </span>
-                  </div>
-                )}
+                  )}
+                  {chat.unreadCount && chat.unreadCount > 0 ? (
+                    <div className="h-5 min-w-5 px-1.5 bg-primary rounded-full flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-primary-foreground">
+                        {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                      </span>
+                    </div>
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
               </Link>
             )
           ))
         )}
       </div>
+
+      {/* Floating Plus Button */}
+      <div className="fixed bottom-20 right-4 z-40">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              size="icon" 
+              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => setShowNewMessage(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              New Message
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowCreateCommunity(true)} className="gap-2">
+              <Users className="h-4 w-4" />
+              Create Community
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Create Community Modal */}
+      <CreateCommunityModal
+        isOpen={showCreateCommunity}
+        onClose={() => setShowCreateCommunity(false)}
+        roomId="general"
+        onCreated={refetchCommunities}
+      />
+
+      {/* New Message Modal - Select from connections */}
+      {showNewMessage && (
+        <FollowersModal
+          isOpen={showNewMessage}
+          onClose={() => setShowNewMessage(false)}
+          userId={user?.id || ''}
+        />
+      )}
     </div>
   );
 }
