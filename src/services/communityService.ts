@@ -76,14 +76,8 @@ export async function createCommunity(
     return null;
   }
 
-  // Add creator as first member with 'creator' role
-  await supabase
-    .from('community_members')
-    .insert({
-      community_id: data.id,
-      user_id: user.id,
-      role: 'creator'
-    });
+  // Creator membership is enforced by a database trigger.
+  // (This guarantees the creator is always the first member, even if the client disconnects.)
 
   return {
     id: data.id,

@@ -11,6 +11,7 @@ import { CallInterface } from "@/components/CallInterface";
 import { WebRTCService } from "@/services/webRTCService";
 import { MessageNotification } from "@/components/MessageNotification";
 import { useAuth } from "@/context/AuthContext";
+import { useCommunityMessageNotifications } from "@/hooks/useCommunityMessageNotifications";
 
 interface LayoutProps {
   children: ReactNode;
@@ -57,6 +58,9 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}
 function LayoutContent({ children }: LayoutProps) {
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
   const { isAuthenticated } = useAuth();
+
+  useCommunityMessageNotifications(isAuthenticated);
+
   const [activeCall, setActiveCall] = useState<{
     webRTCService: WebRTCService;
     targetUserId: string;
