@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, MessageSquare, Heart, MessageCircle, UserPlus } from 'lucide-react';
+import { ArrowLeft, Bell, MessageSquare, Heart, MessageCircle, UserPlus, Users, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
+import { requestNotificationPermission } from '@/utils/pushNotifications';
 
 const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
 
@@ -13,6 +15,8 @@ interface NotificationSettings {
   likes: boolean;
   comments: boolean;
   follows: boolean;
+  communities: boolean;
+  communitySound: boolean;
 }
 
 const defaultSettings: NotificationSettings = {
@@ -20,6 +24,8 @@ const defaultSettings: NotificationSettings = {
   likes: true,
   comments: true,
   follows: true,
+  communities: true,
+  communitySound: true,
 };
 
 export function getNotificationSettings(): NotificationSettings {
@@ -44,10 +50,26 @@ export default function NotificationSettingsPage() {
     setSettings(getNotificationSettings());
   }, []);
 
-  const handleToggle = (key: keyof NotificationSettings) => {
-    const newSettings = { ...settings, [key]: !settings[key] };
+  const handleToggle = async (key: keyof NotificationSettings) => {
+    const newValue = !settings[key];
+    const newSettings = { ...settings, [key]: newValue };
     setSettings(newSettings);
     saveNotificationSettings(newSettings);
+
+    // Request browser notification permission when community notifications are enabled
+    if (key === 'communities' && newValue) {
+      try {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          toast({
+            description: "Please allow notifications in your browser settings",
+            variant: "destructive"
+          });
+        }
+      } catch {
+        // Permission request failed silently
+      }
+    }
   };
 
   if (!isAuthenticated) {
@@ -144,6 +166,44 @@ export default function NotificationSettingsPage() {
               onCheckedChange={() => handleToggle('follows')}
             />
           </div>
+
+          {/* Community Notifications */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-orange-500" />
+              </div>
+              <div>
+                <Label htmlFor="communities" className="font-medium">Communities</Label>
+                <p className="text-xs text-muted-foreground">When new messages arrive in your communities</p>
+              </div>
+            </div>
+            <Switch
+              id="communities"
+              checked={settings.communities}
+              onCheckedChange={() => handleToggle('communities')}
+            />
+          </div>
+
+          {/* Community Sound */}
+          {settings.communities && (
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border ml-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-orange-500/5 flex items-center justify-center">
+                  <Volume2 className="h-5 w-5 text-orange-400" />
+                </div>
+                <div>
+                  <Label htmlFor="communitySound" className="font-medium">Sound</Label>
+                  <p className="text-xs text-muted-foreground">Play sound for community messages</p>
+                </div>
+              </div>
+              <Switch
+                id="communitySound"
+                checked={settings.communitySound}
+                onCheckedChange={() => handleToggle('communitySound')}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

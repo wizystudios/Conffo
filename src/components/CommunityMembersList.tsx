@@ -42,7 +42,9 @@ export function CommunityMembersList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const isCreator = creatorId === user?.id;
+  const canManage = isCreator || isAdmin;
 
   useEffect(() => {
     if (isOpen) {
@@ -61,19 +63,27 @@ export function CommunityMembersList({
       
       setMembers(membersData);
       
+      // Check if current user is admin
+      const me = membersData.find((m) => m.userId === user?.id);
+      setIsAdmin(me?.role === 'creator' || me?.role === 'admin');
+      
       const memberIds = new Set(membersData.map(m => m.userId));
       const availableConnections = connectionsData.filter(c => !memberIds.has(c.id));
       setConnections(availableConnections);
     } else {
       const membersData = await getCommunityMembers(communityId);
       setMembers(membersData);
+      
+      // Check if current user is admin
+      const me = membersData.find((m) => m.userId === user?.id);
+      setIsAdmin(me?.role === 'creator' || me?.role === 'admin');
     }
     
     setIsLoading(false);
   };
 
   const handleRemoveMember = async (memberId: string, userId: string) => {
-    if (!isCreator) return;
+    if (!canManage) return;
     
     const success = await removeCommunityMember(communityId, userId);
     if (success) {
@@ -237,7 +247,7 @@ export function CommunityMembersList({
                     )}
                   </div>
                   
-                  {isCreator && member.role !== 'creator' && (
+                  {canManage && member.role !== 'creator' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 px-2">
@@ -245,17 +255,17 @@ export function CommunityMembersList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {member.role === 'member' ? (
+                        {member.role === 'member' && isCreator ? (
                           <DropdownMenuItem onClick={() => handlePromote(member.userId)}>
                             <ChevronUp className="h-4 w-4 mr-2" />
                             Promote to Admin
                           </DropdownMenuItem>
-                        ) : (
+                        ) : member.role === 'admin' && isCreator ? (
                           <DropdownMenuItem onClick={() => handleDemote(member.userId)}>
                             <ChevronDown className="h-4 w-4 mr-2" />
                             Demote to Member
                           </DropdownMenuItem>
-                        )}
+                        ) : null}
                         <DropdownMenuItem 
                           onClick={() => handleRemoveMember(member.id, member.userId)}
                           className="text-destructive"

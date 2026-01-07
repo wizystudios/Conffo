@@ -30,6 +30,12 @@ export default function MultiStepAuthPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   
+  // Phone number normalization - strip all non-digits except leading +
+  const normalizePhone = (phone: string): string => {
+    const digits = phone.replace(/[^\d+]/g, '');
+    return digits.startsWith('+') ? digits : `+${digits}`;
+  };
+  
   // Validation - stricter email validation requiring proper TLD
   const isPhone = (value: string) => /^\+?[\d\s-]{10,}$/.test(value.replace(/\s/g, ''));
   const emailValid = email && /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
@@ -81,15 +87,35 @@ export default function MultiStepAuthPage() {
       try {
         setLoading(true);
 
-        // Look up the email by phone number from profiles
+        // Look up the email by phone number from profiles (normalized)
+        const normalized = normalizePhone(phoneNumber);
+        
         const { data: profile, error: lookupError } = await supabase
           .from('profiles')
-          .select('id, contact_email')
-          .eq('contact_phone', phoneNumber)
+          .select('id')
+          .or(`contact_phone.eq.${normalized},contact_phone.eq.${phoneNumber}`)
           .maybeSingle();
 
-        if (lookupError || !profile?.contact_email) {
+        if (lookupError || !profile?.id) {
           throw new Error('No account found with this phone number');
+        }
+
+        // Lookup auth user email via user id
+        const { data: authData, error: authError } = await supabase.auth.admin
+          ? { data: null, error: new Error('No access') }
+          : { data: null, error: null };
+        
+        // Use the email from the auth.users linked to profile
+        const { data: userWithEmail } = await supabase
+          .from('profiles')
+          .select('contact_email')
+          .eq('id', profile.id)
+          .maybeSingle();
+        
+        if (!userWithEmail?.contact_email) {
+          // Try to get the email from the user's auth account
+          // Since we can't query auth.users directly, we need email stored in profile
+          throw new Error('Please add your email in profile settings to enable phone login');
         }
 
         Object.keys(localStorage).forEach((key) => {
@@ -99,7 +125,7 @@ export default function MultiStepAuthPage() {
         });
 
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: profile.contact_email,
+          email: userWithEmail.contact_email,
           password,
         });
 
