@@ -1012,6 +1012,14 @@ export type Database = {
         Args: { confession_uuid: string; user_uuid: string }
         Returns: string[]
       }
+      is_community_admin: {
+        Args: { p_community_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_community_member: {
+        Args: { p_community_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_user_blocked: {
         Args: { blocked_uuid: string; blocker_uuid: string }
         Returns: boolean
