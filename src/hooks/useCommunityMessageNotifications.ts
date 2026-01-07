@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import {
-  requestNotificationPermission,
   showCommunityMessageNotification,
 } from '@/utils/pushNotifications';
+import { getNotificationSettings } from '@/pages/NotificationSettingsPage';
 
 type Cache = Map<string, string>;
 
@@ -24,17 +24,34 @@ function formatCommunityMessagePreview(row: CommunityMessageRow): string {
   return 'New message';
 }
 
-export function useCommunityMessageNotifications(enabled: boolean) {
+// Simple notification sound
+function playNotificationSound() {
+  try {
+    const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+    audio.volume = 0.3;
+    audio.play().catch(() => {});
+  } catch {
+    // Ignore audio errors
+  }
+}
+
+export function useCommunityMessageNotifications() {
   const { user, isAuthenticated } = useAuth();
+  const [settings, setSettings] = useState(getNotificationSettings);
+
+  // Re-check settings periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSettings(getNotificationSettings());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const senderNameCache = useRef<Cache>(new Map());
   const communityNameCache = useRef<Cache>(new Map());
 
   useEffect(() => {
-    if (!enabled || !isAuthenticated || !user?.id) return;
-
-    // Ask once after login; without permission browser notifications won't show.
-    requestNotificationPermission().catch(() => undefined);
+    if (!settings.communities || !isAuthenticated || !user?.id) return;
 
     let cancelled = false;
 
@@ -91,6 +108,12 @@ export function useCommunityMessageNotifications(enabled: boolean) {
 
           if (cancelled) return;
 
+          // Play sound if enabled
+          const currentSettings = getNotificationSettings();
+          if (currentSettings.communitySound) {
+            playNotificationSound();
+          }
+
           showCommunityMessageNotification(
             senderName,
             communityName,
@@ -105,5 +128,5 @@ export function useCommunityMessageNotifications(enabled: boolean) {
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [enabled, isAuthenticated, user?.id]);
+  }, [settings.communities, isAuthenticated, user?.id]);
 }

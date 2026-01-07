@@ -59,7 +59,7 @@ function LayoutContent({ children }: LayoutProps) {
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
   const { isAuthenticated } = useAuth();
 
-  useCommunityMessageNotifications(isAuthenticated);
+  useCommunityMessageNotifications();
 
   const [activeCall, setActiveCall] = useState<{
     webRTCService: WebRTCService;

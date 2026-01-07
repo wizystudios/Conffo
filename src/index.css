@@ -177,14 +177,18 @@
   }
 }
 
-/* Moments indicator (unique, not Instagram rings) */
+/* ========================================
+   CONFFO UNIQUE BRAND SYSTEM
+   ======================================== */
+
+/* Moments indicator (unique gradient bar below avatar - NOT Instagram ring) */
 .story-indicator-bar {
   height: 3px;
   border-radius: 9999px;
   background: linear-gradient(
     90deg,
     hsl(var(--primary)) 0%,
-    hsl(var(--accent)) 50%,
+    hsl(252 80% 65%) 50%,
     hsl(var(--primary)) 100%
   );
 }
@@ -192,22 +196,101 @@
 .story-avatar-glow {
   box-shadow:
     0 0 0 2px hsl(var(--background)),
-    0 0 0 3.5px hsl(var(--primary) / 0.55),
-    0 10px 24px -16px hsl(var(--primary) / 0.55);
+    0 0 12px 2px hsl(var(--primary) / 0.4);
+  transition: box-shadow 0.3s ease;
 }
 
-/* Add a slow pulse animation */
+.story-avatar-glow:hover {
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 20px 4px hsl(var(--primary) / 0.6);
+}
+
+/* Conffo signature floating action button */
+.conffo-fab {
+  @apply rounded-full shadow-lg;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(252 70% 60%) 100%);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.conffo-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 24px -4px hsl(var(--primary) / 0.5);
+}
+
+.conffo-fab:active {
+  transform: scale(0.96);
+}
+
+/* Conffo card - subtle depth with signature border */
+.conffo-card {
+  @apply bg-card rounded-2xl border border-border/50;
+  box-shadow: 0 2px 12px -4px hsl(var(--foreground) / 0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.conffo-card:hover {
+  box-shadow: 0 8px 24px -8px hsl(var(--foreground) / 0.12);
+}
+
+/* Conffo unique button styles */
+.conffo-btn-connect {
+  @apply text-[10px] font-semibold px-3 py-1 rounded-full;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(252 65% 55%) 100%);
+  color: hsl(var(--primary-foreground));
+  transition: all 0.2s ease;
+}
+
+.conffo-btn-connect:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.4);
+}
+
+/* Unique interaction - tap ripple effect */
+.conffo-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.conffo-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, hsl(var(--primary) / 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+.conffo-ripple:active::after {
+  opacity: 1;
+  transform: scale(2);
+}
+
+/* Conffo unique loading spinner */
+.conffo-spinner {
+  @apply h-5 w-5 rounded-full;
+  border: 2px solid hsl(var(--primary) / 0.2);
+  border-top-color: hsl(var(--primary));
+  animation: conffo-spin 0.8s linear infinite;
+}
+
+@keyframes conffo-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Slow pulse animation for moments */
 @keyframes pulse-slow {
   0%, 100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.8;
+    opacity: 0.7;
   }
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 2s ease-in-out infinite;
+  animation: pulse-slow 2.5s ease-in-out infinite;
 }
 
 /* Smooth slide-in animations */
