@@ -61,28 +61,35 @@ export function StoryRing({ userId, username, avatarUrl, size = 'md' }: StoryRin
 
   return (
     <>
-      <div 
-        className={`cursor-pointer relative`}
+      <button
+        type="button"
+        className="cursor-pointer"
         onClick={handleClick}
+        aria-label={hasStories ? `View ${username || 'user'} moment` : `${username || 'user'} has no moments`}
       >
-        <div 
-          className={cn(
-            `rounded-full transition-all`, 
-            hasStories && (
-              hasUnwatchedStories 
-                ? 'bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500' 
-                : 'bg-gray-400/30'
-            ),
-            ringSize[size]
+        <div className="flex flex-col items-center gap-1">
+          <div className={cn('rounded-full', hasUnwatchedStories && hasStories && 'story-avatar-glow')}>
+            <Avatar className={sizeClass[size]}>
+              <AvatarImage src={avatarUrl || ''} alt={username || 'User'} loading="lazy" />
+              <AvatarFallback>{getInitials(username)}</AvatarFallback>
+            </Avatar>
+          </div>
+
+          {hasStories && (
+            <div
+              className={cn(
+                'story-indicator-bar',
+                hasUnwatchedStories ? 'animate-pulse-slow' : 'opacity-30',
+                size === 'sm' && 'w-6',
+                size === 'md' && 'w-8',
+                size === 'lg' && 'w-10',
+                size === 'xl' && 'w-14'
+              )}
+            />
           )}
-        >
-          <Avatar className={sizeClass[size]}>
-            <AvatarImage src={avatarUrl || ''} alt={username || 'User'} />
-            <AvatarFallback>{getInitials(username)}</AvatarFallback>
-          </Avatar>
         </div>
-      </div>
-      
+      </button>
+
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-none w-full h-full max-h-none">
           {stories.length > 0 && (

@@ -177,14 +177,23 @@
   }
 }
 
-/* Animation for story rings */
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Moments indicator (unique, not Instagram rings) */
+.story-indicator-bar {
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--accent)) 50%,
+    hsl(var(--primary)) 100%
+  );
+}
+
+.story-avatar-glow {
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 0 3.5px hsl(var(--primary) / 0.55),
+    0 10px 24px -16px hsl(var(--primary) / 0.55);
 }
 
 /* Add a slow pulse animation */

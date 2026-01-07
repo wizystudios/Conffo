@@ -14,6 +14,7 @@ import { User, Save, Camera, Eye, EyeOff } from 'lucide-react';
 export function ProfileUpdateForm() {
   const { user, refreshUser } = useAuth();
   const [username, setUsername] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isProfilePublic, setIsProfilePublic] = useState(true);
@@ -26,7 +27,7 @@ export function ProfileUpdateForm() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('username, is_public')
+          .select('username, is_public, contact_phone')
           .eq('id', user.id)
           .single();
 
@@ -48,6 +49,7 @@ export function ProfileUpdateForm() {
         }
 
         setIsProfilePublic(profile?.is_public !== false);
+        setContactPhone(profile?.contact_phone || '');
       } catch (error) {
         console.error('Error initializing profile:', error);
         // Fallback to email-derived username
@@ -75,6 +77,7 @@ export function ProfileUpdateForm() {
         .upsert({
           id: user.id,
           username: username.trim(),
+          contact_phone: contactPhone.trim() || null,
           is_public: isProfilePublic,
           updated_at: new Date().toISOString()
         });
@@ -272,6 +275,17 @@ export function ProfileUpdateForm() {
               value={user?.email || ''}
               disabled
               className="bg-muted"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact_phone">Phone (for login)</Label>
+            <Input
+              id="contact_phone"
+              type="tel"
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="+1 555 123 4567"
             />
           </div>
 
