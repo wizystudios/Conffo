@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PlusCircle, Heart, User, MessageCircle, LogOut } from 'lucide-react';
+import { Home, Search, PlusCircle, Bell, User, MessageCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -47,10 +47,10 @@ export function DesktopSidebar() {
   };
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Feed' },
+    { path: '/', icon: Home, label: 'Confessions' },
     { path: '/search', icon: Search, label: 'Search' },
     { path: '/chat', icon: MessageCircle, label: 'Messages' },
-    { path: '/notifications', icon: Heart, label: 'Notification', badge: unreadCount },
+    { path: '/notifications', icon: Bell, label: 'Notification', badge: unreadCount },
   ];
 
   return (

@@ -58,12 +58,12 @@ export default function MultiStepAuthPage() {
     return age;
   }
 
-  // Auto-submit sign in when password is entered
+  // Auto-submit sign in when password is entered (only for email method)
   useEffect(() => {
-    if (authMode === 'signin' && emailValid && passwordValid && !loading) {
+    if (authMode === 'signin' && signinMethod === 'email' && emailValid && passwordValid && !loading) {
       handleSignIn();
     }
-  }, [password]);
+  }, [password, signinMethod]);
 
   // Auto-advance signup flow
   useEffect(() => {
@@ -73,6 +73,55 @@ export default function MultiStepAuthPage() {
   }, [gender]);
 
   const handleSignIn = async () => {
+    // For phone login, we need to look up the email first
+    if (signinMethod === 'phone') {
+      if (!phoneValid || !passwordValid) return;
+      setAuthError(null);
+
+      try {
+        setLoading(true);
+
+        // Look up the email by phone number from profiles
+        const { data: profile, error: lookupError } = await supabase
+          .from('profiles')
+          .select('id, contact_email')
+          .eq('contact_phone', phoneNumber)
+          .maybeSingle();
+
+        if (lookupError || !profile?.contact_email) {
+          throw new Error('No account found with this phone number');
+        }
+
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+            localStorage.removeItem(key);
+          }
+        });
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: profile.contact_email,
+          password,
+        });
+
+        if (error) throw error;
+
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
+      } catch (error: any) {
+        setAuthError(error?.message || 'Failed to sign in');
+        toast({
+          title: 'Sign in failed',
+          description: error?.message,
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Email login
     if (!emailValid || !passwordValid) return;
     setAuthError(null);
 
@@ -304,6 +353,17 @@ export default function MultiStepAuthPage() {
               >
                 Forgot password?
               </button>
+            )}
+
+            {/* Sign in button for phone method */}
+            {signinMethod === 'phone' && phoneValid && passwordValid && (
+              <Button
+                onClick={handleSignIn}
+                disabled={loading}
+                className="w-full h-9 text-sm"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In'}
+              </Button>
             )}
           </div>
         )}
