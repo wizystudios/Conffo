@@ -124,82 +124,96 @@ export function AllUsersBar() {
 
   return (
     <div className="px-4 py-3 border-b border-border">
-      <div className="flex items-center space-x-4 overflow-x-auto scrollbar-hide">
-        {/* Current User Profile with Plus Button */}
+      <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+        {/* Current User - Unique card style */}
         {currentUserProfile && (
-          <div className="flex flex-col items-center min-w-16 relative">
-            {currentUserProfile.hasStory ? (
-              <StoryRing
-                userId={currentUserProfile.id}
-                username={currentUserProfile.username}
-                avatarUrl={currentUserProfile.avatar_url}
-                size="md"
-              />
-            ) : (
-              <Link to={`/user/${currentUserProfile.id}`}>
-                <Avatar className="h-12 w-12 border-2 border-transparent hover:border-muted transition-colors">
-                  <AvatarImage 
-                    src={currentUserProfile.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${currentUserProfile.id}`} 
-                    alt={currentUserProfile.username || 'Your Profile'} 
+          <div className="flex-shrink-0 relative group">
+            <Link to={`/user/${currentUserProfile.id}`} className="block">
+              <div className="relative">
+                {currentUserProfile.hasStory ? (
+                  <StoryRing
+                    userId={currentUserProfile.id}
+                    username={currentUserProfile.username}
+                    avatarUrl={currentUserProfile.avatar_url}
+                    size="md"
                   />
-                  <AvatarFallback>
-                    {currentUserProfile.username?.charAt(0).toUpperCase() || 'Y'}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-            )}
-            
-            {/* Plus button for creating new confession */}
-            <Button
-              size="sm"
-              onClick={handleCreateConfession}
-              className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full p-0"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-            
-            <span className="text-xs text-center mt-1 truncate w-16">
-              {currentUserProfile.username || 'You'}
+                ) : (
+                  <Avatar className="h-14 w-14 ring-2 ring-primary/30 hover:ring-primary/60 transition-all">
+                    <AvatarImage 
+                      src={currentUserProfile.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${currentUserProfile.id}`} 
+                      alt={currentUserProfile.username || 'You'} 
+                    />
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {currentUserProfile.username?.charAt(0).toUpperCase() || 'Y'}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                {/* Create badge */}
+                <button
+                  onClick={(e) => { e.preventDefault(); handleCreateConfession(); }}
+                  className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+            </Link>
+            <span className="block text-[10px] text-center mt-1.5 text-muted-foreground truncate max-w-14">
+              You
             </span>
           </div>
         )}
-        
+
+        {/* Divider */}
+        <div className="h-12 w-px bg-border flex-shrink-0" />
+
+        {/* Other Users - Horizontal scroll with unique design */}
         {users.map((userData) => (
-          <div key={userData.id} className="flex flex-col items-center min-w-16 relative">
-            {userData.hasStory ? (
-              <StoryRing
-                userId={userData.id}
-                username={userData.username}
-                avatarUrl={userData.avatar_url}
-                size="md"
-              />
-            ) : (
-              <Link to={`/user/${userData.id}`}>
-                <Avatar className="h-12 w-12 border-2 border-transparent hover:border-muted transition-colors">
-                  <AvatarImage 
-                    src={userData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userData.id}`} 
-                    alt={userData.username || 'User'} 
-                  />
-                  <AvatarFallback>
-                    {userData.username?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-            )}
-            
-            {/* Show follow button only for non-followed users */}
-            {!userData.isFollowing && (
-              <Button
-                size="sm"
-                onClick={() => handleFollow(userData.id)}
-                className="absolute -top-1 -right-1 h-6 w-6 rounded-full p-0"
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            )}
-            
-            <span className="text-xs text-center mt-1 truncate w-16">
-              {userData.username || 'User'}
+          <div key={userData.id} className="flex-shrink-0 group">
+            <div className="relative">
+              {userData.hasStory ? (
+                <StoryRing
+                  userId={userData.id}
+                  username={userData.username}
+                  avatarUrl={userData.avatar_url}
+                  size="md"
+                />
+              ) : (
+                <Link to={`/user/${userData.id}`}>
+                  <Avatar className={`h-12 w-12 transition-all ${
+                    userData.isFollowing 
+                      ? 'ring-2 ring-green-500/40' 
+                      : 'ring-2 ring-muted/40 hover:ring-primary/40'
+                  }`}>
+                    <AvatarImage 
+                      src={userData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userData.id}`} 
+                      alt={userData.username || 'User'} 
+                    />
+                    <AvatarFallback className="bg-muted text-muted-foreground text-sm">
+                      {userData.username?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              )}
+              
+              {/* Connect button - unique hexagon style instead of plus */}
+              {!userData.isFollowing && (
+                <button
+                  onClick={() => handleFollow(userData.id)}
+                  className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-medium shadow-sm hover:scale-105 transition-transform"
+                >
+                  +
+                </button>
+              )}
+              
+              {/* Connected indicator */}
+              {userData.isFollowing && (
+                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2">
+                  <Check className="h-3 w-3 text-green-500" />
+                </div>
+              )}
+            </div>
+            <span className="block text-[10px] text-center mt-1.5 text-muted-foreground truncate max-w-12">
+              {userData.username?.split(' ')[0] || 'User'}
             </span>
           </div>
         ))}
