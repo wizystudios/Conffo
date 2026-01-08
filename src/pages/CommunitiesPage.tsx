@@ -7,7 +7,7 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { getUserCommunities, Community } from '@/services/communityService';
-import { CommunityChat } from '@/components/CommunityChat';
+import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -43,7 +43,7 @@ export default function CommunitiesPage() {
   if (selectedCommunity) {
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        <CommunityChat
+        <UnifiedChatInterface
           community={selectedCommunity}
           onBack={() => setSelectedCommunity(null)}
           onShowMembers={() => setShowMembers(true)}

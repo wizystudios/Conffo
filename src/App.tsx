@@ -36,6 +36,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
+import { OnboardingGate } from "./components/OnboardingGate";
 
 const App = () => {
   const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
@@ -115,6 +116,7 @@ const App = () => {
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              <OnboardingGate />
               <FishSuccessAnimation 
                 show={showAnimation} 
                 message={message}

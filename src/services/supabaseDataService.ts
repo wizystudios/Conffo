@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Confession, Room, Comment, RoomInfo, ReportReason, Reaction } from '@/types';
+import { sendMessage } from '@/services/chatService';
 import { v4 as uuidv4 } from 'uuid';
 
 export const getConfessions = async (roomId?: string, userId?: string): Promise<Confession[]> => {
@@ -314,23 +315,79 @@ export const getTrendingConfessions = async (limit = 10, userId?: string): Promi
   }
 };
 
+const extractAtMentions = (text: string): string[] => {
+  const matches = text.match(/@([A-Za-z0-9_]{2,32})/g) || [];
+  return Array.from(new Set(matches.map(m => m.slice(1))));
+};
+
+export const distributeConfessionMentions = async (params: {
+  confessionId: string;
+  content: string;
+  senderId: string;
+}) => {
+  const mentions = extractAtMentions(params.content);
+  if (mentions.length === 0) return;
+
+  const excerpt = params.content.replace(/\s+/g, ' ').trim().slice(0, 80);
+  const link = `/confession/${params.confessionId}`;
+
+  for (const handle of mentions) {
+    // 1) Try community by name
+    const { data: community } = await supabase
+      .from('communities')
+      .select('id, name')
+      .ilike('name', handle)
+      .maybeSingle();
+
+    if (community?.id) {
+      await supabase.from('community_messages').insert({
+        community_id: community.id,
+        sender_id: params.senderId,
+        message_type: 'text',
+        content: `📝 Confession shared: ${excerpt}${excerpt.length === 80 ? '…' : ''}\n${link}`,
+      });
+      continue;
+    }
+
+    // 2) Try user by username
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .ilike('username', handle)
+      .maybeSingle();
+
+    if (profile?.id && profile.id !== params.senderId) {
+      await sendMessage(
+        profile.id,
+        `📝 Check my confession: ${link}`,
+        'text'
+      );
+    }
+  }
+};
+
 export const addConfession = async (
   content: string, 
   room: Room,
   userId: string
 ): Promise<void> => {
   try {
-    const { error } = await supabase
+    const { data: confession, error } = await supabase
       .from('confessions')
-      .insert([
-        { 
-          content,
-          room_id: room,
-          user_id: userId
-        }
-      ]);
+      .insert([{ 
+        content,
+        room_id: room,
+        user_id: userId
+      }])
+      .select('id')
+      .single();
     
     if (error) throw error;
+
+    // Best-effort mention distribution
+    if (confession?.id) {
+      distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
+    }
   } catch (error) {
     console.error('Error adding confession:', error);
     throw error;
@@ -347,7 +404,7 @@ export const addConfessionWithMedia = async (
   mediaType?: 'image' | 'video' | 'audio'
 ): Promise<void> => {
   try {
-    const { error } = await supabase
+    const { data: confession, error } = await supabase
       .from('confessions')
       .insert([
         { 
@@ -358,9 +415,15 @@ export const addConfessionWithMedia = async (
           media_type: mediaType,
           tags
         }
-      ]);
+      ])
+      .select('id')
+      .single();
     
     if (error) throw error;
+
+    if (confession?.id) {
+      distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
+    }
   } catch (error) {
     console.error('Error adding confession with media:', error);
     throw error;
@@ -422,6 +485,9 @@ export const createConfessionWithMediaItems = async (
       throw mediaError;
     }
   }
+
+  // Best-effort mention distribution
+  distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
 };
 
 // Add the missing toggleReaction function
