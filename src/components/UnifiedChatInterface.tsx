@@ -514,10 +514,11 @@ export function UnifiedChatInterface({
         ) : (
           <div className="space-y-1">
             {messages.map((message: any, index: number) => {
-              const msgSenderId = isCommunityChat ? message.senderId : message.sender_id;
+              const msgSenderId = message.senderId || message.sender_id;
               const isOwn = msgSenderId === user?.id;
               const isSystemMessage = message.messageType === 'system' || message.message_type === 'system';
-              const prevMsgSenderId = isCommunityChat ? messages[index - 1]?.senderId : messages[index - 1]?.sender_id;
+              const prevMsg = messages[index - 1] as any;
+              const prevMsgSenderId = prevMsg?.senderId || prevMsg?.sender_id;
               const showAvatar = !isOwn && (index === 0 || prevMsgSenderId !== msgSenderId);
               
               const replyMsg = isCommunityChat 
@@ -787,9 +788,10 @@ export function UnifiedChatInterface({
         onOpenChange={(open) => !open && setDeleteMessageId(null)}
         onDeleteForMe={handleDeleteForMe}
         onDeleteForEveryone={handleDeleteForEveryone}
-        isOwn={!!deleteMessageId && (isCommunityChat 
-          ? messages.find((m: any) => m.id === deleteMessageId)?.senderId === user?.id
-          : messages.find((m: any) => m.id === deleteMessageId)?.sender_id === user?.id)}
+        isOwn={!!deleteMessageId && (() => {
+          const msg = messages.find((m: any) => m.id === deleteMessageId) as any;
+          return (msg?.senderId || msg?.sender_id) === user?.id;
+        })()}
       />
       
       <ReportDialog
