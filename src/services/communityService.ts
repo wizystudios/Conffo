@@ -303,6 +303,9 @@ export async function respondToJoinRequest(
   requestId: string, 
   approve: boolean
 ): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
   const { data: request, error: fetchError } = await supabase
     .from('community_join_requests')
     .select('*')
@@ -317,7 +320,7 @@ export async function respondToJoinRequest(
     .update({ status: approve ? 'approved' : 'declined', updated_at: new Date().toISOString() })
     .eq('id', requestId);
 
-  // If approved, add as member
+  // If approved, add as member and post system message
   if (approve) {
     await supabase
       .from('community_members')
@@ -326,6 +329,23 @@ export async function respondToJoinRequest(
         user_id: request.user_id,
         role: 'member'
       });
+
+    // Get usernames for system message
+    const [{ data: adminProfile }, { data: memberProfile }] = await Promise.all([
+      supabase.from('profiles').select('username').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('username').eq('id', request.user_id).maybeSingle()
+    ]);
+
+    const adminName = adminProfile?.username || 'An admin';
+    const memberName = memberProfile?.username || 'A user';
+
+    // Post system message
+    await supabase.from('community_messages').insert({
+      community_id: request.community_id,
+      sender_id: user.id,
+      content: `${adminName} accepted ${memberName}'s request to join`,
+      message_type: 'text'
+    });
   }
 
   return true;
@@ -398,6 +418,23 @@ export async function addCommunityMember(communityId: string, userId: string): P
     console.error('Error adding community member:', error);
     return false;
   }
+
+  // Get usernames for system message
+  const [{ data: adminProfile }, { data: memberProfile }] = await Promise.all([
+    supabase.from('profiles').select('username').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('username').eq('id', userId).maybeSingle()
+  ]);
+
+  const adminName = adminProfile?.username || 'An admin';
+  const memberName = memberProfile?.username || 'A user';
+
+  // Post system message
+  await supabase.from('community_messages').insert({
+    community_id: communityId,
+    sender_id: user.id,
+    content: `${adminName} added ${memberName} to the community`,
+    message_type: 'text'
+  });
 
   return true;
 }

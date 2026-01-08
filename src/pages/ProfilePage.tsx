@@ -35,6 +35,9 @@ interface ProfileData {
   date_of_birth: string | null;
   interests: string[] | null;
   is_verified: boolean | null;
+  privacy_settings: {
+    show_communities_on_profile?: boolean;
+  } | null;
 }
 
 interface UserCommunity {
@@ -126,7 +129,7 @@ export default function ProfilePage() {
       try {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified')
+          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified, privacy_settings')
           .eq('id', targetUserId)
           .maybeSingle();
 
@@ -147,7 +150,8 @@ export default function ProfilePage() {
             website: profile.website,
             date_of_birth: profile.date_of_birth,
             interests: profile.interests,
-            is_verified: profile.is_verified
+            is_verified: profile.is_verified,
+            privacy_settings: profile.privacy_settings as any
           });
         } else {
           const fallbackProfile: ProfileData = {
@@ -162,7 +166,8 @@ export default function ProfilePage() {
             website: null,
             date_of_birth: null,
             interests: null,
-            is_verified: null
+            is_verified: null,
+            privacy_settings: null
           };
           setProfileData(fallbackProfile);
         }
@@ -199,7 +204,8 @@ export default function ProfilePage() {
           website: null,
           date_of_birth: null,
           interests: null,
-          is_verified: null
+          is_verified: null,
+          privacy_settings: null
         });
       } finally {
         setIsLoadingProfile(false);
@@ -230,7 +236,7 @@ export default function ProfilePage() {
       const targetUserId = userId || user!.id;
       supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified')
+        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified, privacy_settings')
         .eq('id', targetUserId)
         .maybeSingle()
         .then(({ data: updatedProfile, error }) => {
@@ -252,7 +258,8 @@ export default function ProfilePage() {
               website: updatedProfile.website,
               date_of_birth: updatedProfile.date_of_birth,
               interests: updatedProfile.interests,
-              is_verified: updatedProfile.is_verified
+              is_verified: updatedProfile.is_verified,
+              privacy_settings: updatedProfile.privacy_settings as any
             });
           }
         });
@@ -376,7 +383,7 @@ export default function ProfilePage() {
                 onClick={() => {}}
               >
                 <span className="text-xl font-bold">{postsCount}</span>
-                <span className="text-xs text-muted-foreground">Posts</span>
+                <span className="text-xs text-muted-foreground">Confessions</span>
               </button>
               
               <div className="w-px h-8 bg-border" />
@@ -517,8 +524,8 @@ export default function ProfilePage() {
             </div>
           )}
           
-          {/* User Communities */}
-          {userCommunities.length > 0 && (
+          {/* User Communities - Show if enabled in privacy settings or own profile */}
+          {userCommunities.length > 0 && (isOwnProfile || profileData.privacy_settings?.show_communities_on_profile !== false) && (
             <div className="bg-card rounded-2xl p-4 border border-border/50">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 <Users className="h-3 w-3 inline mr-1" />

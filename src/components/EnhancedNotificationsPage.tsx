@@ -198,7 +198,7 @@ export default function EnhancedNotificationsPage() {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background">
+    <div ref={containerRef} className="min-h-screen bg-background lg:pb-6">
       {/* Header - no top navbar */}
       <div className="sticky top-0 z-10 bg-background">
         <div className="flex items-center justify-between px-4 py-3">

@@ -19,6 +19,7 @@ interface PrivacySettings {
   story_visibility: 'public' | 'friends' | 'private';
   allow_messages: boolean;
   allow_friend_requests: boolean;
+  show_communities_on_profile: boolean;
 }
 
 interface ProfileData {
@@ -52,7 +53,8 @@ export function EnhancedProfileSettings() {
       activity_visibility: 'public',
       story_visibility: 'public',
       allow_messages: true,
-      allow_friend_requests: true
+      allow_friend_requests: true,
+      show_communities_on_profile: true
     }
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -419,6 +421,17 @@ export function EnhancedProfileSettings() {
               <Switch
                 checked={formData.privacy_settings.allow_friend_requests}
                 onCheckedChange={(checked) => updatePrivacySetting('allow_friend_requests', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <Label>Show Communities on Profile</Label>
+              </div>
+              <Switch
+                checked={formData.privacy_settings.show_communities_on_profile ?? true}
+                onCheckedChange={(checked) => updatePrivacySetting('show_communities_on_profile', checked)}
               />
             </div>
           </div>
