@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { useAuth } from '@/context/AuthContext';
 import { areUsersBlocked } from '@/services/blockService';
@@ -7,6 +7,8 @@ import { toast } from '@/hooks/use-toast';
 
 export default function ChatPage() {
   const { userId } = useParams<{ userId: string }>();
+  const [searchParams] = useSearchParams();
+  const highlightMessageId = searchParams.get('messageId');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -36,7 +38,11 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <UnifiedChatInterface targetUserId={userId} onBack={handleBack} />
+      <UnifiedChatInterface 
+        targetUserId={userId} 
+        onBack={handleBack} 
+        highlightMessageId={highlightMessageId || undefined}
+      />
     </div>
   );
 }

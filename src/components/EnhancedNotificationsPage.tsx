@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface NotificationItemProps {
   notification: any;
-  onNavigateToChat: (userId: string) => void;
+  onNavigateToChat: (userId: string, messageId?: string) => void;
   onMarkAsRead: (id: string) => void;
 }
 
@@ -35,11 +35,19 @@ const NotificationItem = ({ notification, onNavigateToChat, onMarkAsRead }: Noti
     }
     
     if (notification.type === 'message' && notification.senderInfo?.userId) {
-      onNavigateToChat(notification.senderInfo.userId);
+      // Deep-link to the specific message if we have a related_id (message_id)
+      if (notification.related_id) {
+        onNavigateToChat(notification.senderInfo.userId, notification.related_id);
+      } else {
+        onNavigateToChat(notification.senderInfo.userId);
+      }
     } else if ((notification.type === 'new_reaction' || notification.type === 'new_comment') && notification.related_id) {
       navigate(`/confession/${notification.related_id}`);
     } else if (notification.type === 'follow' && notification.senderInfo?.userId) {
       navigate(`/profile/${notification.senderInfo.userId}`);
+    } else if (notification.type === 'community' && notification.related_id) {
+      // Navigate to chat page - community chat
+      navigate('/chat');
     }
   };
 
@@ -193,8 +201,12 @@ export default function EnhancedNotificationsPage() {
     queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
   };
 
-  const handleNavigateToChat = (userId: string) => {
-    navigate(`/chat/${userId}`);
+  const handleNavigateToChat = (userId: string, messageId?: string) => {
+    if (messageId) {
+      navigate(`/chat/${userId}?messageId=${messageId}`);
+    } else {
+      navigate(`/chat/${userId}`);
+    }
   };
 
   return (

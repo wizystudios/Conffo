@@ -46,6 +46,8 @@ interface UnifiedChatInterfaceProps {
   onShowRequests?: () => void;
   // Common
   onBack?: () => void;
+  // Deep-link to specific message
+  highlightMessageId?: string;
 }
 
 const playSendSound = () => {
@@ -62,7 +64,8 @@ export function UnifiedChatInterface({
   onShowMembers,
   onAddMembers,
   onShowRequests,
-  onBack
+  onBack,
+  highlightMessageId
 }: UnifiedChatInterfaceProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -180,14 +183,24 @@ export function UnifiedChatInterface({
     };
   }, [isCommunityChat, community, user?.id]);
 
-  // Scroll to bottom on initial load
+  // Scroll to bottom on initial load or to highlighted message
   useEffect(() => {
     const messages = isCommunityChat ? communityMessages : dmMessages;
     if (isInitialLoad.current && messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      // If we have a highlightMessageId, scroll to that message instead
+      if (highlightMessageId && messageRefs.current[highlightMessageId]) {
+        setTimeout(() => {
+          messageRefs.current[highlightMessageId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setHighlightedMessageId(highlightMessageId);
+          // Clear highlight after 3 seconds
+          setTimeout(() => setHighlightedMessageId(null), 3000);
+        }, 300);
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }
       isInitialLoad.current = false;
     }
-  }, [isCommunityChat ? communityMessages : dmMessages]);
+  }, [isCommunityChat ? communityMessages : dmMessages, highlightMessageId]);
 
   // Mark DM as read
   useEffect(() => {

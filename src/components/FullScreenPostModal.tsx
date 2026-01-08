@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
+import { MentionAutocomplete, useMentionAutocomplete } from '@/components/MentionAutocomplete';
 
 interface FullScreenPostModalProps {
   isOpen: boolean;
@@ -41,6 +42,10 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Mention autocomplete
+  const { showMentions, setShowMentions, cursorPosition, handleInputChange, insertMention } = useMentionAutocomplete();
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -235,15 +240,41 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
       {/* Content */}
       <div className="overflow-y-auto h-[calc(100vh-64px)] pb-6">
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Text Area */}
-          <Textarea
-            placeholder="Share your confession..."
-            className="min-h-[120px] text-base resize-none border-0 focus-visible:ring-0 p-0 text-lg"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            autoFocus
-            disabled={isSubmitting}
-          />
+          {/* Text Area with Mention Autocomplete */}
+          <div className="relative">
+            <Textarea
+              ref={textareaRef}
+              placeholder="Share your confession... Use @ to mention users or communities"
+              className="min-h-[120px] text-base resize-none border-0 focus-visible:ring-0 p-0 text-lg"
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                handleInputChange(e.target.value, e.target.selectionStart);
+              }}
+              onKeyUp={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                handleInputChange(content, target.selectionStart);
+              }}
+              onClick={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                handleInputChange(content, target.selectionStart);
+              }}
+              autoFocus
+              disabled={isSubmitting}
+            />
+            
+            <MentionAutocomplete
+              inputValue={content}
+              cursorPosition={cursorPosition}
+              isVisible={showMentions}
+              onClose={() => setShowMentions(false)}
+              onSelect={(mention, startIndex, endIndex) => {
+                const newContent = insertMention(content, mention, startIndex, endIndex);
+                setContent(newContent);
+                setShowMentions(false);
+              }}
+            />
+          </div>
           
           {/* Media Preview - Vertical Layout */}
           {mediaFiles.length > 0 && (
