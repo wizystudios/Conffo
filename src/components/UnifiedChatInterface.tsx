@@ -381,7 +381,7 @@ export function UnifiedChatInterface({
   };
 
   const isLoading = isCommunityChat ? isCommunityLoading : dmLoading;
-  const messages = isCommunityChat ? communityMessages : dmMessages;
+  const messages = (isCommunityChat ? communityMessages : dmMessages) as any[];
   
   // Display info
   const displayName = isCommunityChat 

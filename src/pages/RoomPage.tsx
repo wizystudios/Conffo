@@ -10,7 +10,7 @@ import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Confession, Room, RoomInfo } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { CommunityList } from '@/components/CommunityList';
-import { CommunityChat } from '@/components/CommunityChat';
+import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { Community } from '@/services/communityService';
@@ -66,7 +66,7 @@ export default function RoomPage() {
   if (selectedCommunity) {
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        <CommunityChat
+        <UnifiedChatInterface
           community={selectedCommunity}
           onBack={() => setSelectedCommunity(null)}
           onShowMembers={() => setShowMembers(true)}

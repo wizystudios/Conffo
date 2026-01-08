@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ModernChatInterface } from '@/components/ModernChatInterface';
+import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { useAuth } from '@/context/AuthContext';
 import { areUsersBlocked } from '@/services/blockService';
 import { toast } from '@/hooks/use-toast';
@@ -36,7 +36,7 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <ModernChatInterface targetUserId={userId} onBack={handleBack} />
+      <UnifiedChatInterface targetUserId={userId} onBack={handleBack} />
     </div>
   );
 }

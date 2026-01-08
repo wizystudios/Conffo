@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface AuthUser extends SupabaseUser {
   username?: string;
   avatarUrl?: string;
+  onboardingCompleted?: boolean;
 }
 
 interface AuthContextType {
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('username, avatar_url, is_admin')
+        .select('username, avatar_url, is_admin, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
 
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .insert({
               id: userId,
               username: emailUsername,
+              onboarding_completed: false,
               updated_at: new Date().toISOString()
             });
 
@@ -65,7 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             profile = {
               username: emailUsername,
               avatar_url: null,
-              is_admin: false
+              is_admin: false,
+              onboarding_completed: false,
             };
             console.log('Created default profile');
           } else {
@@ -82,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...authUser,
         username: profile?.username || authUser.email?.split('@')[0] || 'User',
         avatarUrl: profile?.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${userId}`,
+        onboardingCompleted: profile?.onboarding_completed ?? false,
       };
     } catch (error) {
       console.error('Error fetching user profile:', error);

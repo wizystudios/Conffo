@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { getRooms } from '@/services/supabaseDataService';
+import { distributeConfessionMentions } from '@/services/supabaseDataService';
 import { Room } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { X, Image as ImageIcon, Video as VideoIcon, Music, Hash, ArrowLeft, Loader2 } from 'lucide-react';
@@ -157,33 +158,36 @@ export function FullScreenPostModal({ isOpen, onClose, onSuccess, initialRoom }:
         .select('id')
         .single();
 
-      if (confessionError || !confession) throw confessionError || new Error('Failed to create confession');
+       if (confessionError || !confession) throw confessionError || new Error('Failed to create confession');
 
-      if (uploaded.length > 0) {
-        const rows = uploaded.map((m, index) => ({
-          confession_id: confession.id,
-          user_id: user.id,
-          media_url: m.url,
-          media_type: m.type,
-          order_index: index,
-        }));
+       if (uploaded.length > 0) {
+         const rows = uploaded.map((m, index) => ({
+           confession_id: confession.id,
+           user_id: user.id,
+           media_url: m.url,
+           media_type: m.type,
+           order_index: index,
+         }));
 
-        const { error: mediaError } = await supabase.from('confession_media').insert(rows);
-        if (mediaError) {
-          await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
-          throw mediaError;
-        }
-      }
+         const { error: mediaError } = await supabase.from('confession_media').insert(rows);
+         if (mediaError) {
+           await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
+           throw mediaError;
+         }
+       }
 
-      setUploadProgress(100);
+       // Best-effort mention distribution
+       distributeConfessionMentions({ confessionId: confession.id, content, senderId: user.id }).catch(() => {});
 
-      toast({
-        title: "Confession shared!",
-        description: "Your confession has been shared successfully.",
-      });
+       setUploadProgress(100);
 
-      if (onSuccess) onSuccess();
-      onClose();
+       toast({
+         title: "Confession shared!",
+         description: "Your confession has been shared successfully.",
+       });
+
+       if (onSuccess) onSuccess();
+       onClose();
     } catch (error) {
       console.error('Error submitting confession:', error);
       toast({

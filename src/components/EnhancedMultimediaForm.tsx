@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Room } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { compressImages } from '@/utils/imageCompression';
+import { distributeConfessionMentions } from '@/services/supabaseDataService';
 import { UploadDebugPanel, UploadStatus } from '@/components/UploadDebugPanel';
 
 interface MediaFile {
@@ -212,45 +213,48 @@ export function EnhancedMultimediaForm({ onSuccess, onCancel, initialRoom }: Enh
         throw confessionError || new Error('Failed to create confession');
       }
 
-      if (urls.length > 0) {
-        // Update statuses to db_inserting
-        setUploadStatuses(prev => prev.map(s => ({ ...s, status: 'db_inserting' as const })));
-        
-        const rows = urls.map((url, index) => ({
-          confession_id: confession.id,
-          user_id: user.id,
-          media_url: url,
-          media_type: types[index] || 'image',
-          order_index: index,
-        }));
+       if (urls.length > 0) {
+         // Update statuses to db_inserting
+         setUploadStatuses(prev => prev.map(s => ({ ...s, status: 'db_inserting' as const })));
+         
+         const rows = urls.map((url, index) => ({
+           confession_id: confession.id,
+           user_id: user.id,
+           media_url: url,
+           media_type: types[index] || 'image',
+           order_index: index,
+         }));
 
-        const { error: mediaError } = await supabase
-          .from('confession_media')
-          .insert(rows);
+         const { error: mediaError } = await supabase
+           .from('confession_media')
+           .insert(rows);
 
-        if (mediaError) {
-          setUploadStatuses(prev => prev.map(s => ({ 
-            ...s, 
-            status: 'error' as const, 
-            error: mediaError.message,
-            dbInserted: false 
-          })));
-          await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
-          throw mediaError;
-        }
-        
-        // Mark all as complete
-        setUploadStatuses(prev => prev.map(s => ({ 
-          ...s, 
-          status: 'complete' as const,
-          dbInserted: true 
-        })));
-      }
+         if (mediaError) {
+           setUploadStatuses(prev => prev.map(s => ({ 
+             ...s, 
+             status: 'error' as const, 
+             error: mediaError.message,
+             dbInserted: false 
+           })));
+           await supabase.from('confessions').delete().eq('id', confession.id).eq('user_id', user.id);
+           throw mediaError;
+         }
+         
+         // Mark all as complete
+         setUploadStatuses(prev => prev.map(s => ({ 
+           ...s, 
+           status: 'complete' as const,
+           dbInserted: true 
+         })));
+       }
 
-      toast({
-        title: "Confession posted!",
-        description: "Your confession has been shared successfully.",
-      });
+       // Best-effort mention distribution
+       distributeConfessionMentions({ confessionId: confession.id, content, senderId: user.id }).catch(() => {});
+
+       toast({
+         title: "Confession posted!",
+         description: "Your confession has been shared successfully.",
+       });
 
       if (onSuccess) onSuccess();
       
