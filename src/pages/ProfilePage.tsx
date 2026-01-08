@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { UserConfessions } from '@/components/UserConfessions';
-import { UserSavedPosts } from '@/components/UserSavedPosts';
-import { UserLikedPosts } from '@/components/UserLikedPosts';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Ban, UserMinus, BadgeCheck } from 'lucide-react';
+import { MessageSquare, Ban, UserMinus, BadgeCheck, Settings, Camera, Shield, Users, Globe, MapPin, Calendar, Mail, Phone, Heart, ChevronRight } from 'lucide-react';
 import { Navigate, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,15 +13,14 @@ import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal'
 import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
 import { RealImageVerification } from '@/components/RealImageVerification';
-import { ProfileDetailsSection } from '@/components/ProfileDetailsSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { LogOut } from 'lucide-react';
 import { blockUser, unblockUser, isUserBlocked } from '@/services/blockService';
 import { toast } from '@/hooks/use-toast';
 import { getCountryFlag } from '@/components/CountrySelector';
-import { StoryHighlights } from '@/components/StoryHighlights';
 import { VerificationBadgeRequest } from '@/components/VerificationBadgeRequest';
+import { useQuery } from '@tanstack/react-query';
 
 interface ProfileData {
   id: string;
@@ -34,6 +31,17 @@ interface ProfileData {
   contact_phone: string | null;
   is_public: boolean;
   location: string | null;
+  website: string | null;
+  date_of_birth: string | null;
+  interests: string[] | null;
+  is_verified: boolean | null;
+}
+
+interface UserCommunity {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  memberCount: number;
 }
 
 export default function ProfilePage() {
@@ -46,6 +54,7 @@ export default function ProfilePage() {
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [postsCount, setPostsCount] = useState(0);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
@@ -53,10 +62,45 @@ export default function ProfilePage() {
   const [isBlockLoading, setIsBlockLoading] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
-  // Handle tab from URL params
+  // Fetch user's communities
+  const { data: userCommunities = [] } = useQuery({
+    queryKey: ['user-communities', userId || user?.id],
+    queryFn: async () => {
+      const targetId = userId || user?.id;
+      if (!targetId) return [];
+      
+      const { data: memberships } = await supabase
+        .from('community_members')
+        .select('community_id, communities(id, name, image_url)')
+        .eq('user_id', targetId);
+      
+      if (!memberships) return [];
+      
+      const communities: UserCommunity[] = [];
+      for (const m of memberships) {
+        const comm = (m as any).communities;
+        if (comm) {
+          const { count } = await supabase
+            .from('community_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('community_id', comm.id);
+          
+          communities.push({
+            id: comm.id,
+            name: comm.name,
+            imageUrl: comm.image_url,
+            memberCount: count || 0
+          });
+        }
+      }
+      return communities;
+    },
+    enabled: !!(userId || user?.id)
+  });
+
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['posts', 'settings', 'avatar', 'verify', 'saved', 'liked', 'info'].includes(tab)) {
+    if (tab && ['posts', 'settings', 'avatar', 'verify'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -67,7 +111,6 @@ export default function ProfilePage() {
     const ownProfile = !userId || userId === user.id;
     setIsOwnProfile(ownProfile);
     
-    // Check if user is blocked
     if (userId && userId !== user.id) {
       isUserBlocked(userId).then(setIsBlocked);
     }
@@ -83,7 +126,7 @@ export default function ProfilePage() {
       try {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location')
+          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified')
           .eq('id', targetUserId)
           .maybeSingle();
 
@@ -100,7 +143,11 @@ export default function ProfilePage() {
             contact_email: profile.contact_email,
             contact_phone: profile.contact_phone,
             is_public: profile.is_public ?? true,
-            location: profile.location
+            location: profile.location,
+            website: profile.website,
+            date_of_birth: profile.date_of_birth,
+            interests: profile.interests,
+            is_verified: profile.is_verified
           });
         } else {
           const fallbackProfile: ProfileData = {
@@ -111,30 +158,33 @@ export default function ProfilePage() {
             contact_email: null,
             contact_phone: null,
             is_public: true,
-            location: null
+            location: null,
+            website: null,
+            date_of_birth: null,
+            interests: null,
+            is_verified: null
           };
           setProfileData(fallbackProfile);
         }
         
-        try {
-          const [followersResponse, followingResponse] = await Promise.all([
-            supabase
-              .from('user_follows')
-              .select('*', { count: 'exact', head: true })
-              .eq('following_id', targetUserId),
-            supabase
-              .from('user_follows') 
-              .select('*', { count: 'exact', head: true })
-              .eq('follower_id', targetUserId)
-          ]);
-          
-          setFollowersCount(followersResponse.count || 0);
-          setFollowingCount(followingResponse.count || 0);
-        } catch (followError) {
-          console.error('Error fetching follow counts:', followError);
-          setFollowersCount(0);
-          setFollowingCount(0);
-        }
+        const [followersResponse, followingResponse, postsResponse] = await Promise.all([
+          supabase
+            .from('user_follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', targetUserId),
+          supabase
+            .from('user_follows') 
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', targetUserId),
+          supabase
+            .from('confessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', targetUserId)
+        ]);
+        
+        setFollowersCount(followersResponse.count || 0);
+        setFollowingCount(followingResponse.count || 0);
+        setPostsCount(postsResponse.count || 0);
       } catch (error) {
         console.error('Error fetching profile data:', error);
         setProfileData({
@@ -145,7 +195,11 @@ export default function ProfilePage() {
           contact_email: null,
           contact_phone: null,
           is_public: true,
-          location: null
+          location: null,
+          website: null,
+          date_of_birth: null,
+          interests: null,
+          is_verified: null
         });
       } finally {
         setIsLoadingProfile(false);
@@ -176,7 +230,7 @@ export default function ProfilePage() {
       const targetUserId = userId || user!.id;
       supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location')
+        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified')
         .eq('id', targetUserId)
         .maybeSingle()
         .then(({ data: updatedProfile, error }) => {
@@ -194,21 +248,15 @@ export default function ProfilePage() {
               contact_email: updatedProfile.contact_email,
               contact_phone: updatedProfile.contact_phone,
               is_public: updatedProfile.is_public ?? true,
-              location: updatedProfile.location
+              location: updatedProfile.location,
+              website: updatedProfile.website,
+              date_of_birth: updatedProfile.date_of_birth,
+              interests: updatedProfile.interests,
+              is_verified: updatedProfile.is_verified
             });
           }
         });
     }
-  };
-
-  const handleFollowersClick = () => {
-    setFollowersModalTab('followers');
-    setShowFollowersModal(true);
-  };
-
-  const handleFollowingClick = () => {
-    setFollowersModalTab('following');
-    setShowFollowersModal(true);
   };
 
   const handleBlockToggle = async () => {
@@ -240,24 +288,17 @@ export default function ProfilePage() {
     return (
       <Layout>
         <div className="w-full max-w-2xl mx-auto">
-          {/* Profile Header Skeleton */}
-          <div className="px-3 sm:px-4 py-4">
-            <div className="flex items-start gap-4 animate-pulse">
-              <div className="h-20 w-20 rounded-full bg-muted" />
-              <div className="flex-1 space-y-2">
-                <div className="h-5 w-24 bg-muted rounded" />
-                <div className="h-4 w-48 bg-muted rounded" />
-                <div className="flex gap-4 mt-2">
-                  <div className="h-4 w-16 bg-muted rounded" />
-                  <div className="h-4 w-16 bg-muted rounded" />
-                </div>
+          <div className="px-4 py-6">
+            <div className="flex flex-col items-center gap-4 animate-pulse">
+              <div className="h-24 w-24 rounded-full bg-muted" />
+              <div className="h-5 w-32 bg-muted rounded" />
+              <div className="h-4 w-48 bg-muted rounded" />
+              <div className="flex gap-8 mt-2">
+                <div className="h-12 w-16 bg-muted rounded" />
+                <div className="h-12 w-16 bg-muted rounded" />
+                <div className="h-12 w-16 bg-muted rounded" />
               </div>
             </div>
-          </div>
-          {/* Content Skeleton */}
-          <div className="px-3 space-y-3 animate-pulse">
-            <div className="h-32 bg-muted rounded-lg" />
-            <div className="h-32 bg-muted rounded-lg" />
           </div>
         </div>
       </Layout>
@@ -285,114 +326,238 @@ export default function ProfilePage() {
   return (
     <Layout>
       <div className="w-full max-w-2xl mx-auto">
-        {/* Profile Header */}
-        <div className="w-full bg-background">
-          <div className="px-3 sm:px-4 py-4">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-start gap-4">
-                <div className="relative flex-shrink-0">
-                  <Avatar className="h-20 w-20 border-2 border-border">
-                    <AvatarImage src={avatarUrl} alt={username} />
-                    <AvatarFallback className="text-2xl">
-                      {username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {countryFlag && (
-                    <span className="absolute -bottom-1 -right-1 text-2xl" title="Country">
-                      {countryFlag}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold truncate">{username}</h2>
-                    {isBlocked && (
-                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
-                        <Ban className="h-3 w-3 mr-0.5" />
-                        Blocked
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  {/* Bio - Shown prominently */}
-                  {profileData.bio && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {profileData.bio}
-                    </p>
-                  )}
-                  
-                  {/* Profile Details - shown for other users */}
-                  {!isOwnProfile && userId && (
-                    <ProfileDetailsSection userId={userId} isBlocked={isBlocked} />
-                  )}
-                  
-                  <div className="flex items-center gap-4 mt-2">
-                    <button 
-                      type="button"
-                      className="flex items-center gap-1 hover:opacity-80 cursor-pointer"
-                      onClick={() => {
-                        setFollowersModalTab('followers');
-                        setShowFollowersModal(true);
-                      }}
-                    >
-                      <span className="font-semibold text-sm">{followersCount}</span>
-                      <span className="text-xs text-muted-foreground">Fans</span>
-                    </button>
-                    
-                    <button 
-                      type="button"
-                      className="flex items-center gap-1 hover:opacity-80 cursor-pointer"
-                      onClick={() => {
-                        setFollowersModalTab('following');
-                        setShowFollowersModal(true);
-                      }}
-                    >
-                      <span className="font-semibold text-sm">{followingCount}</span>
-                      <span className="text-xs text-muted-foreground">Crew</span>
-                    </button>
-                  </div>
-                </div>
+        {/* Conffo Unique Profile Header - Centered Layout */}
+        <div className="w-full bg-background px-4 py-6">
+          {/* Avatar & Username - Centered */}
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-1">
+                <Avatar className="h-full w-full border-2 border-background">
+                  <AvatarImage src={avatarUrl} alt={username} />
+                  <AvatarFallback className="text-3xl font-bold">
+                    {username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              
-              {/* Other user profile: Follow button + Chat + Block */}
-              {!isOwnProfile && isAuthenticated && userId && (
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <FollowButton userId={userId} onFollowChange={handleFollowChange} />
-                  </div>
-                  <Button 
-                    variant="outline"
-                    size="icon"
-                    onClick={handleChat}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant={isBlocked ? "destructive" : "outline"}
-                    size="icon"
-                    onClick={handleBlockToggle}
-                    disabled={isBlockLoading}
-                  >
-                    {isBlocked ? <UserMinus className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
-                  </Button>
+              {countryFlag && (
+                <span className="absolute -bottom-1 -right-1 text-2xl" title="Country">
+                  {countryFlag}
+                </span>
+              )}
+              {profileData.is_verified && (
+                <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                  <BadgeCheck className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
             </div>
+            
+            <div className="mt-3 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <h2 className="text-xl font-bold">{username}</h2>
+                {isBlocked && (
+                  <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+                    <Ban className="h-3 w-3 mr-0.5" />
+                    Blocked
+                  </Badge>
+                )}
+              </div>
+              
+              {profileData.bio && (
+                <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
+                  {profileData.bio}
+                </p>
+              )}
+            </div>
+            
+            {/* Stats Row - Unique Conffo Design */}
+            <div className="flex items-center justify-center gap-8 mt-4">
+              <button 
+                className="flex flex-col items-center hover:opacity-80 transition-opacity"
+                onClick={() => {}}
+              >
+                <span className="text-xl font-bold">{postsCount}</span>
+                <span className="text-xs text-muted-foreground">Posts</span>
+              </button>
+              
+              <div className="w-px h-8 bg-border" />
+              
+              <button 
+                className="flex flex-col items-center hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  setFollowersModalTab('followers');
+                  setShowFollowersModal(true);
+                }}
+              >
+                <span className="text-xl font-bold">{followersCount}</span>
+                <span className="text-xs text-muted-foreground">Fans</span>
+              </button>
+              
+              <div className="w-px h-8 bg-border" />
+              
+              <button 
+                className="flex flex-col items-center hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  setFollowersModalTab('following');
+                  setShowFollowersModal(true);
+                }}
+              >
+                <span className="text-xl font-bold">{followingCount}</span>
+                <span className="text-xs text-muted-foreground">Crew</span>
+              </button>
+            </div>
           </div>
+          
+          {/* Action Buttons */}
+          {!isOwnProfile && isAuthenticated && userId && (
+            <div className="flex gap-2 mt-4 justify-center">
+              <FollowButton userId={userId} onFollowChange={handleFollowChange} />
+              <Button 
+                variant="outline"
+                size="icon"
+                onClick={handleChat}
+                className="rounded-full"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={isBlocked ? "destructive" : "outline"}
+                size="icon"
+                onClick={handleBlockToggle}
+                disabled={isBlockLoading}
+                className="rounded-full"
+              >
+                {isBlocked ? <UserMinus className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+              </Button>
+            </div>
+          )}
+          
+          {isOwnProfile && (
+            <div className="flex gap-2 mt-4 justify-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('settings')}
+                className="rounded-full"
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Edit Profile
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('avatar')}
+                className="rounded-full"
+              >
+                <Camera className="h-4 w-4 mr-1" />
+                Avatar
+              </Button>
+              {!profileData.is_verified && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowVerificationModal(true)}
+                  className="rounded-full"
+                >
+                  <BadgeCheck className="h-4 w-4 mr-1" />
+                  Verify
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Profile Details Section - Unique Conffo Cards */}
+        <div className="px-4 py-3 space-y-3">
+          {/* Info Cards */}
+          {(profileData.location || profileData.website || profileData.date_of_birth) && (
+            <div className="bg-card rounded-2xl p-4 border border-border/50">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">About</h3>
+              <div className="space-y-2">
+                {profileData.location && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{profileData.location}</span>
+                  </div>
+                )}
+                {profileData.website && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <a href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`} 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       className="text-primary hover:underline truncate">
+                      {profileData.website.replace(/^https?:\/\//, '')}
+                    </a>
+                  </div>
+                )}
+                {profileData.date_of_birth && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>{new Date(profileData.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Interests */}
+          {profileData.interests && profileData.interests.length > 0 && (
+            <div className="bg-card rounded-2xl p-4 border border-border/50">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                <Heart className="h-3 w-3 inline mr-1" />
+                Interests
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {profileData.interests.map((interest, idx) => (
+                  <Badge key={idx} variant="secondary" className="rounded-full px-3 py-1 text-xs">
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* User Communities */}
+          {userCommunities.length > 0 && (
+            <div className="bg-card rounded-2xl p-4 border border-border/50">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                <Users className="h-3 w-3 inline mr-1" />
+                Communities
+              </h3>
+              <div className="space-y-2">
+                {userCommunities.slice(0, 3).map((community) => (
+                  <button
+                    key={community.id}
+                    onClick={() => navigate('/chat')}
+                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={community.imageUrl || undefined} />
+                      <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                        {community.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium">{community.name}</p>
+                      <p className="text-xs text-muted-foreground">{community.memberCount} members</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Story Highlights */}
-        <StoryHighlights userId={userId || user?.id || ''} isOwnProfile={isOwnProfile} />
-        
-        {/* Content - Own profile shows only posts, settings accessed via menu */}
+        {/* Content Tabs - Conffo Style */}
         <div className="w-full">
           {isOwnProfile ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Hidden tabs for settings/avatar/verify - accessed via menu */}
-              <TabsContent value="posts">
-                <UserConfessions userId={user?.id} />
-              </TabsContent>
+              {activeTab === 'posts' && (
+                <TabsContent value="posts" className="mt-0">
+                  <UserConfessions userId={user?.id} />
+                </TabsContent>
+              )}
 
               <TabsContent value="settings" className="p-4">
                 <div className="space-y-4">
@@ -461,7 +626,6 @@ export default function ProfilePage() {
           )}
         </div>
         
-        {/* Always show the modal - for own profile or viewing others */}
         <FullScreenFollowersModal
           isOpen={showFollowersModal}
           onClose={() => setShowFollowersModal(false)}
@@ -469,7 +633,6 @@ export default function ProfilePage() {
           initialTab={followersModalTab}
         />
         
-        {/* Verification Request Modal */}
         <VerificationBadgeRequest 
           isOpen={showVerificationModal} 
           onClose={() => setShowVerificationModal(false)} 
