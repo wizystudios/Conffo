@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
-import { FileText, Copy, Forward, Trash2, Reply, SmilePlus } from 'lucide-react';
+import { FileText, Copy, Forward, Trash2, Reply, SmilePlus, Eye } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { haptic } from '@/utils/hapticFeedback';
@@ -23,6 +23,9 @@ interface ModernMessageBubbleProps {
   onReply?: () => void;
   replyToMessage?: Message;
   replyToSenderName?: string;
+  // Community read receipts
+  communityReadCount?: number;
+  isCommunityMessage?: boolean;
 }
 
 export function ModernMessageBubble({ 
@@ -38,7 +41,9 @@ export function ModernMessageBubble({
   onReport,
   onReply,
   replyToMessage,
-  replyToSenderName
+  replyToSenderName,
+  communityReadCount,
+  isCommunityMessage = false
 }: ModernMessageBubbleProps) {
   const formatTime = (date: string) => {
     return new Date(date).toLocaleTimeString([], { 
@@ -240,7 +245,7 @@ export function ModernMessageBubble({
           <div className={`flex items-center gap-1 text-xs text-muted-foreground ${isOwn ? 'justify-end pr-1' : 'justify-start pl-1'}`}>
             <span>{formatTime(message.created_at)}</span>
             {message.updated_at !== message.created_at && <span>(edited)</span>}
-            {isOwn && (
+            {isOwn && !isCommunityMessage && (
               <MessageReadReceipt 
                 isSent={true}
                 isDelivered={true}
@@ -248,6 +253,14 @@ export function ModernMessageBubble({
               />
             )}
           </div>
+          
+          {/* Community read receipts - only for own messages */}
+          {isOwn && isCommunityMessage && communityReadCount !== undefined && communityReadCount > 0 && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground justify-end pr-1 mt-0.5">
+              <Eye className="h-3 w-3" />
+              <span>Seen by {communityReadCount}</span>
+            </div>
+          )}
           
           {/* Reaction display */}
           <MessageReactionDisplay 

@@ -393,7 +393,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   };
   
   return (
-    <div className="w-full bg-background mb-0 border-b border-border">
+    <div className="w-full bg-background mb-2 border border-border/30 rounded-none shadow-sm">
       {/* Header - Username, Room Tag, and Time in single line */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 flex-wrap">

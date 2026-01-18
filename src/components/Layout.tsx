@@ -91,13 +91,13 @@ function LayoutContent({ children }: LayoutProps) {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Desktop Layout - 3-column design, sidebars always visible */}
       <div className="hidden lg:flex">
-        {isAuthenticated && <DesktopSidebar />}
-        <main className={`flex-1 min-h-screen py-6 ${isAuthenticated ? 'ml-72 xl:mr-80' : ''}`}>
+        <DesktopSidebar />
+        <main className="flex-1 min-h-screen py-6 ml-72 xl:mr-80">
           <div className="w-full max-w-xl mx-auto px-4">
             {children}
           </div>
         </main>
-        {isAuthenticated && <DesktopRightSidebar />}
+        <DesktopRightSidebar />
       </div>
 
       {/* Mobile Layout */}
