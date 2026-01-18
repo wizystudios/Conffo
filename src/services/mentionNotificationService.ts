@@ -1,6 +1,37 @@
 import { supabase } from '@/integrations/supabase/client';
 import { createNotification } from '@/utils/notificationUtils';
 
+const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
+
+interface NotificationPreferences {
+  mentions?: boolean;
+  messages?: boolean;
+  replies?: boolean;
+  reactions?: boolean;
+  likes?: boolean;
+  comments?: boolean;
+  follows?: boolean;
+  communities?: boolean;
+}
+
+/**
+ * Check if a user has a specific notification type enabled
+ * For now, we can only check local storage for the author's preferences
+ * In the future, this could be stored in the database per user
+ */
+async function isNotificationEnabled(userId: string, type: keyof NotificationPreferences): Promise<boolean> {
+  // Default to true if no settings found
+  try {
+    // For now, we check local storage - in production this would be a DB query per user
+    const stored = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+    if (!stored) return true;
+    const settings = JSON.parse(stored) as NotificationPreferences;
+    return settings[type] !== false;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Creates notifications for all @mentions in content
  * @param content The content to scan for mentions
@@ -14,6 +45,10 @@ export async function createMentionNotifications(
   relatedId: string,
   type: 'confession' | 'message' = 'confession'
 ) {
+  // Check if mentions notifications are enabled
+  const mentionsEnabled = await isNotificationEnabled(authorId, 'mentions');
+  if (!mentionsEnabled) return;
+  
   // Extract @mentions from content
   const mentionRegex = /@(\w+)/g;
   const mentions: string[] = [];
@@ -94,6 +129,10 @@ export async function createReplyNotification(
   // Don't notify if replying to yourself
   if (originalSenderId === replySenderId) return;
   
+  // Check if replies notifications are enabled
+  const repliesEnabled = await isNotificationEnabled(replySenderId, 'replies');
+  if (!repliesEnabled) return;
+  
   // Get reply sender's profile
   const { data: senderProfile } = await supabase
     .from('profiles')
@@ -125,6 +164,10 @@ export async function createMessageNotification(
   messageId: string,
   preview: string
 ) {
+  // Check if message notifications are enabled
+  const messagesEnabled = await isNotificationEnabled(senderId, 'messages');
+  if (!messagesEnabled) return;
+  
   // Get sender's profile
   const { data: senderProfile } = await supabase
     .from('profiles')
@@ -141,4 +184,12 @@ export async function createMessageNotification(
     `${senderName}: ${truncatedPreview}`,
     messageId
   );
+
+  // Also check for mentions in the message
+  await createMentionNotifications(preview, senderId, messageId, 'message');
 }
+
+/**
+ * Exports the isNotificationEnabled function for external use
+ */
+export { isNotificationEnabled };

@@ -33,6 +33,7 @@ import { CommunityEditModal } from '@/components/CommunityEditModal';
 import { CommunityTopicsModal } from '@/components/CommunityTopicsModal';
 import { haptic } from '@/utils/hapticFeedback';
 import { formatDistanceToNow } from 'date-fns';
+import { useCommunityReadReceipts } from '@/hooks/useCommunityReadReceipts';
 
 interface UnifiedChatInterfaceProps {
   // For direct messages
@@ -85,6 +86,9 @@ export function UnifiedChatInterface({
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTopicsModal, setShowTopicsModal] = useState(false);
+  
+  // Community read receipts
+  const { readReceipts, markMessagesAsRead, fetchReadCounts } = useCommunityReadReceipts(community?.id);
   
   // Shared state
   const [newMessage, setNewMessage] = useState('');
@@ -577,6 +581,8 @@ export function UnifiedChatInterface({
                     senderAvatar={isCommunityChat ? message.senderAvatar : displayAvatar}
                     senderName={isCommunityChat ? message.senderName : displayName}
                     showSenderName={isCommunityChat && !isOwn && showAvatar}
+                    isCommunityMessage={isCommunityChat}
+                    communityReadCount={isCommunityChat && isOwn ? readReceipts[message.id] : undefined}
                     onDelete={() => setDeleteMessageId(message.id)}
                     onEdit={() => { 
                       if (!isCommunityChat) {
@@ -658,7 +664,7 @@ export function UnifiedChatInterface({
                 className="hidden"
               />
               
-              <div className="flex-1 flex items-center gap-1 bg-muted rounded-full px-3 py-1.5">
+              <div className="flex-1 flex items-center gap-1 bg-secondary/50 rounded-full px-3 py-1.5 border-0">
                 <QuickReplies onSelect={(reply) => setNewMessage(reply)} />
                 <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => fileInputRef.current?.click()}>
                   <ImageIcon className="h-4 w-4 text-primary" />
@@ -670,7 +676,7 @@ export function UnifiedChatInterface({
                     if (!isCommunityChat) sendTypingEvent();
                   }}
                   placeholder="Message..."
-                  className="flex-1 border-0 bg-transparent h-7 text-xs focus-visible:ring-0 px-0"
+                  className="flex-1 border-0 bg-transparent h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0 px-0 shadow-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
