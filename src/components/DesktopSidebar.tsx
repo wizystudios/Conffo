@@ -5,12 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { useNotifications } from '@/hooks/useNotifications';
 import wetechLogo from '@/assets/wetech-logo.png';
 
 export function DesktopSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -24,21 +26,6 @@ export function DesktopSidebar() {
       return data;
     },
     enabled: !!user?.id,
-  });
-
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['unread-notifications', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return 0;
-      const { count } = await supabase
-        .from('notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
-      return count || 0;
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
   });
 
   const handleSignOut = async () => {

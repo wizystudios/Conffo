@@ -552,68 +552,7 @@ export function UnifiedChatInterface({
                 );
               }
               
-              // For community messages, show sender info
-              if (isCommunityChat && !isOwn) {
-                return (
-                  <div 
-                    key={message.id}
-                    ref={(el) => { messageRefs.current[message.id] = el; }}
-                    className={`flex gap-2 ${isHighlighted ? 'bg-primary/20 rounded-lg' : ''}`}
-                  >
-                    {showAvatar && (
-                      <Avatar className="h-8 w-8 flex-shrink-0 mt-5">
-                        <AvatarImage src={message.senderAvatar} />
-                        <AvatarFallback className="text-xs">
-                          {message.senderName?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    {!showAvatar && <div className="w-8" />}
-                    
-                    <div className="max-w-[75%]">
-                      {showAvatar && (
-                        <p className="text-xs text-muted-foreground mb-0.5 ml-1">{message.senderName}</p>
-                      )}
-                      
-                      {replyMsg && (
-                        <div className="text-xs px-2 py-1 mb-1 rounded-lg border-l-2 border-primary/50 bg-muted/50">
-                          <p className="text-[10px] text-primary font-medium">{replyMsg.senderName || 'User'}</p>
-                          <p className="text-muted-foreground line-clamp-1">{replyMsg.content}</p>
-                        </div>
-                      )}
-                      
-                      <div 
-                        className="rounded-2xl px-3 py-2 bg-muted rounded-bl-sm cursor-pointer"
-                        onClick={() => setReplyToMessage(message)}
-                      >
-                        {message.messageType === 'audio' && message.mediaUrl ? (
-                          <audio src={message.mediaUrl} controls className="h-8 max-w-[200px]" />
-                        ) : message.messageType === 'image' && message.mediaUrl ? (
-                          <img src={message.mediaUrl} alt="" className="rounded-xl max-w-[250px] max-h-[300px] object-cover" />
-                        ) : message.messageType === 'video' && message.mediaUrl ? (
-                          <video src={message.mediaUrl} className="rounded-xl max-w-[250px]" controls playsInline />
-                        ) : (
-                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 mt-0.5 ml-1">
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(message.createdAt || message.created_at), { addSuffix: true })}
-                        </p>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setReplyToMessage(message); }}
-                          className="text-[10px] text-primary hover:underline"
-                        >
-                          Reply
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              
-              // Own messages or DM messages use ModernMessageBubble
+              // All messages (DM and community) use ModernMessageBubble for consistent UX
               return (
                 <div 
                   key={message.id}
@@ -637,6 +576,7 @@ export function UnifiedChatInterface({
                     showAvatar={showAvatar}
                     senderAvatar={isCommunityChat ? message.senderAvatar : displayAvatar}
                     senderName={isCommunityChat ? message.senderName : displayName}
+                    showSenderName={isCommunityChat && !isOwn && showAvatar}
                     onDelete={() => setDeleteMessageId(message.id)}
                     onEdit={() => { 
                       if (!isCommunityChat) {

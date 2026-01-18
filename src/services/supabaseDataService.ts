@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Confession, Room, Comment, RoomInfo, ReportReason, Reaction } from '@/types';
 import { sendMessage } from '@/services/chatService';
+import { createMentionNotifications } from '@/services/mentionNotificationService';
 import { v4 as uuidv4 } from 'uuid';
 
 export const getConfessions = async (roomId?: string, userId?: string): Promise<Confession[]> => {
@@ -384,9 +385,10 @@ export const addConfession = async (
     
     if (error) throw error;
 
-    // Best-effort mention distribution
+    // Best-effort mention distribution and notifications
     if (confession?.id) {
       distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
+      createMentionNotifications(content, userId, confession.id, 'confession').catch(() => {});
     }
   } catch (error) {
     console.error('Error adding confession:', error);
@@ -423,6 +425,7 @@ export const addConfessionWithMedia = async (
 
     if (confession?.id) {
       distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
+      createMentionNotifications(content, userId, confession.id, 'confession').catch(() => {});
     }
   } catch (error) {
     console.error('Error adding confession with media:', error);
