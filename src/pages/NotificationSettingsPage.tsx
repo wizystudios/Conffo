@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, MessageSquare, Heart, MessageCircle, UserPlus, Users, Volume2 } from 'lucide-react';
+import { ArrowLeft, Bell, MessageSquare, Heart, MessageCircle, UserPlus, Users, Volume2, AtSign, Reply, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -10,13 +10,16 @@ import { requestNotificationPermission } from '@/utils/pushNotifications';
 
 const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
 
-interface NotificationSettings {
+export interface NotificationSettings {
   messages: boolean;
   likes: boolean;
   comments: boolean;
   follows: boolean;
   communities: boolean;
   communitySound: boolean;
+  mentions: boolean;
+  replies: boolean;
+  reactions: boolean;
 }
 
 const defaultSettings: NotificationSettings = {
@@ -26,6 +29,9 @@ const defaultSettings: NotificationSettings = {
   follows: true,
   communities: true,
   communitySound: true,
+  mentions: true,
+  replies: true,
+  reactions: true,
 };
 
 export function getNotificationSettings(): NotificationSettings {
@@ -99,6 +105,7 @@ export default function NotificationSettingsPage() {
         </p>
 
         <div className="space-y-4">
+          {/* Messages */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-border">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -116,6 +123,61 @@ export default function NotificationSettingsPage() {
             />
           </div>
 
+          {/* Mentions */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-cyan-500/10 flex items-center justify-center">
+                <AtSign className="h-5 w-5 text-cyan-500" />
+              </div>
+              <div>
+                <Label htmlFor="mentions" className="font-medium">Mentions</Label>
+                <p className="text-xs text-muted-foreground">When someone @mentions you</p>
+              </div>
+            </div>
+            <Switch
+              id="mentions"
+              checked={settings.mentions}
+              onCheckedChange={() => handleToggle('mentions')}
+            />
+          </div>
+
+          {/* Replies */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                <Reply className="h-5 w-5 text-indigo-500" />
+              </div>
+              <div>
+                <Label htmlFor="replies" className="font-medium">Replies</Label>
+                <p className="text-xs text-muted-foreground">When someone replies to your message</p>
+              </div>
+            </div>
+            <Switch
+              id="replies"
+              checked={settings.replies}
+              onCheckedChange={() => handleToggle('replies')}
+            />
+          </div>
+
+          {/* Reactions */}
+          <div className="flex items-center justify-between p-4 rounded-xl border border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                <Smile className="h-5 w-5 text-yellow-500" />
+              </div>
+              <div>
+                <Label htmlFor="reactions" className="font-medium">Reactions</Label>
+                <p className="text-xs text-muted-foreground">When someone reacts to your post or message</p>
+              </div>
+            </div>
+            <Switch
+              id="reactions"
+              checked={settings.reactions}
+              onCheckedChange={() => handleToggle('reactions')}
+            />
+          </div>
+
+          {/* Likes */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-border">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-pink-500/10 flex items-center justify-center">
@@ -133,6 +195,7 @@ export default function NotificationSettingsPage() {
             />
           </div>
 
+          {/* Comments */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-border">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -150,6 +213,7 @@ export default function NotificationSettingsPage() {
             />
           </div>
 
+          {/* Follows */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-border">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">

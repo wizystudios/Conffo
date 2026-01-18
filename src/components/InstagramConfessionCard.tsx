@@ -394,9 +394,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   
   return (
     <div className="w-full bg-background mb-0 border-b border-border">
-      {/* Header - Username, Room Tag, and Time */}
+      {/* Header - Username, Room Tag, and Time in single line */}
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <UsernameDisplay 
             userId={confession.userId}
             showAvatar={true}
@@ -404,8 +404,10 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             linkToProfile={true}
             showStoryIndicator={true}
           />
-          <span className="text-muted-foreground text-sm">·</span>
-          <span className="text-muted-foreground text-sm">{formatTimeShort(new Date(confession.timestamp))}</span>
+          <div className="inline-block bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium rounded-full">
+            #{confession.room}
+          </div>
+          <span className="text-muted-foreground text-xs">{formatTimeShort(new Date(confession.timestamp))}</span>
           {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
             <>
               <span className="text-muted-foreground">·</span>
@@ -413,7 +415,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 variant="ghost"
                 size="sm"
                 onClick={handleFollow}
-                className="h-auto p-0 text-primary font-semibold text-sm hover:bg-transparent"
+                className="h-auto p-0 text-primary font-semibold text-xs hover:bg-transparent"
               >
                 Follow
               </Button>
@@ -450,7 +452,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       
       {/* Caption ABOVE media - Ultra-small Glacial Indifference, 1-line clamp + see more */}
       {confession.content && (
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-1">
           <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "'Glacial Indifference', sans-serif" }}>
             <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
             {displayContent}
@@ -466,13 +468,6 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           )}
         </div>
       )}
-      
-      {/* Room Tag */}
-      <div className="px-4 pb-3">
-        <div className="inline-block bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium rounded-full">
-          #{confession.room}
-        </div>
-      </div>
       
       {/* Media Carousel with Double Tap - Reels-style overlay for videos */}
       {mediaArray.length > 0 && (

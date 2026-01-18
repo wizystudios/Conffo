@@ -11,7 +11,7 @@ import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { formatDistanceToNow } from 'date-fns';
 import { getBlockedUsers } from '@/services/blockService';
 import { getUserCommunities, Community } from '@/services/communityService';
-import { CommunityChat } from '@/components/CommunityChat';
+import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { JoinRequestsModal } from '@/components/JoinRequestsModal';
 import {
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { ConnectionsPickerModal } from '@/components/ConnectionsPickerModal';
+import { Layout } from '@/components/Layout';
 
 interface ChatUser {
   id: string;
@@ -163,11 +164,11 @@ export default function ChatListPage() {
     );
   }
 
-  // Full screen community chat
+  // Full screen community chat - use UnifiedChatInterface for full feature parity with DMs
   if (selectedCommunity) {
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        <CommunityChat
+        <UnifiedChatInterface
           community={selectedCommunity}
           onBack={() => setSelectedCommunity(null)}
           onShowMembers={() => setShowMembers(true)}
@@ -197,6 +198,7 @@ export default function ChatListPage() {
   }
 
   return (
+    <Layout>
     <div className="min-h-screen bg-background pb-20 lg:pb-6">
       <div className="sticky top-0 z-10 bg-background">
         <div className="flex items-center justify-between px-4 py-3">
@@ -355,5 +357,6 @@ export default function ChatListPage() {
         onClose={() => setShowNewMessage(false)}
       />
     </div>
+    </Layout>
   );
 }
