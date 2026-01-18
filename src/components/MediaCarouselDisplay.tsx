@@ -83,9 +83,9 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const currentMedia = media[currentIndex];
 
   return (
-    <div ref={containerRef} className="relative w-full bg-muted/20">
-      {/* Fixed aspect ratio container with proper sizing */}
-      <div className="relative w-full" style={{ aspectRatio: '4/5', maxHeight: '600px' }}>
+    <div ref={containerRef} className="relative w-full bg-muted/10">
+      {/* Fixed aspect ratio container - no extra spacing */}
+      <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
         {currentMedia.type === 'image' ? (
           <>
             {/* Skeleton placeholder while loading */}

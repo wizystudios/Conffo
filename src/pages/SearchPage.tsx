@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BottomNavigation } from '@/components/BottomNavigation';
+import { Layout } from '@/components/Layout';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,7 +62,7 @@ export default function SearchPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background pb-14 lg:pb-6">
+    <Layout>
       <div className="w-full max-w-2xl mx-auto p-2 pt-4 space-y-2">
         {/* Search Input */}
         <div className="relative">
@@ -250,7 +250,6 @@ export default function SearchPage() {
           </div>
         )}
       </div>
-      <BottomNavigation />
-    </div>
+    </Layout>
   );
 }
