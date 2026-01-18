@@ -1,15 +1,17 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, MessageCircle, LogIn, Plus, Search, User } from 'lucide-react';
+import { Home, MessageCircle, LogIn, Plus, Search, User, Bell } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export function BottomNavigation() {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { unreadCounts } = useUnreadMessages();
+  const { unreadCount: notificationCount } = useNotifications();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -43,6 +45,17 @@ export function BottomNavigation() {
           >
             <Plus className="h-6 w-6 text-primary-foreground" />
           </Button>
+        )}
+        
+        {isAuthenticated && (
+          <Link to="/notifications" className="flex flex-col items-center py-1 px-3 relative">
+            <Bell className={`h-5 w-5 ${isActive('/notifications') ? 'text-primary' : 'text-muted-foreground'}`} />
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </span>
+            )}
+          </Link>
         )}
         
         {isAuthenticated && (

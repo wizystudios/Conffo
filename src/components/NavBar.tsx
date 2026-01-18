@@ -1,38 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Bell, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import { getUserNotifications } from "@/utils/notificationUtils";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { haptic } from "@/utils/hapticFeedback";
 import { FullPageMenu } from "@/components/FullPageMenu";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export function NavBar() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [showNotificationBadge, setShowNotificationBadge] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isNavbarVisible = useScrollNavbar();
-  
-  // Fetch notifications count only
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications-count', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      return await getUserNotifications(user.id, false);
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-  });
-  
-  const unreadNotificationsCount = notifications.filter((n: any) => !n.is_read).length;
-  
-  useEffect(() => {
-    setShowNotificationBadge(unreadNotificationsCount > 0);
-  }, [unreadNotificationsCount]);
+  const { unreadCount } = useNotifications();
 
   const handleMenuToggle = () => {
     haptic.light();
@@ -52,11 +34,11 @@ export function NavBar() {
                 className="relative h-9 w-9"
                 onClick={() => navigate('/notifications')}
               >
-                {showNotificationBadge ? (
+                {unreadCount > 0 ? (
                   <>
                     <Bell className="h-5 w-5" />
                     <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center bg-primary text-[10px]">
-                      {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                      {unreadCount > 9 ? '9+' : unreadCount}
                     </Badge>
                   </>
                 ) : (

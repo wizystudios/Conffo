@@ -15,6 +15,7 @@ interface ModernMessageBubbleProps {
   showAvatar: boolean;
   senderAvatar?: string;
   senderName?: string;
+  showSenderName?: boolean;
   onDelete?: () => void;
   onEdit?: () => void;
   onForward?: () => void;
@@ -30,6 +31,7 @@ export function ModernMessageBubble({
   showAvatar,
   senderAvatar,
   senderName,
+  showSenderName = false,
   onDelete,
   onEdit,
   onForward,
@@ -138,6 +140,11 @@ export function ModernMessageBubble({
         )}
 
         <div className="flex flex-col gap-1 relative">
+          {/* Sender name for community messages */}
+          {showSenderName && senderName && (
+            <p className="text-xs text-muted-foreground mb-0.5 ml-1">{senderName}</p>
+          )}
+          
           {/* Reaction picker */}
           <MessageReactionPicker
             messageId={message.id}
@@ -166,28 +173,50 @@ export function ModernMessageBubble({
               <p className="text-xs leading-relaxed break-words">{message.content}</p>
             </div>
           ) : message.message_type === 'image' ? (
-            <a 
-              href={message.media_url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              download
-              className="rounded-2xl overflow-hidden aspect-square max-w-[280px] block"
+            <div 
+              className={`rounded-2xl overflow-hidden max-w-[280px] ${
+                isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
+              }`}
             >
-              <img
-                src={message.media_url}
-                alt="Shared"
-                className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
-              />
-            </a>
+              <a 
+                href={message.media_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                download
+                className="block"
+              >
+                <img
+                  src={message.media_url}
+                  alt="Shared"
+                  className="w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                />
+              </a>
+              {/* Caption below image - like WhatsApp */}
+              {message.content && message.content !== message.media_url && !message.content.match(/^(image|video|Voice message)/i) && (
+                <p className={`px-3 py-2 text-xs leading-relaxed break-words ${
+                  isOwn ? 'text-white' : 'text-gray-900'
+                }`}>{message.content}</p>
+              )}
+            </div>
           ) : message.message_type === 'video' ? (
-            <div className="rounded-2xl overflow-hidden aspect-square max-w-[280px]">
+            <div 
+              className={`rounded-2xl overflow-hidden max-w-[280px] ${
+                isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
+              }`}
+            >
               <video
                 src={message.media_url}
                 controls
                 playsInline
                 controlsList="download"
-                className="w-full h-full object-contain"
+                className="w-full max-h-[300px] object-contain"
               />
+              {/* Caption below video - like WhatsApp */}
+              {message.content && message.content !== message.media_url && !message.content.match(/^(image|video|Voice message)/i) && (
+                <p className={`px-3 py-2 text-xs leading-relaxed break-words ${
+                  isOwn ? 'text-white' : 'text-gray-900'
+                }`}>{message.content}</p>
+              )}
             </div>
           ) : message.message_type === 'audio' ? (
             <div className="rounded-2xl">

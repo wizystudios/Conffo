@@ -450,7 +450,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       
       {/* Caption ABOVE media - Ultra-small Glacial Indifference, 1-line clamp + see more */}
       {confession.content && (
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-3">
           <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "'Glacial Indifference', sans-serif" }}>
             <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
             {displayContent}
@@ -468,7 +468,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       )}
       
       {/* Room Tag */}
-      <div className="px-4 pb-2">
+      <div className="px-4 pb-3">
         <div className="inline-block bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium rounded-full">
           #{confession.room}
         </div>
