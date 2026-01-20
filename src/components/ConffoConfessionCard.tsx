@@ -251,6 +251,12 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
       {/* Comment Modal */}
       <ImprovedCommentModal
         confessionId={confession.id}
+        confessionContent={confession.content}
+        confessionAuthor={displayName}
+        confessionMediaUrl={confession.mediaUrl || undefined}
+        confessionMediaType={confession.mediaType === 'audio' ? undefined : confession.mediaType}
+        confessionMediaUrls={confession.mediaUrls}
+        confessionMediaTypes={confession.mediaTypes?.filter(t => t !== 'audio') as ('image' | 'video')[] | undefined}
         isOpen={showComments}
         onClose={() => setShowComments(false)}
       />

@@ -249,22 +249,12 @@ export default function RoomPage() {
         <div className="px-4 py-3 border-b border-border/30">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium">Communities</h3>
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCreateCommunity(true)}
-                className="h-7 text-xs"
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Create
-              </Button>
-            )}
           </div>
           <CommunityList 
             key={communitiesKey}
             roomId={roomId || ''} 
             onSelectCommunity={setSelectedCommunity}
+            onCreateCommunity={() => setShowCreateCommunity(true)}
           />
         </div>
 
@@ -335,16 +325,23 @@ export default function RoomPage() {
       />
 
       {/* Comments Modal */}
-      {selectedConfessionId && (
-        <ImprovedCommentModal
-          confessionId={selectedConfessionId}
-          isOpen={showComments}
-          onClose={() => {
-            setShowComments(false);
-            setSelectedConfessionId(null);
-          }}
-        />
-      )}
+      {selectedConfessionId && (() => {
+        const selectedConfession = sortedConfessions.find(c => c.id === selectedConfessionId);
+        return selectedConfession ? (
+          <ImprovedCommentModal
+            confessionId={selectedConfessionId}
+            confessionContent={selectedConfession.content}
+            confessionAuthor="Anonymous"
+            confessionMediaUrl={selectedConfession.mediaUrl || undefined}
+            confessionMediaType={selectedConfession.mediaType === 'audio' ? undefined : selectedConfession.mediaType}
+            isOpen={showComments}
+            onClose={() => {
+              setShowComments(false);
+              setSelectedConfessionId(null);
+            }}
+          />
+        ) : null;
+      })()}
     </Layout>
   );
 }
