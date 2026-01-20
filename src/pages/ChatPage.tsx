@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
+import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { areUsersBlocked } from '@/services/blockService';
 import { toast } from '@/hooks/use-toast';
@@ -37,12 +38,14 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      <UnifiedChatInterface 
-        targetUserId={userId} 
-        onBack={handleBack} 
-        highlightMessageId={highlightMessageId || undefined}
-      />
-    </div>
+    <Layout hideBottomNav>
+      <div className="h-[calc(100vh-60px)] lg:h-screen flex flex-col">
+        <UnifiedChatInterface 
+          targetUserId={userId} 
+          onBack={handleBack} 
+          highlightMessageId={highlightMessageId || undefined}
+        />
+      </div>
+    </Layout>
   );
 }

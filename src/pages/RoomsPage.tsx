@@ -20,34 +20,34 @@ export default function RoomsPage() {
 
   return (
     <Layout>
-      <div className="space-y-4 p-3 pt-16">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold mb-1">Confession Rooms</h1>
-            <p className="text-xs text-muted-foreground">
-              Choose a room to browse or share confessions
-            </p>
-          </div>
-
-          {isAuthenticated && (
-            <Button
-              variant="outline"
-              className="h-9 rounded-full gap-2"
-              onClick={() => setShowCommunitySearch(true)}
-            >
-              <Search className="h-4 w-4" />
-              Communities
-            </Button>
-          )}
+      <div className="space-y-4 p-4 pt-16">
+        {/* Header section */}
+        <div className="text-center py-4">
+          <h1 className="text-xl font-bold mb-2">Find a Room To</h1>
+          <h2 className="text-xl font-bold text-primary">Share Your Confessions</h2>
         </div>
         
         {isLoading ? (
-          <div className="text-center py-6">
-            <p className="text-xs text-muted-foreground">Loading rooms...</p>
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />
+            ))}
           </div>
         ) : (
           <RoomsList rooms={rooms} />
         )}
+        
+        {/* Search bar */}
+        <div className="pt-4">
+          <Button
+            variant="outline"
+            className="w-full h-10 rounded-full gap-2 justify-start px-4"
+            onClick={() => setShowCommunitySearch(true)}
+          >
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground text-sm">Search for rooms...</span>
+          </Button>
+        </div>
 
         <CommunitySearchModal
           isOpen={showCommunitySearch}
