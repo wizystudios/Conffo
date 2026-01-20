@@ -332,16 +332,16 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="w-full max-w-2xl mx-auto">
-        {/* Conffo Unique Profile Header - Centered Layout */}
-        <div className="w-full bg-background px-4 py-6">
+      <div className="w-full max-w-2xl mx-auto pb-24">
+        {/* Conffo Unique Profile Header - Glassmorphism */}
+        <div className="conffo-glass-card mx-3 mt-3 p-6">
           {/* Avatar & Username - Centered */}
           <div className="flex flex-col items-center">
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-1">
+              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 p-1">
                 <Avatar className="h-full w-full border-2 border-background">
                   <AvatarImage src={avatarUrl} alt={username} />
-                  <AvatarFallback className="text-3xl font-bold">
+                  <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
                     {username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -352,13 +352,13 @@ export default function ProfilePage() {
                 </span>
               )}
               {profileData.is_verified && (
-                <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
                   <BadgeCheck className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
             </div>
             
-            <div className="mt-3 text-center">
+            <div className="mt-4 text-center">
               <div className="flex items-center justify-center gap-2">
                 <h2 className="text-xl font-bold">{username}</h2>
                 {isBlocked && (
@@ -375,18 +375,31 @@ export default function ProfilePage() {
                 </p>
               )}
             </div>
+
+            {/* Edit Profile Button - Unique Style */}
+            {isOwnProfile && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('settings')}
+                className="mt-4 rounded-full conffo-glass-card border-primary/30 px-6"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            )}
             
             {/* Stats Row - Unique Conffo Design */}
-            <div className="flex items-center justify-center gap-8 mt-4">
+            <div className="flex items-center justify-center gap-6 mt-6 w-full">
               <button 
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
                 onClick={() => {}}
               >
-                <span className="text-xl font-bold">{postsCount}</span>
+                <span className="text-2xl font-bold">{postsCount}</span>
                 <span className="text-xs text-muted-foreground">Confessions</span>
               </button>
               
-              <div className="w-px h-8 bg-border" />
+              <div className="conffo-gradient-divider" />
               
               <button 
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
@@ -395,26 +408,23 @@ export default function ProfilePage() {
                   setShowFollowersModal(true);
                 }}
               >
-                <span className="text-xl font-bold">{followersCount}</span>
-                <span className="text-xs text-muted-foreground">Fans</span>
+                <span className="text-2xl font-bold">{followersCount}</span>
+                <span className="text-xs text-muted-foreground">Replies</span>
               </button>
               
-              <div className="w-px h-8 bg-border" />
+              <div className="conffo-gradient-divider" />
               
               <button 
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
-                onClick={() => {
-                  setFollowersModalTab('following');
-                  setShowFollowersModal(true);
-                }}
+                onClick={() => setActiveTab('posts')}
               >
-                <span className="text-xl font-bold">{followingCount}</span>
-                <span className="text-xs text-muted-foreground">Crew</span>
+                <span className="text-2xl font-bold">{followingCount}</span>
+                <span className="text-xs text-muted-foreground">Bookmarks</span>
               </button>
             </div>
           </div>
           
-          {/* Action Buttons */}
+          {/* Action Buttons for other users */}
           {!isOwnProfile && isAuthenticated && userId && (
             <div className="flex gap-2 mt-4 justify-center">
               <FollowButton userId={userId} onFollowChange={handleFollowChange} />
@@ -422,7 +432,7 @@ export default function ProfilePage() {
                 variant="outline"
                 size="icon"
                 onClick={handleChat}
-                className="rounded-full"
+                className="rounded-full conffo-glass-card"
               >
                 <MessageSquare className="h-4 w-4" />
               </Button>
@@ -431,23 +441,48 @@ export default function ProfilePage() {
                 size="icon"
                 onClick={handleBlockToggle}
                 disabled={isBlockLoading}
-                className="rounded-full"
+                className="rounded-full conffo-glass-card"
               >
                 {isBlocked ? <UserMinus className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
               </Button>
             </div>
           )}
-          
-          {isOwnProfile && (
-            <div className="flex gap-2 mt-4 justify-center">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setActiveTab('settings')}
-                className="rounded-full"
+        </div>
+
+        {/* Tabs - Conffo Style */}
+        <div className="px-3 mt-4">
+          <div className="conffo-glass-card p-1 flex gap-1">
+            {['posts', 'settings', 'avatar'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === tab
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                <Settings className="h-4 w-4 mr-1" />
-                Edit Profile
+                {tab === 'posts' ? 'Confessions' : tab === 'settings' ? 'Replies' : 'Bookmarks'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="px-3 mt-4 space-y-3">
+          {activeTab === 'posts' && (
+            <UserConfessions userId={profileData.id} />
+          )}
+          {activeTab === 'settings' && isOwnProfile && (
+            <div className="conffo-glass-card p-4">
+              <EnhancedProfileSettings onProfileUpdate={handleProfileUpdate} />
+            </div>
+          )}
+          {activeTab === 'avatar' && isOwnProfile && (
+            <div className="conffo-glass-card p-4">
+              <AvatarCustomization onAvatarUpdate={handleProfileUpdate} />
+            </div>
+          )}
               </Button>
               <Button 
                 variant="outline" 
