@@ -138,8 +138,10 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
         <Link to={`/confession/${confession.id}`} className="block mb-3">
           <div className="rounded-xl overflow-hidden">
             <MediaCarouselDisplay
-              mediaUrls={mediaUrls}
-              mediaTypes={mediaTypes}
+              media={mediaUrls.map((url, i) => ({
+                url,
+                type: mediaTypes[i] || 'image'
+              }))}
             />
           </div>
         </Link>
