@@ -12,12 +12,12 @@ interface ConffoRoomCardProps {
 
 // Color themes for different rooms - matching the design reference
 const ROOM_THEMES = [
-  { bg: 'from-rose-400/80 to-rose-600/80', border: 'border-rose-300/30' },
-  { bg: 'from-violet-400/80 to-purple-600/80', border: 'border-violet-300/30' },
-  { bg: 'from-amber-400/80 to-orange-500/80', border: 'border-amber-300/30' },
-  { bg: 'from-emerald-400/80 to-teal-600/80', border: 'border-emerald-300/30' },
-  { bg: 'from-blue-400/80 to-indigo-600/80', border: 'border-blue-300/30' },
-  { bg: 'from-pink-400/80 to-fuchsia-600/80', border: 'border-pink-300/30' },
+  { bg: 'from-rose-400/90 to-rose-600/90', border: 'border-rose-300/30' },
+  { bg: 'from-violet-400/90 to-purple-600/90', border: 'border-violet-300/30' },
+  { bg: 'from-amber-400/90 to-orange-500/90', border: 'border-amber-300/30' },
+  { bg: 'from-emerald-400/90 to-teal-600/90', border: 'border-emerald-300/30' },
+  { bg: 'from-blue-400/90 to-indigo-600/90', border: 'border-blue-300/30' },
+  { bg: 'from-pink-400/90 to-fuchsia-600/90', border: 'border-pink-300/30' },
 ];
 
 // Room icons based on keywords
@@ -100,11 +100,10 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
   return (
     <button
       onClick={handleClick}
-      className={`relative aspect-[4/5] rounded-2xl overflow-hidden border ${theme.border} transition-all hover:scale-[1.02] active:scale-[0.98] text-left w-full`}
+      className={`relative aspect-[4/5] rounded-2xl overflow-hidden border ${theme.border} transition-all hover:scale-[1.02] active:scale-[0.98] text-left w-full animate-fadeIn`}
       style={{ 
         animationDelay: `${index * 100}ms`,
-        animation: 'fadeIn 0.4s ease-out forwards',
-        opacity: 0
+        animationFillMode: 'both'
       }}
     >
       {/* Gradient Background */}
