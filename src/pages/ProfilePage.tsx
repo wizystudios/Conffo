@@ -317,8 +317,8 @@ export default function ProfilePage() {
 
         {/* Settings Sheet */}
         <Sheet open={showSettings} onOpenChange={setShowSettings}>
-          <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl">
-            <EnhancedProfileSettings onClose={() => setShowSettings(false)} />
+          <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl overflow-y-auto">
+            <EnhancedProfileSettings />
           </SheetContent>
         </Sheet>
       </div>
