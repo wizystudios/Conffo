@@ -15,6 +15,7 @@ import { useCommunityMessageNotifications } from "@/hooks/useCommunityMessageNot
 
 interface LayoutProps {
   children: ReactNode;
+  hideBottomNav?: boolean;
 }
 
 // Error boundary implemented as a class component, since React requires error boundaries to be classes
@@ -55,7 +56,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}
   }
 }
 
-function LayoutContent({ children }: LayoutProps) {
+function LayoutContent({ children, hideBottomNav }: LayoutProps) {
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
   const { isAuthenticated } = useAuth();
 
@@ -108,7 +109,7 @@ function LayoutContent({ children }: LayoutProps) {
             {children}
           </div>
         </main>
-        <BottomNavigation />
+        {!hideBottomNav && <BottomNavigation />}
       </div>
       
       {/* Message Notification */}
@@ -135,10 +136,10 @@ function LayoutContent({ children }: LayoutProps) {
   );
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, hideBottomNav }: LayoutProps) {
   return (
     <ErrorBoundary>
-      <LayoutContent>{children}</LayoutContent>
+      <LayoutContent hideBottomNav={hideBottomNav}>{children}</LayoutContent>
     </ErrorBoundary>
   );
 }

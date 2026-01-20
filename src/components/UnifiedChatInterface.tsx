@@ -213,6 +213,35 @@ export function UnifiedChatInterface({
     }
   }, [isCommunityChat, targetUserId, user?.id]);
 
+  // Auto-mark community messages as read when scrolling
+  useEffect(() => {
+    if (!isCommunityChat || !community || !user?.id) return;
+
+    // Mark all visible messages as read when messages load or scroll stops
+    const markVisibleAsRead = () => {
+      const otherUserMsgIds = communityMessages
+        .filter(m => m.senderId !== user.id)
+        .map(m => m.id);
+      
+      if (otherUserMsgIds.length > 0) {
+        markMessagesAsRead(otherUserMsgIds);
+      }
+    };
+
+    // Mark as read on initial load
+    if (communityMessages.length > 0) {
+      markVisibleAsRead();
+    }
+
+    // Also fetch read counts for own messages
+    const ownMsgIds = communityMessages
+      .filter(m => m.senderId === user.id)
+      .map(m => m.id);
+    if (ownMsgIds.length > 0) {
+      fetchReadCounts(ownMsgIds);
+    }
+  }, [isCommunityChat, community, communityMessages, user?.id, markMessagesAsRead, fetchReadCounts]);
+
   const { data: targetProfile } = useQuery({
     queryKey: ['profile', targetUserId],
     queryFn: async () => {
