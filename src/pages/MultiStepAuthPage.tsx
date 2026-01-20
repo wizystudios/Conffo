@@ -64,20 +64,6 @@ export default function MultiStepAuthPage() {
     return age;
   }
 
-  // Auto-submit sign in when password is entered (only for email method)
-  useEffect(() => {
-    if (authMode === 'signin' && signinMethod === 'email' && emailValid && passwordValid && !loading) {
-      handleSignIn();
-    }
-  }, [password, signinMethod]);
-
-  // Auto-advance signup flow
-  useEffect(() => {
-    if (authMode === 'signup' && genderValid && emailValid && passwordValid && usernameValid && birthdateValid && !loading) {
-      handleSignUp();
-    }
-  }, [gender]);
-
   const handleSignIn = async () => {
     // For phone login, we need to look up the email first
     if (signinMethod === 'phone') {
@@ -100,11 +86,6 @@ export default function MultiStepAuthPage() {
           throw new Error('No account found with this phone number');
         }
 
-        // Lookup auth user email via user id
-        const { data: authData, error: authError } = await supabase.auth.admin
-          ? { data: null, error: new Error('No access') }
-          : { data: null, error: null };
-        
         // Use the email from the auth.users linked to profile
         const { data: userWithEmail } = await supabase
           .from('profiles')
@@ -113,8 +94,6 @@ export default function MultiStepAuthPage() {
           .maybeSingle();
         
         if (!userWithEmail?.contact_email) {
-          // Try to get the email from the user's auth account
-          // Since we can't query auth.users directly, we need email stored in profile
           throw new Error('Please add your email in profile settings to enable phone login');
         }
 
@@ -266,8 +245,8 @@ export default function MultiStepAuthPage() {
   const signupStep = getCurrentSignupStep();
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-8">
         {/* Back button */}
         <Button 
           variant="ghost" 
@@ -278,20 +257,30 @@ export default function MultiStepAuthPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
-        {/* Mode Toggle */}
-        <div className="flex gap-4 justify-center">
+        {/* Logo/Brand */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold conffo-text-gradient mb-2">Conffo</h1>
+          <p className="text-sm text-muted-foreground">Share Your Confessions Anonymously</p>
+        </div>
+
+        {/* Mode Toggle - Glassmorphism style */}
+        <div className="flex gap-4 justify-center p-1 bg-muted/30 rounded-full">
           <button
             onClick={() => handleModeSwitch('signin')}
-            className={`text-lg font-medium pb-1 border-b-2 transition-colors ${
-              authMode === 'signin' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'
+            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
+              authMode === 'signin' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'text-muted-foreground'
             }`}
           >
             Sign In
           </button>
           <button
             onClick={() => handleModeSwitch('signup')}
-            className={`text-lg font-medium pb-1 border-b-2 transition-colors ${
-              authMode === 'signup' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'
+            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
+              authMode === 'signup' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'text-muted-foreground'
             }`}
           >
             Sign Up
@@ -299,75 +288,83 @@ export default function MultiStepAuthPage() {
         </div>
 
         {authError && (
-          <div className="p-3 bg-destructive/10 rounded-lg text-center">
+          <div className="p-3 bg-destructive/10 rounded-xl text-center">
             <p className="text-sm text-destructive">{authError}</p>
           </div>
         )}
 
-        {/* Sign In Flow */}
+        {/* Sign In Flow - Cosmic glassmorphism design */}
         {authMode === 'signin' && (
-          <div className="space-y-4">
-            {/* Toggle between email/phone - text only, no buttons */}
-            <div className="flex gap-4 justify-center mb-2">
+          <div className="space-y-4 conffo-glass-card p-6">
+            {/* Toggle between email/phone */}
+            <div className="flex gap-4 justify-center mb-4">
               <button 
                 onClick={() => setSigninMethod('email')}
-                className={`text-sm flex items-center gap-1 ${signinMethod === 'email' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+                className={`text-sm flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                  signinMethod === 'email' 
+                    ? 'bg-primary/20 text-primary' 
+                    : 'text-muted-foreground'
+                }`}
               >
-                <Mail className="h-3 w-3" /> Email
+                <Mail className="h-3.5 w-3.5" /> Email
               </button>
               <button 
                 onClick={() => setSigninMethod('phone')}
-                className={`text-sm flex items-center gap-1 ${signinMethod === 'phone' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+                className={`text-sm flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                  signinMethod === 'phone' 
+                    ? 'bg-primary/20 text-primary' 
+                    : 'text-muted-foreground'
+                }`}
               >
-                <Phone className="h-3 w-3" /> Phone
+                <Phone className="h-3.5 w-3.5" /> Phone
               </button>
             </div>
 
-            {/* Email input - smaller, no box */}
+            {/* Email input */}
             {signinMethod === 'email' && (
               <div className="relative">
-                <Mail className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="email" 
                   placeholder="Email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
                   autoFocus
                 />
-                {emailValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+                {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Phone input - smaller, no box */}
+            {/* Phone input */}
             {signinMethod === 'phone' && (
               <div className="relative">
-                <Phone className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="tel" 
                   placeholder="Phone number" 
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
                   autoFocus
                 />
-                {phoneValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+                {phoneValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Password - shows when identifier is valid - smaller, no box */}
+            {/* Password */}
             {identifierValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Lock className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="password" 
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
                   autoFocus
                 />
-                {loading && <Loader2 className="absolute right-2 top-2.5 h-3 w-3 animate-spin text-muted-foreground" />}
+                {loading && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
             )}
 
@@ -381,12 +378,12 @@ export default function MultiStepAuthPage() {
               </button>
             )}
 
-            {/* Sign in button for phone method */}
-            {signinMethod === 'phone' && phoneValid && passwordValid && (
+            {/* Sign in button */}
+            {identifierValid && passwordValid && (
               <Button
                 onClick={handleSignIn}
                 disabled={loading}
-                className="w-full h-9 text-sm"
+                className="w-full h-11 rounded-xl conffo-confess-btn text-white"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In'}
               </Button>
@@ -394,167 +391,114 @@ export default function MultiStepAuthPage() {
           </div>
         )}
 
-        {/* Sign Up Flow - matching signin design */}
+        {/* Sign Up Flow - Cosmic glassmorphism design */}
         {authMode === 'signup' && (
-          <div className="space-y-4">
-            {/* Toggle between email/phone - text only, no buttons */}
-            <div className="flex gap-4 justify-center mb-2">
-              <button 
-                onClick={() => setSigninMethod('email')}
-                className={`text-sm flex items-center gap-1 ${signinMethod === 'email' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
-              >
-                <Mail className="h-3 w-3" /> Email
-              </button>
-              <button 
-                onClick={() => setSigninMethod('phone')}
-                className={`text-sm flex items-center gap-1 ${signinMethod === 'phone' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
-              >
-                <Phone className="h-3 w-3" /> Phone
-              </button>
+          <div className="space-y-4 conffo-glass-card p-6">
+            {/* Email */}
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="email" 
+                placeholder="Email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                autoFocus={signupStep === 'email'}
+              />
+              {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
             </div>
 
-            {/* Email - smaller, no box */}
-            {signinMethod === 'email' && (
-              <div className="relative">
-                <Mail className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
-                <Input 
-                  type="email" 
-                  placeholder="Email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
-                  autoFocus={signupStep === 'email'}
-                  disabled={signupStep !== 'email'}
-                />
-                {emailValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
-              </div>
-            )}
-
-            {/* Phone - smaller, no box */}
-            {signinMethod === 'phone' && (
-              <div className="relative">
-                <Phone className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
-                <Input 
-                  type="tel" 
-                  placeholder="Phone number" 
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
-                  autoFocus={signupStep === 'email'}
-                  disabled={signupStep !== 'email'}
-                />
-                {phoneValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
-              </div>
-            )}
-
-            {/* Password - smaller, no box */}
-            {(emailValid || phoneValid) && (
+            {/* Password */}
+            {emailValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Lock className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="password" 
                   placeholder="Password (6+ characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
                   autoFocus={signupStep === 'password'}
-                  disabled={signupStep !== 'password'}
                 />
-                {passwordValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+                {passwordValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Username - smaller, no box */}
+            {/* Username */}
             {passwordValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <User className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="text" 
                   placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
                   autoFocus={signupStep === 'username'}
-                  disabled={signupStep !== 'username'}
-                  minLength={3}
-                  maxLength={30}
                 />
-                {usernameValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+                {usernameValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Birthdate - smaller, no box */}
+            {/* Birthdate */}
             {usernameValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Calendar className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="date" 
                   placeholder="Date of birth"
                   value={birthdate}
                   onChange={(e) => setBirthdate(e.target.value)}
-                  className="pl-7 h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0 focus-visible:ring-0"
+                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
                   autoFocus={signupStep === 'birthdate'}
-                  disabled={signupStep !== 'birthdate'}
-                  max={new Date(Date.now() - 13 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                 />
-                {birthdateValid && <Check className="absolute right-2 top-2.5 h-3 w-3 text-green-500" />}
+                {birthdateValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Gender - smaller, styled to match */}
+            {/* Gender */}
             {birthdateValid && (
               <div className="animate-in fade-in slide-in-from-bottom-2">
-                <Select value={gender} onValueChange={setGender} disabled={signupStep !== 'gender'}>
-                  <SelectTrigger className="h-9 text-sm bg-transparent border-0 border-b border-muted-foreground/30 rounded-none focus:ring-0">
+                <Select value={gender} onValueChange={setGender}>
+                  <SelectTrigger className="h-11 bg-background/50 border-border/30 rounded-xl">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="non-binary">Non-binary</SelectItem>
-                    <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                   </SelectContent>
                 </Select>
-                {loading && (
-                  <div className="flex items-center justify-center mt-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
-                )}
               </div>
+            )}
+
+            {/* Sign up button */}
+            {genderValid && (
+              <Button
+                onClick={handleSignUp}
+                disabled={loading}
+                className="w-full h-11 rounded-xl conffo-confess-btn text-white"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Account'}
+              </Button>
             )}
           </div>
         )}
 
-        {/* Back link for going back to previous field */}
-        {authMode === 'signin' && emailValid && (
-          <button 
-            onClick={() => { setPassword(''); setEmail(''); }}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Back
+        {/* Footer */}
+        <p className="text-center text-xs text-muted-foreground">
+          By continuing, you agree to our{' '}
+          <button onClick={() => navigate('/terms')} className="text-primary hover:underline">
+            Terms
+          </button>{' '}
+          and{' '}
+          <button onClick={() => navigate('/privacy')} className="text-primary hover:underline">
+            Privacy Policy
           </button>
-        )}
-
-        {authMode === 'signup' && signupStep !== 'email' && (
-          <button 
-            onClick={() => {
-              if (signupStep === 'password') { setPassword(''); setEmail(''); }
-              else if (signupStep === 'username') { setUsername(''); setPassword(''); }
-              else if (signupStep === 'birthdate') { setBirthdate(''); setUsername(''); }
-              else if (signupStep === 'gender') { setGender(''); setBirthdate(''); }
-            }}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Back
-          </button>
-        )}
-
-        <p className="text-xs text-muted-foreground text-center pt-4">
-          By continuing, you agree to our Terms and Privacy Policy
         </p>
       </div>
-      
-      {/* Forgot Password Modal */}
+
       <ForgotPasswordModal 
         isOpen={showForgotPassword} 
         onClose={() => setShowForgotPassword(false)} 

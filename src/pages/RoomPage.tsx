@@ -1,20 +1,23 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Users, Bell, Shield, Settings } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Users, Shield, Plus, MessageCircle, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Layout } from '@/components/Layout';
 import { ConffoConfessionCard } from '@/components/ConffoConfessionCard';
 import { SwipeableConfessionViewer } from '@/components/SwipeableConfessionViewer';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CommunityList } from '@/components/CommunityList';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { Community } from '@/services/communityService';
+import { ImprovedCommentModal } from '@/components/ImprovedCommentModal';
+import { supabase } from '@/integrations/supabase/client';
+import { haptic } from '@/utils/hapticFeedback';
+import { toast } from '@/hooks/use-toast';
 
 // Get room emoji icon
 const getRoomIcon = (name: string): string => {
@@ -30,6 +33,9 @@ const getRoomIcon = (name: string): string => {
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
   const [activeTab, setActiveTab] = useState<'new' | 'supported' | 'discussed'>('new');
   const [viewMode, setViewMode] = useState<'swipe' | 'list'>('list');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -38,6 +44,8 @@ export default function RoomPage() {
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [communitiesKey, setCommunitiesKey] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [selectedConfessionId, setSelectedConfessionId] = useState<string | null>(null);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -51,6 +59,19 @@ export default function RoomPage() {
     queryFn: () => getConfessions(roomId as Room, user?.id),
     enabled: !!roomId,
   });
+
+  // Sort confessions based on active tab
+  const sortedConfessions = [...confessions].sort((a, b) => {
+    if (activeTab === 'new') {
+      return b.timestamp - a.timestamp;
+    } else if (activeTab === 'supported') {
+      const aReactions = (a.reactions?.heart || 0) + (a.reactions?.like || 0);
+      const bReactions = (b.reactions?.heart || 0) + (b.reactions?.like || 0);
+      return bReactions - aReactions;
+    } else {
+      return (b.commentCount || 0) - (a.commentCount || 0);
+    }
+  });
   
   const handleConfessionSuccess = () => {
     refetch();
@@ -58,6 +79,48 @@ export default function RoomPage() {
 
   const handleCommunityCreated = () => {
     setCommunitiesKey(prev => prev + 1);
+  };
+
+  const handleOpenComments = (confessionId: string) => {
+    setSelectedConfessionId(confessionId);
+    setShowComments(true);
+  };
+
+  const handleLike = async (confessionId: string) => {
+    if (!user) {
+      toast({ title: "Please sign in to like", variant: "destructive" });
+      return;
+    }
+    
+    haptic.light();
+    
+    // Check if already liked
+    const { data: existing } = await supabase
+      .from('reactions')
+      .select('id')
+      .eq('confession_id', confessionId)
+      .eq('user_id', user.id)
+      .eq('type', 'heart')
+      .maybeSingle();
+    
+    if (existing) {
+      await supabase
+        .from('reactions')
+        .delete()
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('reactions')
+        .insert({
+          confession_id: confessionId,
+          user_id: user.id,
+          type: 'heart'
+        });
+    }
+    
+    // Refresh data
+    queryClient.invalidateQueries({ queryKey: ['confessions'] });
+    queryClient.invalidateQueries({ queryKey: ['reactions'] });
   };
   
   if (!roomInfo) {
@@ -69,7 +132,7 @@ export default function RoomPage() {
             <p className="text-muted-foreground mb-6">
               The room you're looking for doesn't exist.
             </p>
-            <Link to="/rooms">
+            <Link to="/">
               <Button>View All Rooms</Button>
             </Link>
           </div>
@@ -112,27 +175,22 @@ export default function RoomPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto pb-24">
-        {/* Header */}
+        {/* Header - Simplified, no notification icon */}
         <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-lg border-b border-border/30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <Link to="/rooms">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              </Link>
+              <button onClick={() => navigate('/')}>
+                <ArrowLeft className="h-5 w-5" />
+              </button>
               <div className="flex items-center gap-2">
                 <span className="text-xl">{roomIcon}</span>
                 <h1 className="font-bold">{roomInfo.name}</h1>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <Bell className="h-4 w-4" />
-            </Button>
           </div>
           
           <p className="text-xs text-muted-foreground text-center pb-2">
-            {roomInfo.description || 'Anonymous confessions about love'}
+            {roomInfo.description || 'Anonymous confessions'}
           </p>
 
           {/* Member avatars + Join/Rules buttons */}
@@ -164,6 +222,7 @@ export default function RoomPage() {
               size="sm"
               className="rounded-full px-4 h-8"
             >
+              <Shield className="h-3 w-3 mr-1" />
               Rules
             </Button>
           </div>
@@ -186,6 +245,29 @@ export default function RoomPage() {
           </div>
         </div>
 
+        {/* Communities Section */}
+        <div className="px-4 py-3 border-b border-border/30">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium">Communities</h3>
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCreateCommunity(true)}
+                className="h-7 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Create
+              </Button>
+            )}
+          </div>
+          <CommunityList 
+            key={communitiesKey}
+            roomId={roomId || ''} 
+            onSelectCommunity={setSelectedCommunity}
+          />
+        </div>
+
         {/* Content */}
         {isLoading ? (
           <div className="p-4 space-y-3">
@@ -196,20 +278,42 @@ export default function RoomPage() {
         ) : viewMode === 'swipe' ? (
           <div className="pt-4">
             <SwipeableConfessionViewer 
-              confessions={confessions} 
+              confessions={sortedConfessions} 
               onUpdate={handleConfessionSuccess}
             />
           </div>
         ) : (
           <div className="pt-2">
-            {confessions.length > 0 ? (
-              confessions.map((confession, index) => (
-                <ConffoConfessionCard 
-                  key={confession.id}
-                  confession={confession}
-                  onUpdate={handleConfessionSuccess}
-                  index={index}
-                />
+            {sortedConfessions.length > 0 ? (
+              sortedConfessions.map((confession, index) => (
+                <div key={confession.id} className="relative">
+                  <ConffoConfessionCard 
+                    confession={confession}
+                    onUpdate={handleConfessionSuccess}
+                    index={index}
+                  />
+                  {/* Inline action buttons for like/comment without clicking confession */}
+                  <div className="absolute bottom-16 right-6 flex gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike(confession.id);
+                      }}
+                      className="p-2 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background"
+                    >
+                      <Heart className="h-4 w-4 text-pink-400" />
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenComments(confession.id);
+                      }}
+                      className="p-2 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background"
+                    >
+                      <MessageCircle className="h-4 w-4 text-primary" />
+                    </button>
+                  </div>
+                </div>
               ))
             ) : (
               <div className="conffo-glass-card p-8 mx-4 text-center">
@@ -229,6 +333,18 @@ export default function RoomPage() {
         roomId={roomId || ''}
         onCreated={handleCommunityCreated}
       />
+
+      {/* Comments Modal */}
+      {selectedConfessionId && (
+        <ImprovedCommentModal
+          confessionId={selectedConfessionId}
+          isOpen={showComments}
+          onClose={() => {
+            setShowComments(false);
+            setSelectedConfessionId(null);
+          }}
+        />
+      )}
     </Layout>
   );
 }

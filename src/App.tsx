@@ -97,6 +97,9 @@ const App = () => {
                   <Route path="/rooms" element={<RoomsPage />} />
                   <Route path="/room/:roomId" element={<RoomPage />} />
                   
+                  {/* My Replies - comments on user's confessions */}
+                  <Route path="/recent" element={<RecentPage />} />
+                  
                   {/* Other pages */}
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/user/:userId" element={<ProfilePage />} />
