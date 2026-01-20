@@ -482,114 +482,23 @@ export default function ProfilePage() {
             <div className="conffo-glass-card p-4">
               <AvatarCustomization onAvatarUpdate={handleProfileUpdate} />
             </div>
-          )}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setActiveTab('avatar')}
-                className="rounded-full"
-              >
-                <Camera className="h-4 w-4 mr-1" />
-                Avatar
-              </Button>
-              {!profileData.is_verified && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowVerificationModal(true)}
-                  className="rounded-full"
-                >
-                  <BadgeCheck className="h-4 w-4 mr-1" />
-                  Verify
-                </Button>
-              )}
-            </div>
-          )}
         </div>
-
-        {/* Profile Details Section - Unique Conffo Cards */}
-        <div className="px-4 py-3 space-y-3">
-          {/* Info Cards */}
-          {(profileData.location || profileData.website || profileData.date_of_birth) && (
-            <div className="bg-card rounded-2xl p-4 border border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">About</h3>
-              <div className="space-y-2">
-                {profileData.location && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{profileData.location}</span>
-                  </div>
-                )}
-                {profileData.website && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <a href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`} 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       className="text-primary hover:underline truncate">
-                      {profileData.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  </div>
-                )}
-                {profileData.date_of_birth && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{new Date(profileData.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Interests */}
-          {profileData.interests && profileData.interests.length > 0 && (
-            <div className="bg-card rounded-2xl p-4 border border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                <Heart className="h-3 w-3 inline mr-1" />
-                Interests
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {profileData.interests.map((interest, idx) => (
-                  <Badge key={idx} variant="secondary" className="rounded-full px-3 py-1 text-xs">
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* User Communities - Show if enabled in privacy settings or own profile */}
-          {userCommunities.length > 0 && (isOwnProfile || profileData.privacy_settings?.show_communities_on_profile !== false) && (
-            <div className="bg-card rounded-2xl p-4 border border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                <Users className="h-3 w-3 inline mr-1" />
-                Communities
-              </h3>
-              <div className="space-y-2">
-                {userCommunities.slice(0, 3).map((community) => (
-                  <button
-                    key={community.id}
-                    onClick={() => navigate('/chat')}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={community.imageUrl || undefined} />
-                      <AvatarFallback className="bg-primary/20 text-primary font-bold">
-                        {community.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-medium">{community.name}</p>
-                      <p className="text-xs text-muted-foreground">{community.memberCount} members</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        
+        <FullScreenFollowersModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          userId={userId || user?.id || ''}
+          initialTab={followersModalTab}
+        />
+        
+        <VerificationBadgeRequest 
+          isOpen={showVerificationModal} 
+          onClose={() => setShowVerificationModal(false)} 
+        />
+      </div>
+    </Layout>
+  );
+}
         
         {/* Content Tabs - Conffo Style */}
         <div className="w-full">
