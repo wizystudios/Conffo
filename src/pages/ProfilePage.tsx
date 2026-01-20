@@ -4,13 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { UserConfessions } from '@/components/UserConfessions';
 import { Button } from '@/components/ui/button';
 import { Settings, BadgeCheck, ChevronLeft, Users } from 'lucide-react';
-import { Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Navigate, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
 import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal';
 import { getCountryFlag } from '@/components/CountrySelector';
-import { useQuery } from '@tanstack/react-query';
+import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface ProfileData {
   id: string;
@@ -23,6 +24,7 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('confessions');
@@ -34,6 +36,14 @@ export default function ProfilePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Check if settings should be open from URL param
+  useEffect(() => {
+    if (searchParams.get('tab') === 'settings') {
+      setShowSettings(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;
@@ -148,7 +158,7 @@ export default function ProfilePage() {
           </button>
           <h1 className="font-bold text-lg">My Profile</h1>
           {isOwnProfile && (
-            <button onClick={() => navigate('/profile?tab=settings')} className="p-2 -mr-2">
+            <button onClick={() => setShowSettings(true)} className="p-2 -mr-2">
               <Settings className="h-5 w-5 text-muted-foreground" />
             </button>
           )}
@@ -184,12 +194,12 @@ export default function ProfilePage() {
             </p>
           )}
 
-          {/* Edit Profile Button */}
+          {/* Edit Profile Button - Now opens settings sheet */}
           {isOwnProfile && (
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => navigate('/profile?tab=settings')}
+              onClick={() => setShowSettings(true)}
               className="mt-4 rounded-full px-6"
             >
               <Settings className="h-4 w-4 mr-2" />
@@ -304,6 +314,13 @@ export default function ProfilePage() {
           userId={userId || user?.id || ''}
           initialTab={followersModalTab}
         />
+
+        {/* Settings Sheet */}
+        <Sheet open={showSettings} onOpenChange={setShowSettings}>
+          <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl">
+            <EnhancedProfileSettings onClose={() => setShowSettings(false)} />
+          </SheetContent>
+        </Sheet>
       </div>
     </Layout>
   );
