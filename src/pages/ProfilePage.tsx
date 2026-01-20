@@ -475,7 +475,7 @@ export default function ProfilePage() {
           )}
           {activeTab === 'settings' && isOwnProfile && (
             <div className="conffo-glass-card p-4">
-              <EnhancedProfileSettings onProfileUpdate={handleProfileUpdate} />
+              <EnhancedProfileSettings />
             </div>
           )}
           {activeTab === 'avatar' && isOwnProfile && (
