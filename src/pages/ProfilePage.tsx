@@ -332,16 +332,16 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="w-full max-w-2xl mx-auto">
-        {/* Conffo Unique Profile Header - Centered Layout */}
-        <div className="w-full bg-background px-4 py-6">
+      <div className="w-full max-w-2xl mx-auto pb-24">
+        {/* Conffo Unique Profile Header - Glassmorphism */}
+        <div className="conffo-glass-card mx-3 mt-3 p-6">
           {/* Avatar & Username - Centered */}
           <div className="flex flex-col items-center">
             <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-1">
+              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 p-1">
                 <Avatar className="h-full w-full border-2 border-background">
                   <AvatarImage src={avatarUrl} alt={username} />
-                  <AvatarFallback className="text-3xl font-bold">
+                  <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
                     {username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -352,13 +352,13 @@ export default function ProfilePage() {
                 </span>
               )}
               {profileData.is_verified && (
-                <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
                   <BadgeCheck className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
             </div>
             
-            <div className="mt-3 text-center">
+            <div className="mt-4 text-center">
               <div className="flex items-center justify-center gap-2">
                 <h2 className="text-xl font-bold">{username}</h2>
                 {isBlocked && (
@@ -375,18 +375,31 @@ export default function ProfilePage() {
                 </p>
               )}
             </div>
+
+            {/* Edit Profile Button - Unique Style */}
+            {isOwnProfile && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('settings')}
+                className="mt-4 rounded-full conffo-glass-card border-primary/30 px-6"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            )}
             
             {/* Stats Row - Unique Conffo Design */}
-            <div className="flex items-center justify-center gap-8 mt-4">
+            <div className="flex items-center justify-center gap-6 mt-6 w-full">
               <button 
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
                 onClick={() => {}}
               >
-                <span className="text-xl font-bold">{postsCount}</span>
+                <span className="text-2xl font-bold">{postsCount}</span>
                 <span className="text-xs text-muted-foreground">Confessions</span>
               </button>
               
-              <div className="w-px h-8 bg-border" />
+              <div className="conffo-gradient-divider" />
               
               <button 
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
@@ -395,26 +408,23 @@ export default function ProfilePage() {
                   setShowFollowersModal(true);
                 }}
               >
-                <span className="text-xl font-bold">{followersCount}</span>
-                <span className="text-xs text-muted-foreground">Fans</span>
+                <span className="text-2xl font-bold">{followersCount}</span>
+                <span className="text-xs text-muted-foreground">Replies</span>
               </button>
               
-              <div className="w-px h-8 bg-border" />
+              <div className="conffo-gradient-divider" />
               
               <button 
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
-                onClick={() => {
-                  setFollowersModalTab('following');
-                  setShowFollowersModal(true);
-                }}
+                onClick={() => setActiveTab('posts')}
               >
-                <span className="text-xl font-bold">{followingCount}</span>
-                <span className="text-xs text-muted-foreground">Crew</span>
+                <span className="text-2xl font-bold">{followingCount}</span>
+                <span className="text-xs text-muted-foreground">Bookmarks</span>
               </button>
             </div>
           </div>
           
-          {/* Action Buttons */}
+          {/* Action Buttons for other users */}
           {!isOwnProfile && isAuthenticated && userId && (
             <div className="flex gap-2 mt-4 justify-center">
               <FollowButton userId={userId} onFollowChange={handleFollowChange} />
@@ -422,7 +432,7 @@ export default function ProfilePage() {
                 variant="outline"
                 size="icon"
                 onClick={handleChat}
-                className="rounded-full"
+                className="rounded-full conffo-glass-card"
               >
                 <MessageSquare className="h-4 w-4" />
               </Button>
@@ -431,205 +441,47 @@ export default function ProfilePage() {
                 size="icon"
                 onClick={handleBlockToggle}
                 disabled={isBlockLoading}
-                className="rounded-full"
+                className="rounded-full conffo-glass-card"
               >
                 {isBlocked ? <UserMinus className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
               </Button>
             </div>
           )}
-          
-          {isOwnProfile && (
-            <div className="flex gap-2 mt-4 justify-center">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setActiveTab('settings')}
-                className="rounded-full"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Edit Profile
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setActiveTab('avatar')}
-                className="rounded-full"
-              >
-                <Camera className="h-4 w-4 mr-1" />
-                Avatar
-              </Button>
-              {!profileData.is_verified && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowVerificationModal(true)}
-                  className="rounded-full"
-                >
-                  <BadgeCheck className="h-4 w-4 mr-1" />
-                  Verify
-                </Button>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Profile Details Section - Unique Conffo Cards */}
-        <div className="px-4 py-3 space-y-3">
-          {/* Info Cards */}
-          {(profileData.location || profileData.website || profileData.date_of_birth) && (
-            <div className="bg-card rounded-2xl p-4 border border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">About</h3>
-              <div className="space-y-2">
-                {profileData.location && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{profileData.location}</span>
-                  </div>
-                )}
-                {profileData.website && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <a href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`} 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       className="text-primary hover:underline truncate">
-                      {profileData.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  </div>
-                )}
-                {profileData.date_of_birth && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{new Date(profileData.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Interests */}
-          {profileData.interests && profileData.interests.length > 0 && (
-            <div className="bg-card rounded-2xl p-4 border border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                <Heart className="h-3 w-3 inline mr-1" />
-                Interests
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {profileData.interests.map((interest, idx) => (
-                  <Badge key={idx} variant="secondary" className="rounded-full px-3 py-1 text-xs">
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* User Communities - Show if enabled in privacy settings or own profile */}
-          {userCommunities.length > 0 && (isOwnProfile || profileData.privacy_settings?.show_communities_on_profile !== false) && (
-            <div className="bg-card rounded-2xl p-4 border border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                <Users className="h-3 w-3 inline mr-1" />
-                Communities
-              </h3>
-              <div className="space-y-2">
-                {userCommunities.slice(0, 3).map((community) => (
-                  <button
-                    key={community.id}
-                    onClick={() => navigate('/chat')}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={community.imageUrl || undefined} />
-                      <AvatarFallback className="bg-primary/20 text-primary font-bold">
-                        {community.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-medium">{community.name}</p>
-                      <p className="text-xs text-muted-foreground">{community.memberCount} members</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* Tabs - Conffo Style */}
+        <div className="px-3 mt-4">
+          <div className="conffo-glass-card p-1 flex gap-1">
+            {['posts', 'settings', 'avatar'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                  activeTab === tab
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab === 'posts' ? 'Confessions' : tab === 'settings' ? 'Replies' : 'Bookmarks'}
+              </button>
+            ))}
+          </div>
         </div>
-        
-        {/* Content Tabs - Conffo Style */}
-        <div className="w-full">
-          {isOwnProfile ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {activeTab === 'posts' && (
-                <TabsContent value="posts" className="mt-0">
-                  <UserConfessions userId={user?.id} />
-                </TabsContent>
-              )}
 
-              <TabsContent value="settings" className="p-4">
-                <div className="space-y-4">
-                  <SimpleProfileForm />
-                  <EnhancedProfileSettings />
-                  
-                  <div className="pt-4 border-t border-border">
-                    <h3 className="font-semibold mb-4">App Information</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-center space-x-2 p-3 bg-muted/50 rounded-lg">
-                        <img 
-                          src="/lovable-uploads/911a3176-bd7a-4c2f-8145-9fb902754993.png" 
-                          alt="Conffo" 
-                          className="h-8 w-8 object-contain"
-                        />
-                        <span className="font-medium">Conffo</span>
-                        <span className="text-sm text-muted-foreground">from</span>
-                        <div className="flex items-center">
-                          <img 
-                            src="/lovable-uploads/5affd7c4-65bb-4b3a-af86-0cf0b47b138f.png" 
-                            alt="Wetech" 
-                            className="h-6 w-6 rounded-full object-cover mr-1"
-                          />
-                          <span className="font-medium">Wetech</span>
-                        </div>
-                      </div>
-                      
-                      <div className="text-center text-sm text-muted-foreground">
-                        © {new Date().getFullYear()} Conffo
-                      </div>
-                      
-                      <div className="flex flex-col space-y-2">
-                        <Button variant="outline" asChild className="justify-start">
-                          <a href="/terms" target="_blank" rel="noopener noreferrer">
-                            Terms & Conditions
-                          </a>
-                        </Button>
-                        <Button variant="outline" asChild className="justify-start">
-                          <a href="/privacy" target="_blank" rel="noopener noreferrer">
-                            Privacy Policy
-                          </a>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-border">
-                    <Button variant="destructive" onClick={logout} className="w-full">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="avatar" className="p-4">
-                <AvatarCustomization onAvatarUpdate={handleProfileUpdate} />
-              </TabsContent>
-
-              <TabsContent value="verify" className="p-4">
-                <RealImageVerification />
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <UserConfessions userId={userId} />
+        {/* Content Section */}
+        <div className="px-3 mt-4 space-y-3">
+          {activeTab === 'posts' && (
+            <UserConfessions userId={profileData.id} />
+          )}
+          {activeTab === 'settings' && isOwnProfile && (
+            <div className="conffo-glass-card p-4">
+              <EnhancedProfileSettings />
+            </div>
+          )}
+          {activeTab === 'avatar' && isOwnProfile && (
+            <div className="conffo-glass-card p-4">
+              <AvatarCustomization onAvatarUpdate={handleProfileUpdate} />
+            </div>
           )}
         </div>
         
