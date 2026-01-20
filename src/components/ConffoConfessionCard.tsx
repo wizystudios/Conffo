@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { haptic } from '@/utils/hapticFeedback';
+import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 
 interface ConffoConfessionCardProps {
   confession: Confession;
@@ -21,7 +22,6 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
 }: ConffoConfessionCardProps) {
   const { user } = useAuth();
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
 
   // Fetch reaction count
   const { data: reactionData } = useQuery({
@@ -100,12 +100,16 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
     return `#${confession.room || 'Random'}`;
   };
 
+  // Check for media
+  const hasMedia = confession.mediaUrls?.length || confession.mediaUrl;
+  const mediaUrls = confession.mediaUrls || (confession.mediaUrl ? [confession.mediaUrl] : []);
+  const mediaTypes = confession.mediaTypes || (confession.mediaType ? [confession.mediaType] : []);
+
   return (
     <div 
-      className="conffo-glass-card p-4 mx-3 mb-3 animate-in fade-in slide-in-from-bottom-2"
+      className="conffo-glass-card p-4 mx-3 mb-3 conffo-stagger-item"
       style={{ 
-        animationDelay: `${index * 50}ms`,
-        animationFillMode: 'backwards'
+        animationDelay: `${index * 80}ms`,
       }}
     >
       {/* Header */}
@@ -128,6 +132,18 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
           {confession.content}
         </p>
       </Link>
+
+      {/* Media Display - Show if media exists */}
+      {hasMedia && mediaUrls.length > 0 && (
+        <Link to={`/confession/${confession.id}`} className="block mb-3">
+          <div className="rounded-xl overflow-hidden">
+            <MediaCarouselDisplay
+              mediaUrls={mediaUrls}
+              mediaTypes={mediaTypes}
+            />
+          </div>
+        </Link>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between">

@@ -56,10 +56,9 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
   return (
     <Link to={`/room/${room.id}`}>
       <div 
-        className="conffo-glass-card p-4 flex items-center gap-4 group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] animate-in fade-in slide-in-from-bottom-3"
+        className="conffo-glass-card p-4 flex items-center gap-4 group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] conffo-stagger-item"
         style={{ 
           animationDelay: `${index * 80}ms`,
-          animationFillMode: 'backwards'
         }}
       >
         {/* Icon */}
