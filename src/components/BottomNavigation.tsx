@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, Plus, MessageCircle, User } from 'lucide-react';
+import { Home, Search, Plus, MessageSquare, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -43,12 +43,12 @@ export function BottomNavigation() {
           </button>
         )}
         
-        {/* My Replies - Shows replies to user's confessions, NOT chat */}
+        {/* Chats - Direct messages, not replies */}
         {isAuthenticated && (
-          <Link to="/recent" className="flex flex-col items-center py-1 px-3 gap-0.5">
-            <MessageCircle className={`h-5 w-5 ${isActive('/recent') ? 'text-primary' : 'text-muted-foreground'}`} />
-            <span className={`text-[10px] ${isActive('/recent') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-              My Replies
+          <Link to="/chat" className="flex flex-col items-center py-1 px-3 gap-0.5">
+            <MessageSquare className={`h-5 w-5 ${isActive('/chat') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-[10px] ${isActive('/chat') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+              Chats
             </span>
           </Link>
         )}
