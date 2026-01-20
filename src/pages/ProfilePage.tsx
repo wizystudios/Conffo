@@ -3,23 +3,13 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { UserConfessions } from '@/components/UserConfessions';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Ban, UserMinus, BadgeCheck, Settings, Camera, Shield, Users, Globe, MapPin, Calendar, Mail, Phone, Heart, ChevronRight } from 'lucide-react';
-import { Navigate, useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { Settings, BadgeCheck, ChevronLeft, Users } from 'lucide-react';
+import { Navigate, useParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
-import { SimpleProfileForm } from '@/components/SimpleProfileForm';
 import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal';
-import { AvatarCustomization } from '@/components/AvatarCustomization';
-import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
-import { RealImageVerification } from '@/components/RealImageVerification';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { LogOut } from 'lucide-react';
-import { blockUser, unblockUser, isUserBlocked } from '@/services/blockService';
-import { toast } from '@/hooks/use-toast';
 import { getCountryFlag } from '@/components/CountrySelector';
-import { VerificationBadgeRequest } from '@/components/VerificationBadgeRequest';
 import { useQuery } from '@tanstack/react-query';
 
 interface ProfileData {
@@ -27,32 +17,15 @@ interface ProfileData {
   username: string | null;
   avatar_url: string | null;
   bio: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  is_public: boolean;
-  location: string | null;
-  website: string | null;
-  date_of_birth: string | null;
-  interests: string[] | null;
   is_verified: boolean | null;
-  privacy_settings: {
-    show_communities_on_profile?: boolean;
-  } | null;
-}
-
-interface UserCommunity {
-  id: string;
-  name: string;
-  imageUrl: string | null;
-  memberCount: number;
+  location: string | null;
 }
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
-  const [searchParams] = useSearchParams();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('posts');
+  const [activeTab, setActiveTab] = useState('confessions');
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
@@ -61,62 +34,11 @@ export default function ProfilePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [isBlockLoading, setIsBlockLoading] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-
-  // Fetch user's communities
-  const { data: userCommunities = [] } = useQuery({
-    queryKey: ['user-communities', userId || user?.id],
-    queryFn: async () => {
-      const targetId = userId || user?.id;
-      if (!targetId) return [];
-      
-      const { data: memberships } = await supabase
-        .from('community_members')
-        .select('community_id, communities(id, name, image_url)')
-        .eq('user_id', targetId);
-      
-      if (!memberships) return [];
-      
-      const communities: UserCommunity[] = [];
-      for (const m of memberships) {
-        const comm = (m as any).communities;
-        if (comm) {
-          const { count } = await supabase
-            .from('community_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('community_id', comm.id);
-          
-          communities.push({
-            id: comm.id,
-            name: comm.name,
-            imageUrl: comm.image_url,
-            memberCount: count || 0
-          });
-        }
-      }
-      return communities;
-    },
-    enabled: !!(userId || user?.id)
-  });
-
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && ['posts', 'settings', 'avatar', 'verify'].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;
-    
     const ownProfile = !userId || userId === user.id;
     setIsOwnProfile(ownProfile);
-    
-    if (userId && userId !== user.id) {
-      isUserBlocked(userId).then(setIsBlocked);
-    }
   }, [userId, user]);
 
   useEffect(() => {
@@ -127,15 +49,11 @@ export default function ProfilePage() {
       const targetUserId = userId || user.id;
       
       try {
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified, privacy_settings')
+          .select('id, username, avatar_url, bio, is_verified, location')
           .eq('id', targetUserId)
           .maybeSingle();
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-        }
 
         if (profile) {
           setProfileData({
@@ -143,48 +61,24 @@ export default function ProfilePage() {
             username: profile.username || user.email?.split('@')[0] || 'User',
             avatar_url: profile.avatar_url,
             bio: profile.bio,
-            contact_email: profile.contact_email,
-            contact_phone: profile.contact_phone,
-            is_public: profile.is_public ?? true,
-            location: profile.location,
-            website: profile.website,
-            date_of_birth: profile.date_of_birth,
-            interests: profile.interests,
             is_verified: profile.is_verified,
-            privacy_settings: profile.privacy_settings as any
+            location: profile.location
           });
         } else {
-          const fallbackProfile: ProfileData = {
+          setProfileData({
             id: targetUserId,
             username: user.email?.split('@')[0] || 'User',
             avatar_url: null,
             bio: null,
-            contact_email: null,
-            contact_phone: null,
-            is_public: true,
-            location: null,
-            website: null,
-            date_of_birth: null,
-            interests: null,
             is_verified: null,
-            privacy_settings: null
-          };
-          setProfileData(fallbackProfile);
+            location: null
+          });
         }
         
         const [followersResponse, followingResponse, postsResponse] = await Promise.all([
-          supabase
-            .from('user_follows')
-            .select('*', { count: 'exact', head: true })
-            .eq('following_id', targetUserId),
-          supabase
-            .from('user_follows') 
-            .select('*', { count: 'exact', head: true })
-            .eq('follower_id', targetUserId),
-          supabase
-            .from('confessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', targetUserId)
+          supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', targetUserId),
+          supabase.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetUserId),
+          supabase.from('confessions').select('*', { count: 'exact', head: true }).eq('user_id', targetUserId)
         ]);
         
         setFollowersCount(followersResponse.count || 0);
@@ -192,21 +86,6 @@ export default function ProfilePage() {
         setPostsCount(postsResponse.count || 0);
       } catch (error) {
         console.error('Error fetching profile data:', error);
-        setProfileData({
-          id: targetUserId,
-          username: `user_${targetUserId.slice(0, 8)}`,
-          avatar_url: null,
-          bio: null,
-          contact_email: null,
-          contact_phone: null,
-          is_public: true,
-          location: null,
-          website: null,
-          date_of_birth: null,
-          interests: null,
-          is_verified: null,
-          privacy_settings: null
-        });
       } finally {
         setIsLoadingProfile(false);
       }
@@ -215,12 +94,6 @@ export default function ProfilePage() {
     fetchProfileData();
   }, [userId, user]);
 
-  const handleChat = () => {
-    if (userId) {
-      navigate(`/chat/${userId}`);
-    }
-  };
-
   const handleFollowChange = () => {
     if (userId) {
       supabase
@@ -228,66 +101,6 @@ export default function ProfilePage() {
         .select('*', { count: 'exact', head: true })
         .eq('following_id', userId)
         .then(({ count }) => setFollowersCount(count || 0));
-    }
-  };
-
-  const handleProfileUpdate = () => {
-    if (userId || user?.id) {
-      const targetUserId = userId || user!.id;
-      supabase
-        .from('profiles')
-        .select('id, username, avatar_url, bio, contact_email, contact_phone, is_public, location, website, date_of_birth, interests, is_verified, privacy_settings')
-        .eq('id', targetUserId)
-        .maybeSingle()
-        .then(({ data: updatedProfile, error }) => {
-          if (error) {
-            console.error('Error refreshing profile:', error);
-            return;
-          }
-          
-          if (updatedProfile) {
-            setProfileData({
-              id: updatedProfile.id,
-              username: updatedProfile.username || 'User',
-              avatar_url: updatedProfile.avatar_url,
-              bio: updatedProfile.bio,
-              contact_email: updatedProfile.contact_email,
-              contact_phone: updatedProfile.contact_phone,
-              is_public: updatedProfile.is_public ?? true,
-              location: updatedProfile.location,
-              website: updatedProfile.website,
-              date_of_birth: updatedProfile.date_of_birth,
-              interests: updatedProfile.interests,
-              is_verified: updatedProfile.is_verified,
-              privacy_settings: updatedProfile.privacy_settings as any
-            });
-          }
-        });
-    }
-  };
-
-  const handleBlockToggle = async () => {
-    if (!userId || isBlockLoading) return;
-    
-    setIsBlockLoading(true);
-    try {
-      if (isBlocked) {
-        const success = await unblockUser(userId);
-        if (success) {
-          setIsBlocked(false);
-          toast({ title: "User unblocked" });
-        }
-      } else {
-        const success = await blockUser(userId);
-        if (success) {
-          setIsBlocked(true);
-          toast({ title: "User blocked" });
-        }
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to update block status", variant: "destructive" });
-    } finally {
-      setIsBlockLoading(false);
     }
   };
 
@@ -300,11 +113,6 @@ export default function ProfilePage() {
               <div className="h-24 w-24 rounded-full bg-muted" />
               <div className="h-5 w-32 bg-muted rounded" />
               <div className="h-4 w-48 bg-muted rounded" />
-              <div className="flex gap-8 mt-2">
-                <div className="h-12 w-16 bg-muted rounded" />
-                <div className="h-12 w-16 bg-muted rounded" />
-                <div className="h-12 w-16 bg-muted rounded" />
-              </div>
             </div>
           </div>
         </div>
@@ -326,161 +134,166 @@ export default function ProfilePage() {
     );
   }
 
-  const username = profileData.username || 'User';
+  const username = profileData.username || 'Anonymous';
   const avatarUrl = profileData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profileData.id}`;
   const countryFlag = getCountryFlag(profileData.location);
 
   return (
     <Layout>
       <div className="w-full max-w-2xl mx-auto pb-24">
-        {/* Conffo Unique Profile Header - Glassmorphism */}
-        <div className="conffo-glass-card mx-3 mt-3 p-6">
-          {/* Avatar & Username - Centered */}
-          <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 p-1">
-                <Avatar className="h-full w-full border-2 border-background">
-                  <AvatarImage src={avatarUrl} alt={username} />
-                  <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
-                    {username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              {countryFlag && (
-                <span className="absolute -bottom-1 -right-1 text-2xl" title="Country">
-                  {countryFlag}
-                </span>
-              )}
-              {profileData.is_verified && (
-                <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
-                  <BadgeCheck className="h-4 w-4 text-primary-foreground" />
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-4 text-center">
-              <div className="flex items-center justify-center gap-2">
-                <h2 className="text-xl font-bold">{username}</h2>
-                {isBlocked && (
-                  <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
-                    <Ban className="h-3 w-3 mr-0.5" />
-                    Blocked
-                  </Badge>
-                )}
-              </div>
-              
-              {profileData.bio && (
-                <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
-                  {profileData.bio}
-                </p>
-              )}
-            </div>
-
-            {/* Edit Profile Button - Unique Style */}
-            {isOwnProfile && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setActiveTab('settings')}
-                className="mt-4 rounded-full conffo-glass-card border-primary/30 px-6"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            )}
-            
-            {/* Stats Row - Unique Conffo Design */}
-            <div className="flex items-center justify-center gap-6 mt-6 w-full">
-              <button 
-                className="flex flex-col items-center hover:opacity-80 transition-opacity"
-                onClick={() => {}}
-              >
-                <span className="text-2xl font-bold">{postsCount}</span>
-                <span className="text-xs text-muted-foreground">Confessions</span>
-              </button>
-              
-              <div className="conffo-gradient-divider" />
-              
-              <button 
-                className="flex flex-col items-center hover:opacity-80 transition-opacity"
-                onClick={() => {
-                  setFollowersModalTab('followers');
-                  setShowFollowersModal(true);
-                }}
-              >
-                <span className="text-2xl font-bold">{followersCount}</span>
-                <span className="text-xs text-muted-foreground">Replies</span>
-              </button>
-              
-              <div className="conffo-gradient-divider" />
-              
-              <button 
-                className="flex flex-col items-center hover:opacity-80 transition-opacity"
-                onClick={() => setActiveTab('posts')}
-              >
-                <span className="text-2xl font-bold">{followingCount}</span>
-                <span className="text-xs text-muted-foreground">Bookmarks</span>
-              </button>
-            </div>
-          </div>
-          
-          {/* Action Buttons for other users */}
-          {!isOwnProfile && isAuthenticated && userId && (
-            <div className="flex gap-2 mt-4 justify-center">
-              <FollowButton userId={userId} onFollowChange={handleFollowChange} />
-              <Button 
-                variant="outline"
-                size="icon"
-                onClick={handleChat}
-                className="rounded-full conffo-glass-card"
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant={isBlocked ? "destructive" : "outline"}
-                size="icon"
-                onClick={handleBlockToggle}
-                disabled={isBlockLoading}
-                className="rounded-full conffo-glass-card"
-              >
-                {isBlocked ? <UserMinus className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
-              </Button>
-            </div>
+        {/* Header - No container, free design */}
+        <div className="px-4 py-3 flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="font-bold text-lg">My Profile</h1>
+          {isOwnProfile && (
+            <button onClick={() => navigate('/profile?tab=settings')} className="p-2 -mr-2">
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </button>
           )}
         </div>
 
-        {/* Tabs - Conffo Style */}
-        <div className="px-3 mt-4">
-          <div className="conffo-glass-card p-1 flex gap-1">
-            {['posts', 'settings', 'avatar'].map((tab) => (
+        {/* Profile Info - Free from container */}
+        <div className="px-4 py-6 flex flex-col items-center">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 p-1">
+              <Avatar className="h-full w-full border-2 border-background">
+                <AvatarImage src={avatarUrl} alt={username} />
+                <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-accent/20">
+                  {username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            {countryFlag && (
+              <span className="absolute -bottom-1 -right-1 text-2xl">{countryFlag}</span>
+            )}
+            {profileData.is_verified && (
+              <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
+                <BadgeCheck className="h-4 w-4 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+          
+          {/* Username & Bio */}
+          <h2 className="text-xl font-bold mt-4">{username}</h2>
+          {profileData.bio && (
+            <p className="text-sm text-muted-foreground mt-1 text-center max-w-xs">
+              {profileData.bio}
+            </p>
+          )}
+
+          {/* Edit Profile Button */}
+          {isOwnProfile && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/profile?tab=settings')}
+              className="mt-4 rounded-full px-6"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          )}
+
+          {/* Action Buttons for other users */}
+          {!isOwnProfile && isAuthenticated && userId && (
+            <div className="flex gap-3 mt-4">
+              <FollowButton userId={userId} onFollowChange={handleFollowChange} />
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/chat/${userId}`)}
+                className="rounded-full px-4"
+              >
+                Message
+              </Button>
+            </div>
+          )}
+          
+          {/* Stats Row - Free design, no container */}
+          <div className="flex items-center justify-center gap-8 mt-6 w-full">
+            <button className="flex flex-col items-center">
+              <span className="text-2xl font-bold">{postsCount}</span>
+              <span className="text-xs text-muted-foreground">Confessions</span>
+            </button>
+            
+            <button 
+              className="flex flex-col items-center"
+              onClick={() => {
+                setFollowersModalTab('followers');
+                setShowFollowersModal(true);
+              }}
+            >
+              <span className="text-2xl font-bold">{followersCount}</span>
+              <span className="text-xs text-muted-foreground">Fans</span>
+            </button>
+            
+            <button 
+              className="flex flex-col items-center"
+              onClick={() => {
+                setFollowersModalTab('following');
+                setShowFollowersModal(true);
+              }}
+            >
+              <span className="text-2xl font-bold">{followingCount}</span>
+              <span className="text-xs text-muted-foreground">Crew</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs - Confessions, Fans, Crew */}
+        <div className="px-4">
+          <div className="flex gap-1 p-1 bg-muted/30 rounded-full">
+            {['confessions', 'fans', 'crew'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
                   activeTab === tab
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'posts' ? 'Confessions' : tab === 'settings' ? 'Replies' : 'Bookmarks'}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Content Section */}
-        <div className="px-3 mt-4 space-y-3">
-          {activeTab === 'posts' && (
+        {/* Content Section - No form containers */}
+        <div className="px-4 mt-4">
+          {activeTab === 'confessions' && (
             <UserConfessions userId={profileData.id} />
           )}
-          {activeTab === 'settings' && isOwnProfile && (
-            <div className="conffo-glass-card p-4">
-              <EnhancedProfileSettings />
+          {activeTab === 'fans' && (
+            <div className="py-8 text-center">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground mb-4">Your fans will appear here</p>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setFollowersModalTab('followers');
+                  setShowFollowersModal(true);
+                }}
+              >
+                View All Fans
+              </Button>
             </div>
           )}
-          {activeTab === 'avatar' && isOwnProfile && (
-            <div className="conffo-glass-card p-4">
-              <AvatarCustomization onAvatarUpdate={handleProfileUpdate} />
+          {activeTab === 'crew' && (
+            <div className="py-8 text-center">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground mb-4">Your crew will appear here</p>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setFollowersModalTab('following');
+                  setShowFollowersModal(true);
+                }}
+              >
+                View All Crew
+              </Button>
             </div>
           )}
         </div>
@@ -490,11 +303,6 @@ export default function ProfilePage() {
           onClose={() => setShowFollowersModal(false)}
           userId={userId || user?.id || ''}
           initialTab={followersModalTab}
-        />
-        
-        <VerificationBadgeRequest 
-          isOpen={showVerificationModal} 
-          onClose={() => setShowVerificationModal(false)} 
         />
       </div>
     </Layout>
