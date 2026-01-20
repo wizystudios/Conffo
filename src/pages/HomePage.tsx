@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
 import { CommunitySearchModal } from '@/components/CommunitySearchModal';
+import { ActivityFeedCard } from '@/components/ActivityFeedCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +34,9 @@ export default function HomePage() {
           </Button>
         </div>
 
+        {/* Activity Feed Cards - Small cards showing room/community updates */}
+        {isAuthenticated && <ActivityFeedCard />}
+
         {/* Rooms Grid - 2 column layout, no scrolling needed */}
         <div className="px-4">
           {isLoading ? (
@@ -40,7 +44,7 @@ export default function HomePage() {
               {[1, 2, 3, 4].map((i) => (
                 <div 
                   key={i} 
-                  className="aspect-[4/5] rounded-2xl bg-muted/50 animate-pulse"
+                  className="aspect-[4/5] rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 animate-pulse"
                   style={{ animationDelay: `${i * 100}ms` }}
                 />
               ))}

@@ -1,6 +1,6 @@
 import { useState, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Star, Users } from 'lucide-react';
+import { Heart, MessageCircle, Star, Users, Mic } from 'lucide-react';
 import { Confession } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { haptic } from '@/utils/hapticFeedback';
 import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImprovedCommentModal } from '@/components/ImprovedCommentModal';
+import { InlineAudioRecorder } from '@/components/InlineAudioRecorder';
 import { toast } from '@/hooks/use-toast';
 
 interface ConffoConfessionCardProps {
@@ -121,6 +122,11 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
     }
   };
 
+  const handleAudioCommentPosted = () => {
+    queryClient.invalidateQueries({ queryKey: ['comment-count', confession.id] });
+    onUpdate?.();
+  };
+
   const timeAgo = formatDistanceToNow(new Date(confession.timestamp), { addSuffix: false })
     .replace('about ', '')
     .replace('less than a minute', '1m')
@@ -210,15 +216,24 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
 
         {/* Footer with inline actions */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Comment button - opens comment modal directly */}
             <button 
               onClick={handleComment}
               className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
             >
               <MessageCircle className="h-4 w-4 text-primary/70" />
-              <span className="text-xs text-muted-foreground">{commentCount} comments</span>
+              <span className="text-xs text-muted-foreground">{commentCount}</span>
             </button>
+
+            {/* Inline Audio Recorder - Record audio comment without opening modal */}
+            {user && (
+              <InlineAudioRecorder
+                confessionId={confession.id}
+                userId={user.id}
+                onCommentPosted={handleAudioCommentPosted}
+              />
+            )}
           </div>
 
           {/* Like button - works inline */}

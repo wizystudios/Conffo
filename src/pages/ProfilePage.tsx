@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { UserConfessions } from '@/components/UserConfessions';
+import { UserCommunities } from '@/components/UserCommunities';
 import { Button } from '@/components/ui/button';
-import { Settings, BadgeCheck, ChevronLeft, Users, MapPin } from 'lucide-react';
+import { Settings, BadgeCheck, ChevronLeft } from 'lucide-react';
 import { Navigate, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
 import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal';
-import { countries, getCountryFlag } from '@/components/CountrySelector';
+import { countries } from '@/components/CountrySelector';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
 import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -260,7 +261,10 @@ export default function ProfilePage() {
           
           {/* Stats Row */}
           <div className="flex items-center justify-center gap-8 mt-5 w-full">
-            <button className="flex flex-col items-center">
+            <button 
+              className="flex flex-col items-center"
+              onClick={() => setActiveTab('confessions')}
+            >
               <span className="text-2xl font-bold">{postsCount}</span>
               <span className="text-xs text-muted-foreground">Confessions</span>
             </button>
@@ -289,9 +293,33 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Content - Just confessions, no duplicate tabs */}
-        <div className="px-4 mt-2">
-          <UserConfessions userId={profileData.id} />
+        {/* Tabs */}
+        <div className="px-4 mb-3">
+          <div className="flex gap-1 p-0.5 bg-muted/30 rounded-full">
+            {['confessions', 'communities'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  activeTab === tab
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content based on tab */}
+        <div className="px-4">
+          {activeTab === 'confessions' && (
+            <UserConfessions userId={profileData.id} />
+          )}
+          {activeTab === 'communities' && (
+            <UserCommunities userId={profileData.id} />
+          )}
         </div>
         
         <FullScreenFollowersModal
