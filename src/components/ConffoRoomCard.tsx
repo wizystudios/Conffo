@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, ChevronRight, Lock } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { RoomInfo } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface ConffoRoomCardProps {
   room: RoomInfo;
@@ -40,16 +41,52 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
   const navigate = useNavigate();
   const theme = ROOM_THEMES[index % ROOM_THEMES.length];
 
-  // Fetch confession count for this room
-  const { data: confessionCount = 0 } = useQuery({
-    queryKey: ['room-confession-count', room.id],
+  // Fetch confession count and recent users for this room
+  const { data: roomStats } = useQuery({
+    queryKey: ['room-stats', room.id],
     queryFn: async () => {
-      const { count } = await supabase
+      // Get confession count
+      const { count: confessionCount } = await supabase
         .from('confessions')
         .select('*', { count: 'exact', head: true })
         .eq('room_id', room.id);
-      
-      return count || 0;
+
+      // Get recent unique users who posted in this room (last 10 confessions)
+      const { data: recentConfessions } = await supabase
+        .from('confessions')
+        .select('user_id')
+        .eq('room_id', room.id)
+        .not('user_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Get unique user IDs
+      const uniqueUserIds = [...new Set(recentConfessions?.map(c => c.user_id).filter(Boolean) || [])].slice(0, 4);
+
+      // Fetch profiles for these users
+      let memberProfiles: Array<{ id: string; avatar_url: string | null; username: string | null }> = [];
+      if (uniqueUserIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, avatar_url, username')
+          .in('id', uniqueUserIds);
+        memberProfiles = profiles || [];
+      }
+
+      // Count unique members (people who posted)
+      const { data: allPosters } = await supabase
+        .from('confessions')
+        .select('user_id')
+        .eq('room_id', room.id)
+        .not('user_id', 'is', null);
+
+      const uniqueMemberCount = new Set(allPosters?.map(c => c.user_id) || []).size;
+
+      return {
+        confessionCount: confessionCount || 0,
+        memberCount: uniqueMemberCount,
+        memberProfiles
+      };
     },
     staleTime: 60000,
   });
@@ -79,25 +116,62 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
       {/* Content */}
       <div className="relative h-full flex flex-col p-4">
         {/* Emoji Icon */}
-        <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-auto">
-          <span className="text-3xl">{icon}</span>
+        <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-auto">
+          <span className="text-2xl">{icon}</span>
         </div>
         
         {/* Room Name */}
-        <h3 className="text-white font-bold text-lg leading-tight mb-1">
+        <h3 className="text-white font-bold text-base leading-tight mb-1">
           {room.name}
         </h3>
         
         {/* Description */}
-        <p className="text-white/70 text-xs line-clamp-2 mb-3">
+        <p className="text-white/70 text-xs line-clamp-2 mb-2">
           {room.description || 'Anonymous confessions'}
         </p>
         
-        {/* Confession count */}
-        <div className="flex items-center gap-1.5 text-white/80">
-          <Users className="h-3.5 w-3.5" />
-          <span className="text-xs font-medium">{confessionCount}</span>
-          <span className="text-[10px] text-white/60">confessions</span>
+        {/* Stats Row - Real member avatars and counts */}
+        <div className="flex items-center justify-between">
+          {/* Member Avatars */}
+          <div className="flex items-center">
+            {roomStats?.memberProfiles && roomStats.memberProfiles.length > 0 ? (
+              <div className="flex -space-x-1.5">
+                {roomStats.memberProfiles.slice(0, 4).map((profile, i) => (
+                  <Avatar 
+                    key={profile.id} 
+                    className="h-5 w-5 border border-white/50"
+                  >
+                    <AvatarImage 
+                      src={profile.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profile.id}`} 
+                      alt={profile.username || 'Member'} 
+                    />
+                    <AvatarFallback className="text-[8px] bg-white/20 text-white">
+                      {(profile.username || 'U').charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+            ) : (
+              <div className="flex -space-x-1.5">
+                {[1, 2, 3].map((i) => (
+                  <div 
+                    key={i}
+                    className="w-5 h-5 rounded-full bg-white/20 border border-white/30"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Member & Confession Count */}
+          <div className="flex items-center gap-2 text-white/80">
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              <span className="text-[10px] font-medium">{roomStats?.memberCount || 0}</span>
+            </div>
+            <span className="text-white/50">•</span>
+            <span className="text-[10px]">{roomStats?.confessionCount || 0} posts</span>
+          </div>
         </div>
       </div>
     </button>

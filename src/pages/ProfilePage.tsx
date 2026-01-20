@@ -3,14 +3,15 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { UserConfessions } from '@/components/UserConfessions';
 import { Button } from '@/components/ui/button';
-import { Settings, BadgeCheck, ChevronLeft, Users } from 'lucide-react';
+import { Settings, BadgeCheck, ChevronLeft, Users, MapPin } from 'lucide-react';
 import { Navigate, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { FollowButton } from '@/components/FollowButton';
 import { FullScreenFollowersModal } from '@/components/FullScreenFollowersModal';
-import { getCountryFlag } from '@/components/CountrySelector';
+import { countries, getCountryFlag } from '@/components/CountrySelector';
 import { EnhancedProfileSettings } from '@/components/EnhancedProfileSettings';
+import { AvatarCustomization } from '@/components/AvatarCustomization';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface ProfileData {
@@ -25,7 +26,7 @@ interface ProfileData {
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('confessions');
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -37,11 +38,15 @@ export default function ProfilePage() {
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [followersModalTab, setFollowersModalTab] = useState<'followers' | 'following'>('followers');
   const [showSettings, setShowSettings] = useState(false);
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
 
-  // Check if settings should be open from URL param
+  // Check if settings or avatar should be open from URL param
   useEffect(() => {
-    if (searchParams.get('tab') === 'settings') {
+    const tab = searchParams.get('tab');
+    if (tab === 'settings') {
       setShowSettings(true);
+    } else if (tab === 'avatar') {
+      setShowAvatarEditor(true);
     }
   }, [searchParams]);
 
@@ -114,6 +119,20 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarUpdate = (newUrl: string) => {
+    if (profileData) {
+      setProfileData({ ...profileData, avatar_url: newUrl });
+    }
+    setShowAvatarEditor(false);
+  };
+
+  // Get country name and flag from location code
+  const getLocationDisplay = (locationCode: string | null) => {
+    if (!locationCode) return null;
+    const country = countries.find(c => c.code === locationCode);
+    return country ? { flag: country.flag, name: country.name } : null;
+  };
+
   if (isLoading || isLoadingProfile) {
     return (
       <Layout>
@@ -146,28 +165,34 @@ export default function ProfilePage() {
 
   const username = profileData.username || 'Anonymous';
   const avatarUrl = profileData.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profileData.id}`;
-  const countryFlag = getCountryFlag(profileData.location);
+  const locationDisplay = getLocationDisplay(profileData.location);
 
   return (
     <Layout>
       <div className="w-full max-w-2xl mx-auto pb-24">
-        {/* Header - No container, free design */}
+        {/* Header */}
         <div className="px-4 py-3 flex items-center justify-between">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-bold text-lg">My Profile</h1>
-          {isOwnProfile && (
+          <h1 className="font-bold text-lg">{isOwnProfile ? 'My Profile' : 'Profile'}</h1>
+          {isOwnProfile ? (
             <button onClick={() => setShowSettings(true)} className="p-2 -mr-2">
               <Settings className="h-5 w-5 text-muted-foreground" />
             </button>
+          ) : (
+            <div className="w-9" /> 
           )}
         </div>
 
-        {/* Profile Info - Free from container */}
-        <div className="px-4 py-6 flex flex-col items-center">
-          {/* Avatar */}
-          <div className="relative">
+        {/* Profile Info */}
+        <div className="px-4 py-4 flex flex-col items-center">
+          {/* Avatar - Clickable to edit */}
+          <button 
+            onClick={() => isOwnProfile && setShowAvatarEditor(true)}
+            className="relative group"
+            disabled={!isOwnProfile}
+          >
             <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 p-1">
               <Avatar className="h-full w-full border-2 border-background">
                 <AvatarImage src={avatarUrl} alt={username} />
@@ -176,31 +201,43 @@ export default function ProfilePage() {
                 </AvatarFallback>
               </Avatar>
             </div>
-            {countryFlag && (
-              <span className="absolute -bottom-1 -right-1 text-2xl">{countryFlag}</span>
+            {isOwnProfile && (
+              <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <span className="text-white text-xs">Edit</span>
+              </div>
             )}
             {profileData.is_verified && (
               <div className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center">
                 <BadgeCheck className="h-4 w-4 text-primary-foreground" />
               </div>
             )}
-          </div>
+          </button>
           
-          {/* Username & Bio */}
-          <h2 className="text-xl font-bold mt-4">{username}</h2>
+          {/* Username */}
+          <h2 className="text-xl font-bold mt-3">{username}</h2>
+          
+          {/* Location with flag */}
+          {locationDisplay && (
+            <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
+              <span className="text-lg">{locationDisplay.flag}</span>
+              <span className="text-sm">{locationDisplay.name}</span>
+            </div>
+          )}
+          
+          {/* Bio */}
           {profileData.bio && (
-            <p className="text-sm text-muted-foreground mt-1 text-center max-w-xs">
+            <p className="text-sm text-muted-foreground mt-2 text-center max-w-xs">
               {profileData.bio}
             </p>
           )}
 
-          {/* Edit Profile Button - Now opens settings sheet */}
+          {/* Edit Profile Button */}
           {isOwnProfile && (
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setShowSettings(true)}
-              className="mt-4 rounded-full px-6"
+              className="mt-3 rounded-full px-6"
             >
               <Settings className="h-4 w-4 mr-2" />
               Edit Profile
@@ -209,7 +246,7 @@ export default function ProfilePage() {
 
           {/* Action Buttons for other users */}
           {!isOwnProfile && isAuthenticated && userId && (
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-3 mt-3">
               <FollowButton userId={userId} onFollowChange={handleFollowChange} />
               <Button 
                 variant="outline"
@@ -221,8 +258,8 @@ export default function ProfilePage() {
             </div>
           )}
           
-          {/* Stats Row - Free design, no container */}
-          <div className="flex items-center justify-center gap-8 mt-6 w-full">
+          {/* Stats Row */}
+          <div className="flex items-center justify-center gap-8 mt-5 w-full">
             <button className="flex flex-col items-center">
               <span className="text-2xl font-bold">{postsCount}</span>
               <span className="text-xs text-muted-foreground">Confessions</span>
@@ -252,60 +289,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Tabs - Confessions, Fans, Crew */}
-        <div className="px-4">
-          <div className="flex gap-1 p-1 bg-muted/30 rounded-full">
-            {['confessions', 'fans', 'crew'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeTab === tab
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Content Section - No form containers */}
-        <div className="px-4 mt-4">
-          {activeTab === 'confessions' && (
-            <UserConfessions userId={profileData.id} />
-          )}
-          {activeTab === 'fans' && (
-            <div className="py-8 text-center">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground mb-4">Your fans will appear here</p>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setFollowersModalTab('followers');
-                  setShowFollowersModal(true);
-                }}
-              >
-                View All Fans
-              </Button>
-            </div>
-          )}
-          {activeTab === 'crew' && (
-            <div className="py-8 text-center">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground mb-4">Your crew will appear here</p>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setFollowersModalTab('following');
-                  setShowFollowersModal(true);
-                }}
-              >
-                View All Crew
-              </Button>
-            </div>
-          )}
+        {/* Content - Just confessions, no duplicate tabs */}
+        <div className="px-4 mt-2">
+          <UserConfessions userId={profileData.id} />
         </div>
         
         <FullScreenFollowersModal
@@ -319,6 +305,15 @@ export default function ProfilePage() {
         <Sheet open={showSettings} onOpenChange={setShowSettings}>
           <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl overflow-y-auto">
             <EnhancedProfileSettings />
+          </SheetContent>
+        </Sheet>
+
+        {/* Avatar Editor Sheet */}
+        <Sheet open={showAvatarEditor} onOpenChange={setShowAvatarEditor}>
+          <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl overflow-y-auto">
+            <div className="py-4">
+              <AvatarCustomization onAvatarUpdate={handleAvatarUpdate} />
+            </div>
           </SheetContent>
         </Sheet>
       </div>

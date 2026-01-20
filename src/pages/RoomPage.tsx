@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Shield, Plus, MessageCircle, Heart } from 'lucide-react';
+import { ArrowLeft, Users, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { ConffoConfessionCard } from '@/components/ConffoConfessionCard';
@@ -16,8 +16,7 @@ import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { Community } from '@/services/communityService';
 import { ImprovedCommentModal } from '@/components/ImprovedCommentModal';
 import { supabase } from '@/integrations/supabase/client';
-import { haptic } from '@/utils/hapticFeedback';
-import { toast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Get room emoji icon
 const getRoomIcon = (name: string): string => {
@@ -36,8 +35,8 @@ export default function RoomPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  const [activeTab, setActiveTab] = useState<'new' | 'supported' | 'discussed'>('new');
-  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('list');
+  const [activeView, setActiveView] = useState<'confessions' | 'communities'>('confessions');
+  const [sortTab, setSortTab] = useState<'new' | 'supported' | 'discussed'>('new');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
@@ -53,6 +52,31 @@ export default function RoomPage() {
   });
   
   const roomInfo = rooms.find(r => r.id === roomId);
+
+  // Fetch room member avatars
+  const { data: roomMembers } = useQuery({
+    queryKey: ['room-members', roomId],
+    queryFn: async () => {
+      const { data: recentPosts } = await supabase
+        .from('confessions')
+        .select('user_id')
+        .eq('room_id', roomId)
+        .not('user_id', 'is', null)
+        .limit(20);
+      
+      const uniqueIds = [...new Set(recentPosts?.map(p => p.user_id).filter(Boolean) || [])].slice(0, 5);
+      
+      if (uniqueIds.length === 0) return [];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, avatar_url, username')
+        .in('id', uniqueIds);
+      
+      return profiles || [];
+    },
+    enabled: !!roomId,
+  });
   
   const { data: confessions = [], isLoading, refetch } = useQuery({
     queryKey: ['confessions', roomId, user?.id],
@@ -62,9 +86,9 @@ export default function RoomPage() {
 
   // Sort confessions based on active tab
   const sortedConfessions = [...confessions].sort((a, b) => {
-    if (activeTab === 'new') {
+    if (sortTab === 'new') {
       return b.timestamp - a.timestamp;
-    } else if (activeTab === 'supported') {
+    } else if (sortTab === 'supported') {
       const aReactions = (a.reactions?.heart || 0) + (a.reactions?.like || 0);
       const bReactions = (b.reactions?.heart || 0) + (b.reactions?.like || 0);
       return bReactions - aReactions;
@@ -84,43 +108,6 @@ export default function RoomPage() {
   const handleOpenComments = (confessionId: string) => {
     setSelectedConfessionId(confessionId);
     setShowComments(true);
-  };
-
-  const handleLike = async (confessionId: string) => {
-    if (!user) {
-      toast({ title: "Please sign in to like", variant: "destructive" });
-      return;
-    }
-    
-    haptic.light();
-    
-    // Check if already liked
-    const { data: existing } = await supabase
-      .from('reactions')
-      .select('id')
-      .eq('confession_id', confessionId)
-      .eq('user_id', user.id)
-      .eq('type', 'heart')
-      .maybeSingle();
-    
-    if (existing) {
-      await supabase
-        .from('reactions')
-        .delete()
-        .eq('id', existing.id);
-    } else {
-      await supabase
-        .from('reactions')
-        .insert({
-          confession_id: confessionId,
-          user_id: user.id,
-          type: 'heart'
-        });
-    }
-    
-    // Refresh data
-    queryClient.invalidateQueries({ queryKey: ['confessions'] });
-    queryClient.invalidateQueries({ queryKey: ['reactions'] });
   };
   
   if (!roomInfo) {
@@ -175,8 +162,8 @@ export default function RoomPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto pb-24">
-        {/* Header - Simplified, no notification icon */}
-        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-lg border-b border-border/30">
+        {/* Header - Clean, no notification icon */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-lg border-b border-border/30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/')}>
@@ -189,130 +176,138 @@ export default function RoomPage() {
             </div>
           </div>
           
-          <p className="text-xs text-muted-foreground text-center pb-2">
-            {roomInfo.description || 'Anonymous confessions'}
-          </p>
-
-          {/* Member avatars + Join/Rules buttons */}
-          <div className="flex items-center justify-center gap-4 pb-3">
-            <div className="flex items-center">
+          {/* Member avatars + Action buttons - All in one compact row */}
+          <div className="flex items-center justify-between px-4 pb-2">
+            {/* Real member avatars */}
+            <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
-                {['💔', '😢', '😤', '🫂'].map((emoji, i) => (
-                  <div 
-                    key={i}
-                    className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border-2 border-background"
-                  >
-                    <span className="text-xs">{emoji}</span>
-                  </div>
-                ))}
+                {roomMembers && roomMembers.length > 0 ? (
+                  roomMembers.slice(0, 4).map((member) => (
+                    <Avatar key={member.id} className="h-6 w-6 border-2 border-background">
+                      <AvatarImage 
+                        src={member.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${member.id}`} 
+                        alt={member.username || 'Member'} 
+                      />
+                      <AvatarFallback className="text-[8px] bg-muted">
+                        {(member.username || 'U').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))
+                ) : (
+                  [1, 2, 3].map((i) => (
+                    <div key={i} className="h-6 w-6 rounded-full bg-muted border-2 border-background" />
+                  ))
+                )}
               </div>
+              <span className="text-xs text-muted-foreground">{roomMembers?.length || 0}+ members</span>
             </div>
             
-            <Button
-              variant={isJoined ? "secondary" : "default"}
-              size="sm"
-              onClick={() => setIsJoined(!isJoined)}
-              className="rounded-full px-4 h-8"
-            >
-              {isJoined ? 'Joined' : 'Join'}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full px-4 h-8"
-            >
-              <Shield className="h-3 w-3 mr-1" />
-              Rules
-            </Button>
-          </div>
-
-          {/* Sort tabs */}
-          <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-            {['new', 'supported', 'discussed'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
+            {/* Action buttons - small, in a row */}
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant={isJoined ? "secondary" : "default"}
+                size="sm"
+                onClick={() => setIsJoined(!isJoined)}
+                className="rounded-full px-3 h-7 text-xs"
               >
-                {tab === 'new' ? 'New' : tab === 'supported' ? 'Most Supported' : 'Most Discussed'}
-              </button>
-            ))}
+                {isJoined ? 'Joined' : 'Join'}
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full px-3 h-7 text-xs"
+              >
+                <Shield className="h-3 w-3 mr-1" />
+                Rules
+              </Button>
+            </div>
           </div>
+
+          {/* Main View Toggle: Confessions vs Communities */}
+          <div className="flex gap-1 mx-4 mb-2 p-0.5 bg-muted/30 rounded-full">
+            <button
+              onClick={() => setActiveView('confessions')}
+              className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${
+                activeView === 'confessions'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Confessions
+            </button>
+            <button
+              onClick={() => setActiveView('communities')}
+              className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${
+                activeView === 'communities'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Communities
+            </button>
+          </div>
+
+          {/* Sort tabs - only show for confessions view */}
+          {activeView === 'confessions' && (
+            <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-hide">
+              {['new', 'supported', 'discussed'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setSortTab(tab as any)}
+                  className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${
+                    sortTab === tab
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-muted/50 text-muted-foreground'
+                  }`}
+                >
+                  {tab === 'new' ? 'New' : tab === 'supported' ? 'Top' : 'Discussed'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Communities Section */}
-        <div className="px-4 py-3 border-b border-border/30">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium">Communities</h3>
-          </div>
-          <CommunityList 
-            key={communitiesKey}
-            roomId={roomId || ''} 
-            onSelectCommunity={setSelectedCommunity}
-            onCreateCommunity={() => setShowCreateCommunity(true)}
-          />
-        </div>
-
-        {/* Content */}
-        {isLoading ? (
-          <div className="p-4 space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="conffo-glass-card h-32 animate-pulse" />
-            ))}
-          </div>
-        ) : viewMode === 'swipe' ? (
-          <div className="pt-4">
-            <SwipeableConfessionViewer 
-              confessions={sortedConfessions} 
-              onUpdate={handleConfessionSuccess}
+        {/* Content based on active view */}
+        {activeView === 'communities' ? (
+          <div className="p-4">
+            <CommunityList 
+              key={communitiesKey}
+              roomId={roomId || ''} 
+              onSelectCommunity={setSelectedCommunity}
+              onCreateCommunity={() => setShowCreateCommunity(true)}
             />
           </div>
         ) : (
-          <div className="pt-2">
-            {sortedConfessions.length > 0 ? (
-              sortedConfessions.map((confession, index) => (
-                <div key={confession.id} className="relative">
-                  <ConffoConfessionCard 
-                    confession={confession}
-                    onUpdate={handleConfessionSuccess}
-                    index={index}
-                  />
-                  {/* Inline action buttons for like/comment without clicking confession */}
-                  <div className="absolute bottom-16 right-6 flex gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLike(confession.id);
-                      }}
-                      className="p-2 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background"
-                    >
-                      <Heart className="h-4 w-4 text-pink-400" />
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenComments(confession.id);
-                      }}
-                      className="p-2 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background"
-                    >
-                      <MessageCircle className="h-4 w-4 text-primary" />
-                    </button>
-                  </div>
-                </div>
-              ))
+          <>
+            {/* Confessions Content */}
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="conffo-glass-card h-32 animate-pulse" />
+                ))}
+              </div>
             ) : (
-              <div className="conffo-glass-card p-8 mx-4 text-center">
-                <p className="text-muted-foreground">
-                  No confessions in this room yet. Be the first!
-                </p>
+              <div className="pt-2">
+                {sortedConfessions.length > 0 ? (
+                  sortedConfessions.map((confession, index) => (
+                    <ConffoConfessionCard 
+                      key={confession.id}
+                      confession={confession}
+                      onUpdate={handleConfessionSuccess}
+                      index={index}
+                    />
+                  ))
+                ) : (
+                  <div className="conffo-glass-card p-8 mx-4 text-center">
+                    <p className="text-muted-foreground">
+                      No confessions in this room yet. Be the first!
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
       
