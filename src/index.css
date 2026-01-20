@@ -5,83 +5,85 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    /* Conffo Light Theme - Soft cosmic pastels */
+    --background: 270 30% 98%;
+    --foreground: 260 25% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 280 40% 99%;
+    --card-foreground: 260 25% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 280 40% 99%;
+    --popover-foreground: 260 25% 15%;
 
-    --primary: 252 59% 48%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 270 70% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 280 30% 95%;
+    --secondary-foreground: 260 25% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 275 25% 93%;
+    --muted-foreground: 260 15% 45%;
 
-    --accent: 252 59% 94%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 300 60% 92%;
+    --accent-foreground: 270 50% 30%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 252 59% 48%;
+    --border: 275 25% 90%;
+    --input: 275 25% 90%;
+    --ring: 270 70% 55%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 252 59% 48%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 252 59% 48%;
+    --sidebar-background: 280 35% 97%;
+    --sidebar-foreground: 260 25% 20%;
+    --sidebar-primary: 270 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 275 30% 94%;
+    --sidebar-accent-foreground: 260 25% 20%;
+    --sidebar-border: 275 25% 90%;
+    --sidebar-ring: 270 70% 55%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* Conffo Dark Theme - Deep cosmic purple with galaxy feel */
+    --background: 260 45% 8%;
+    --foreground: 270 20% 95%;
 
-    --card: 222 47% 14%;
-    --card-foreground: 210 40% 98%;
+    --card: 265 40% 12%;
+    --card-foreground: 270 20% 95%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 260 45% 10%;
+    --popover-foreground: 270 20% 95%;
 
-    --primary: 252 59% 54%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 270 80% 65%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 265 35% 18%;
+    --secondary-foreground: 270 20% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 265 30% 16%;
+    --muted-foreground: 270 15% 60%;
 
-    --accent: 252 59% 22%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 280 50% 25%;
+    --accent-foreground: 270 20% 95%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 252 59% 54%;
+    --border: 265 30% 20%;
+    --input: 265 30% 20%;
+    --ring: 270 80% 65%;
     
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 252 59% 54%;
+    --sidebar-background: 260 45% 8%;
+    --sidebar-foreground: 270 20% 95%;
+    --sidebar-primary: 270 80% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 252 59% 54%;
+    --sidebar-accent: 265 35% 18%;
+    --sidebar-accent-foreground: 270 20% 95%;
+    --sidebar-border: 265 30% 20%;
+    --sidebar-ring: 270 80% 65%;
   }
 }
 
@@ -585,4 +587,127 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ==========================================
+   CONFFO UNIQUE GLASSMORPHISM CARDS
+   ========================================== */
+
+/* Main glass card - frosted glass effect */
+.conffo-glass-card {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--card) / 0.8) 0%,
+    hsl(var(--card) / 0.6) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 1rem;
+  box-shadow: 
+    0 4px 24px -8px hsl(var(--primary) / 0.15),
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.conffo-glass-card:hover {
+  box-shadow: 
+    0 8px 32px -8px hsl(var(--primary) / 0.25),
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.08);
+}
+
+/* Featured card - more prominent glass effect */
+.conffo-glass-card-featured {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--card) / 0.9) 0%,
+    hsl(var(--accent) / 0.3) 50%,
+    hsl(var(--card) / 0.7) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--primary) / 0.2);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 8px 40px -12px hsl(var(--primary) / 0.3),
+    inset 0 2px 0 0 hsl(var(--foreground) / 0.05);
+}
+
+/* Cosmic background for body */
+.conffo-cosmic-bg {
+  background: 
+    radial-gradient(ellipse at 20% 20%, hsl(280 60% 15% / 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, hsl(300 50% 20% / 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, hsl(260 40% 12%) 0%, hsl(260 45% 8%) 100%);
+}
+
+/* Room card gradient overlays */
+.conffo-room-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(270 50% 40% / 0.2) 0%,
+    hsl(300 40% 50% / 0.1) 100%
+  );
+}
+
+/* Staggered entrance animations */
+@keyframes conffo-stagger-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.conffo-stagger-item {
+  animation: conffo-stagger-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+/* Bottom nav with cosmic blur */
+.conffo-bottom-nav {
+  background: linear-gradient(
+    to top,
+    hsl(var(--background) / 0.95) 0%,
+    hsl(var(--background) / 0.85) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid hsl(var(--border) / 0.3);
+}
+
+/* Confess button - signature floating action */
+.conffo-confess-btn {
+  background: linear-gradient(135deg, hsl(270 80% 60%) 0%, hsl(300 70% 55%) 100%);
+  box-shadow: 
+    0 4px 20px -4px hsl(270 80% 50% / 0.5),
+    0 0 0 4px hsl(var(--background) / 0.8);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.conffo-confess-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 
+    0 8px 28px -4px hsl(270 80% 50% / 0.6),
+    0 0 0 4px hsl(var(--background) / 0.9);
+}
+
+.conffo-confess-btn:active {
+  transform: scale(0.95);
+}
+
+/* Input bar glass effect */
+.conffo-input-bar {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--card) / 0.7) 0%,
+    hsl(var(--card) / 0.5) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.4);
+  border-radius: 1.5rem;
 }
