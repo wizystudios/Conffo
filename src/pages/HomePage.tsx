@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
-import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
+import { ConffoConfessionCard } from '@/components/ConffoConfessionCard';
 import { EnhancedMultimediaForm } from '@/components/EnhancedMultimediaForm';
 import { AllUsersBar } from '@/components/AllUsersBar';
 import { PeopleYouMayKnow } from '@/components/PeopleYouMayKnow';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { FollowingFeed } from '@/components/FollowingFeed';
 import { offlineQueue } from '@/utils/offlineQueue';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Plus } from 'lucide-react';
 import { PostSkeleton } from '@/components/PostSkeleton';
 import { haptic } from '@/utils/hapticFeedback';
 import { Confession } from '@/types';
@@ -31,7 +31,6 @@ const transformConfession = (raw: any): Confession => {
   const mediaUrls = mediaRows.map((m: any) => m.media_url).filter(Boolean);
   const mediaTypes = mediaRows.map((m: any) => (m.media_type || 'image') as any);
 
-  // Back-compat: some older posts stored JSON in confessions.media_url
   let legacyUrls: string[] = [];
   if (mediaUrls.length === 0 && typeof raw.media_url === 'string' && raw.media_url.startsWith('[')) {
     try {
@@ -72,8 +71,6 @@ const HomePage = () => {
   const [showConfessionForm, setShowConfessionForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
   const startY = useRef(0);
   const isPulling = useRef(false);
   const { user, isAuthenticated } = useAuth();
@@ -82,7 +79,7 @@ const HomePage = () => {
   const REFRESH_THRESHOLD = 80;
   const [showMomentCreator, setShowMomentCreator] = useState(false);
 
-  // Get blocked users to filter them out
+  // Get blocked users
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ['blocked-users', user?.id],
     queryFn: getBlockedUsers,
@@ -95,7 +92,6 @@ const HomePage = () => {
     enabled: !!user?.id,
   });
 
-  // Combine all blocked user IDs (both directions)
   const allBlockedIds = [
     ...blockedUsers.map(b => b.blocked_id),
     ...blockedByUsers.map(b => b.blocker_id)
@@ -120,10 +116,7 @@ const HomePage = () => {
     queryFn: async ({ pageParam = 0 }) => {
       const { data, error } = await supabase
         .from('confessions')
-        .select(`
-          *,
-          confession_media (media_url, media_type, order_index)
-        `)
+        .select(`*, confession_media (media_url, media_type, order_index)`)
         .order('created_at', { ascending: false })
         .range(pageParam, pageParam + 9);
       
@@ -137,7 +130,6 @@ const HomePage = () => {
     initialPageParam: 0
   });
 
-  // Filter blocked users from recent confessions
   const recentConfessions = (data?.pages.flatMap(page => page) || [])
     .filter(c => !allBlockedIds.includes(c.userId));
 
@@ -174,7 +166,6 @@ const HomePage = () => {
     initialPageParam: 0
   });
 
-  // Filter blocked users from fans posts
   const fansPosts = (fansData?.pages.flatMap(page => page) || [])
     .filter(c => !allBlockedIds.includes(c.userId));
 
@@ -244,8 +235,6 @@ const HomePage = () => {
     }
   }, [pullDistance, isRefreshing, refetchRecent, refetchFans]);
 
-  // Removed swipe gesture handlers for tabs - users can use tab buttons instead
-
   const handleManualRefresh = async () => {
     haptic.medium();
     setIsRefreshing(true);
@@ -275,7 +264,6 @@ const HomePage = () => {
     <Layout>
       <OfflineIndicator />
       
-      {/* Pull to refresh indicator */}
       <PullToRefreshIndicator 
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
@@ -286,53 +274,45 @@ const HomePage = () => {
         onTouchStart={handlePullTouchStart}
         onTouchMove={handlePullTouchMove}
         onTouchEnd={handlePullTouchEnd}
+        className="pb-24"
       >
-        {/* Tab bar with more spacing from logo */}
-        <div className="px-2 py-1.5 mt-2">
-          <div className="flex items-center justify-center gap-1">
+        {/* Header */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-lg px-4 pt-2 pb-3">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-bold conffo-text-gradient">Conffo</h1>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="h-7 w-7"
+              className="h-8 w-8"
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
-            
-            <div className="flex items-center gap-1">
-              <Button
-                variant={activeTab === 'fans' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleTabChange('fans')}
-                className="h-6 text-xs rounded-full px-3"
+          </div>
+
+          {/* Tab bar */}
+          <div className="flex items-center justify-center gap-1">
+            {['fans', 'all', 'crew'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab as any)}
+                className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  activeTab === tab
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                Fans
-              </Button>
-              <Button
-                variant={activeTab === 'all' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleTabChange('all')}
-                className="h-6 text-xs rounded-full px-4"
-              >
-                All
-              </Button>
-              <Button
-                variant={activeTab === 'crew' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handleTabChange('crew')}
-                className="h-6 text-xs rounded-full px-3"
-              >
-                Crew
-              </Button>
-            </div>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
         </div>
 
         <AllUsersBar />
 
         {isAuthenticated && showConfessionForm && (
-          <div className="mx-2 mb-3 p-3 bg-card rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-2">
+          <div className="mx-4 mb-3 conffo-glass-card p-4 animate-in fade-in slide-in-from-top-2">
             <h2 className="text-base font-semibold mb-3">Share Your Confession</h2>
             <EnhancedMultimediaForm 
               onSuccess={handleConfessionSuccess} 
@@ -354,20 +334,21 @@ const HomePage = () => {
           <FollowingFeed />
         ) : activeTab === 'fans' ? (
           isLoadingFans ? (
-            <div className="space-y-0">
+            <div className="space-y-3 px-4">
               {[1, 2, 3].map((i) => <PostSkeleton key={i} />)}
             </div>
           ) : fansPosts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-xs">
-              No posts from your fans yet!
+            <div className="conffo-glass-card mx-4 p-8 text-center">
+              <p className="text-muted-foreground">No posts from your fans yet!</p>
             </div>
           ) : (
             <>
               <div className="space-y-0">
                 {fansPosts.map((confession: any, index: number) => (
                   <div key={confession.id}>
-                    <InstagramConfessionCard 
+                    <ConffoConfessionCard 
                       confession={confession}
+                      index={index}
                       onUpdate={() => {
                         refetchRecent();
                         refetchFans();
@@ -378,7 +359,7 @@ const HomePage = () => {
                 ))}
               </div>
               {isFetchingNextFans && (
-                <div className="space-y-0">
+                <div className="space-y-3 px-4">
                   {[1, 2].map((i) => <PostSkeleton key={i} />)}
                 </div>
               )}
@@ -388,20 +369,23 @@ const HomePage = () => {
         ) : (
           <>
             {isLoadingRecent ? (
-              <div className="space-y-0">
+              <div className="space-y-3 px-4">
                 {[1, 2, 3].map((i) => <PostSkeleton key={i} />)}
               </div>
             ) : recentConfessions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-xs">
-                No confessions yet. Be the first to share!
+              <div className="conffo-glass-card mx-4 p-8 text-center">
+                <p className="text-muted-foreground">
+                  No confessions yet. Be the first to share!
+                </p>
               </div>
             ) : (
               <>
                 <div className="space-y-0">
                   {recentConfessions.map((confession: any, index: number) => (
                     <div key={confession.id}>
-                      <InstagramConfessionCard 
+                      <ConffoConfessionCard 
                         confession={confession}
+                        index={index}
                         onUpdate={() => {
                           refetchRecent();
                           refetchFans();
@@ -412,7 +396,7 @@ const HomePage = () => {
                   ))}
                 </div>
                 {isFetchingNextPage && (
-                  <div className="space-y-0">
+                  <div className="space-y-3 px-4">
                     {[1, 2].map((i) => <PostSkeleton key={i} />)}
                   </div>
                 )}
@@ -420,6 +404,16 @@ const HomePage = () => {
               </>
             )}
           </>
+        )}
+
+        {/* Floating Confess button */}
+        {isAuthenticated && !showConfessionForm && (
+          <button
+            onClick={() => setShowConfessionForm(true)}
+            className="fixed bottom-24 right-4 w-14 h-14 rounded-full conffo-confess-btn flex items-center justify-center z-40"
+          >
+            <Plus className="h-6 w-6 text-white" />
+          </button>
         )}
       </div>
     </Layout>
