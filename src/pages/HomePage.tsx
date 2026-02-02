@@ -21,12 +21,13 @@ export default function HomePage() {
 
   return (
     <Layout>
-      <div className="pb-24">
+      {/* Home should be a non-scrolling room hub; keep vertical padding minimal */}
+      <div className="pb-2">
         {/* Search Bar - At top, easy to access */}
-        <div className="px-4 py-3">
+        <div className="px-4 pt-2 pb-1.5">
           <Button
             variant="outline"
-            className="w-full h-10 rounded-full gap-2 justify-start px-4 bg-muted/30 border-border/30"
+            className="w-full h-9 rounded-full gap-2 justify-start px-4 bg-muted/30 border-border/30"
             onClick={() => setShowCommunitySearch(true)}
           >
             <Search className="h-4 w-4 text-muted-foreground" />
