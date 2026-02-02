@@ -1,4 +1,3 @@
-
 import { ReactNode, Component, useState } from 'react';
 import { NavBar } from './NavBar';
 import { Footer } from './Footer';
@@ -12,6 +11,7 @@ import { WebRTCService } from "@/services/webRTCService";
 import { MessageNotification } from "@/components/MessageNotification";
 import { useAuth } from "@/context/AuthContext";
 import { useCommunityMessageNotifications } from "@/hooks/useCommunityMessageNotifications";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface LayoutProps {
   children: ReactNode;
@@ -61,6 +61,7 @@ function LayoutContent({ children, hideBottomNav }: LayoutProps) {
   const { isAuthenticated } = useAuth();
 
   useCommunityMessageNotifications();
+  usePushNotifications();
 
   const [activeCall, setActiveCall] = useState<{
     webRTCService: WebRTCService;

@@ -100,7 +100,7 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
   return (
     <button
       onClick={handleClick}
-      className={`relative aspect-[4/5] rounded-2xl overflow-hidden border ${theme.border} transition-all hover:scale-[1.02] active:scale-[0.98] text-left w-full animate-fadeIn`}
+      className={`relative aspect-[3/4] rounded-xl overflow-hidden border ${theme.border} transition-all hover:scale-[1.02] active:scale-[0.98] text-left w-full animate-fadeIn`}
       style={{ 
         animationDelay: `${index * 100}ms`,
         animationFillMode: 'both'
@@ -113,63 +113,48 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
       
       {/* Content */}
-      <div className="relative h-full flex flex-col p-4">
+      <div className="relative h-full flex flex-col p-3">
         {/* Emoji Icon */}
-        <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-auto">
-          <span className="text-2xl">{icon}</span>
+        <div className="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-auto">
+          <span className="text-lg">{icon}</span>
         </div>
         
         {/* Room Name */}
-        <h3 className="text-white font-bold text-base leading-tight mb-1">
+        <h3 className="text-white font-bold text-sm leading-tight mb-0.5">
           {room.name}
         </h3>
         
         {/* Description */}
-        <p className="text-white/70 text-xs line-clamp-2 mb-2">
+        <p className="text-white/70 text-[10px] line-clamp-1 mb-1.5">
           {room.description || 'Anonymous confessions'}
         </p>
         
-        {/* Stats Row - Real member avatars and counts */}
+        {/* Stats Row - Compact */}
         <div className="flex items-center justify-between">
           {/* Member Avatars */}
-          <div className="flex items-center">
+          <div className="flex -space-x-1">
             {roomStats?.memberProfiles && roomStats.memberProfiles.length > 0 ? (
-              <div className="flex -space-x-1.5">
-                {roomStats.memberProfiles.slice(0, 4).map((profile, i) => (
-                  <Avatar 
-                    key={profile.id} 
-                    className="h-5 w-5 border border-white/50"
-                  >
-                    <AvatarImage 
-                      src={profile.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profile.id}`} 
-                      alt={profile.username || 'Member'} 
-                    />
-                    <AvatarFallback className="text-[8px] bg-white/20 text-white">
-                      {(profile.username || 'U').charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-              </div>
-            ) : (
-              <div className="flex -space-x-1.5">
-                {[1, 2, 3].map((i) => (
-                  <div 
-                    key={i}
-                    className="w-5 h-5 rounded-full bg-white/20 border border-white/30"
+              roomStats.memberProfiles.slice(0, 3).map((profile) => (
+                <Avatar key={profile.id} className="h-4 w-4 border border-white/50">
+                  <AvatarImage 
+                    src={profile.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${profile.id}`} 
                   />
-                ))}
-              </div>
+                  <AvatarFallback className="text-[6px] bg-white/20 text-white">
+                    {(profile.username || 'U').charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ))
+            ) : (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="w-4 h-4 rounded-full bg-white/20 border border-white/30" />
+              ))
             )}
           </div>
           
-          {/* Member & Confession Count */}
-          <div className="flex items-center gap-2 text-white/80">
-            <div className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              <span className="text-[10px] font-medium">{roomStats?.memberCount || 0}</span>
-            </div>
-            <span className="text-white/50">•</span>
-            <span className="text-[10px]">{roomStats?.confessionCount || 0} posts</span>
+          {/* Count */}
+          <div className="flex items-center gap-1 text-white/80">
+            <Users className="h-2.5 w-2.5" />
+            <span className="text-[9px]">{roomStats?.memberCount || 0}</span>
           </div>
         </div>
       </div>

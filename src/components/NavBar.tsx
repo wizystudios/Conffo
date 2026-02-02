@@ -23,7 +23,7 @@ export function NavBar() {
   
   return (
     <div className={`bg-background fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ${isNavbarVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-      <div className="container mx-auto flex justify-between items-center px-3 py-2">
+      <div className="flex justify-between items-center px-3 py-2">
         {/* Left side - Notifications (only when authenticated) */}
         <div className="flex items-center gap-1">
           {isAuthenticated ? (

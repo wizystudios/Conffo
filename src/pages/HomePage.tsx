@@ -37,15 +37,15 @@ export default function HomePage() {
         {/* Activity Feed Cards - Small cards showing room/community updates */}
         {isAuthenticated && <ActivityFeedCard />}
 
-        {/* Rooms Grid - 2 column layout, no scrolling needed */}
+        {/* Rooms Grid - 2 column compact layout */}
         <div className="px-4">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div 
                   key={i} 
-                  className="aspect-[4/5] rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 animate-pulse"
-                  style={{ animationDelay: `${i * 100}ms` }}
+                  className="aspect-[3/4] rounded-xl bg-muted/50 animate-pulse"
+                  style={{ animationDelay: `${i * 50}ms` }}
                 />
               ))}
             </div>
@@ -54,7 +54,7 @@ export default function HomePage() {
               <p className="text-muted-foreground">No rooms available yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {rooms.map((room, index) => (
                 <ConffoRoomCard key={room.id} room={room} index={index} />
               ))}
