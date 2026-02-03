@@ -9,6 +9,7 @@ import { IncomingCallModal } from "@/components/IncomingCallModal";
 import { CallInterface } from "@/components/CallInterface";
 import { WebRTCService } from "@/services/webRTCService";
 import { MessageNotification } from "@/components/MessageNotification";
+import { InAppNotificationToast } from "@/components/InAppNotificationToast";
 import { useAuth } from "@/context/AuthContext";
 import { useCommunityMessageNotifications } from "@/hooks/useCommunityMessageNotifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -16,6 +17,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 interface LayoutProps {
   children: ReactNode;
   hideBottomNav?: boolean;
+  showNavBar?: boolean; // Only show navbar when explicitly set to true (home page)
 }
 
 // Error boundary implemented as a class component, since React requires error boundaries to be classes
@@ -56,7 +58,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}
   }
 }
 
-function LayoutContent({ children, hideBottomNav }: LayoutProps) {
+function LayoutContent({ children, hideBottomNav, showNavBar = false }: LayoutProps) {
   const { incomingCall, clearIncomingCall } = useIncomingCalls();
   const { isAuthenticated } = useAuth();
 
@@ -104,14 +106,17 @@ function LayoutContent({ children, hideBottomNav }: LayoutProps) {
 
       {/* Mobile Layout */}
       <div className="lg:hidden">
-        <NavBar />
-        <main className="flex-grow pt-11 pb-12">
+        {showNavBar && <NavBar />}
+        <main className={`flex-grow ${showNavBar ? 'pt-11' : 'pt-0'} pb-12`}>
           <div className="w-full max-w-2xl mx-auto px-0 sm:px-4">
             {children}
           </div>
         </main>
         {!hideBottomNav && <BottomNavigation />}
       </div>
+      
+      {/* In-App Notification Toast */}
+      <InAppNotificationToast />
       
       {/* Message Notification */}
       <MessageNotification />
@@ -137,10 +142,10 @@ function LayoutContent({ children, hideBottomNav }: LayoutProps) {
   );
 }
 
-export function Layout({ children, hideBottomNav }: LayoutProps) {
+export function Layout({ children, hideBottomNav, showNavBar = false }: LayoutProps) {
   return (
     <ErrorBoundary>
-      <LayoutContent hideBottomNav={hideBottomNav}>{children}</LayoutContent>
+      <LayoutContent hideBottomNav={hideBottomNav} showNavBar={showNavBar}>{children}</LayoutContent>
     </ErrorBoundary>
   );
 }

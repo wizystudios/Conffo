@@ -100,9 +100,9 @@ export function ConffoRoomCard({ room, index }: ConffoRoomCardProps) {
   return (
     <button
       onClick={handleClick}
-      className={`relative aspect-[6/5] rounded-xl overflow-hidden border ${theme.border} transition-all hover:scale-[1.02] active:scale-[0.98] text-left w-full animate-fadeIn`}
+      className={`relative aspect-[5/3] rounded-lg overflow-hidden border ${theme.border} transition-all hover:scale-[1.02] active:scale-[0.98] text-left w-full animate-fadeIn`}
       style={{ 
-        animationDelay: `${index * 100}ms`,
+        animationDelay: `${index * 50}ms`,
         animationFillMode: 'both'
       }}
     >
