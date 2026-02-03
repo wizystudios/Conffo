@@ -245,8 +245,8 @@ export default function MultiStepAuthPage() {
   const signupStep = getCurrentSignupStep();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background flex items-center justify-center px-6 py-8">
+      <div className="w-full max-w-sm space-y-6">
         {/* Back button */}
         <Button 
           variant="ghost" 
@@ -257,30 +257,30 @@ export default function MultiStepAuthPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
 
-        {/* Logo/Brand */}
-        <div className="text-center">
+        {/* Logo/Brand - Free, no container */}
+        <div className="text-center pt-8">
           <h1 className="text-3xl font-bold conffo-text-gradient mb-2">Conffo</h1>
           <p className="text-sm text-muted-foreground">Share Your Confessions Anonymously</p>
         </div>
 
-        {/* Mode Toggle - Glassmorphism style */}
-        <div className="flex gap-4 justify-center p-1 bg-muted/30 rounded-full">
+        {/* Mode Toggle - Free style, no box */}
+        <div className="flex gap-1 justify-center">
           <button
             onClick={() => handleModeSwitch('signin')}
-            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-6 py-2 text-sm font-medium transition-all border-b-2 ${
               authMode === 'signin' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'text-muted-foreground'
+                ? 'border-primary text-primary' 
+                : 'border-transparent text-muted-foreground'
             }`}
           >
             Sign In
           </button>
           <button
             onClick={() => handleModeSwitch('signup')}
-            className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-6 py-2 text-sm font-medium transition-all border-b-2 ${
               authMode === 'signup' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'text-muted-foreground'
+                ? 'border-primary text-primary' 
+                : 'border-transparent text-muted-foreground'
             }`}
           >
             Sign Up
@@ -288,14 +288,14 @@ export default function MultiStepAuthPage() {
         </div>
 
         {authError && (
-          <div className="p-3 bg-destructive/10 rounded-xl text-center">
+          <div className="py-2 text-center">
             <p className="text-sm text-destructive">{authError}</p>
           </div>
         )}
 
-        {/* Sign In Flow - Cosmic glassmorphism design */}
+        {/* Sign In Flow - Free design, no card container */}
         {authMode === 'signin' && (
-          <div className="space-y-4 conffo-glass-card p-6">
+          <div className="space-y-4">
             {/* Toggle between email/phone */}
             <div className="flex gap-4 justify-center mb-4">
               <button 
@@ -320,51 +320,51 @@ export default function MultiStepAuthPage() {
               </button>
             </div>
 
-            {/* Email input */}
+            {/* Email input - Free, borderless style */}
             {signinMethod === 'email' && (
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="email" 
                   placeholder="Email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                   autoFocus
                 />
-                {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {emailValid && <Check className="absolute right-0 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Phone input */}
+            {/* Phone input - Free, borderless style */}
             {signinMethod === 'phone' && (
               <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Phone className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="tel" 
                   placeholder="Phone number" 
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                   autoFocus
                 />
-                {phoneValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {phoneValid && <Check className="absolute right-0 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Password */}
+            {/* Password - Free, borderless style */}
             {identifierValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="password" 
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                   autoFocus
                 />
-                {loading && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
+                {loading && <Loader2 className="absolute right-0 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
             )}
 
@@ -383,7 +383,7 @@ export default function MultiStepAuthPage() {
               <Button
                 onClick={handleSignIn}
                 disabled={loading}
-                className="w-full h-11 rounded-xl conffo-confess-btn text-white"
+                className="w-full h-11 rounded-full conffo-confess-btn text-white mt-4"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In'}
               </Button>
@@ -391,76 +391,76 @@ export default function MultiStepAuthPage() {
           </div>
         )}
 
-        {/* Sign Up Flow - Cosmic glassmorphism design */}
+        {/* Sign Up Flow - Free design, no card container */}
         {authMode === 'signup' && (
-          <div className="space-y-4 conffo-glass-card p-6">
-            {/* Email */}
+          <div className="space-y-4">
+            {/* Email - Free, borderless style */}
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="email" 
                 placeholder="Email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                 autoFocus={signupStep === 'email'}
               />
-              {emailValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+              {emailValid && <Check className="absolute right-0 top-3 h-4 w-4 text-green-500" />}
             </div>
 
-            {/* Password */}
+            {/* Password - Free, borderless style */}
             {emailValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="password" 
                   placeholder="Password (6+ characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                   autoFocus={signupStep === 'password'}
                 />
-                {passwordValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {passwordValid && <Check className="absolute right-0 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Username */}
+            {/* Username - Free, borderless style */}
             {passwordValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="text" 
                   placeholder="Username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                   autoFocus={signupStep === 'username'}
                 />
-                {usernameValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {usernameValid && <Check className="absolute right-0 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Birthdate */}
+            {/* Birthdate - Free, borderless style */}
             {usernameValid && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2">
-                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Calendar className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="date" 
                   placeholder="Date of birth"
                   value={birthdate}
                   onChange={(e) => setBirthdate(e.target.value)}
-                  className="pl-10 h-11 bg-background/50 border-border/30 rounded-xl"
+                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
                   autoFocus={signupStep === 'birthdate'}
                 />
-                {birthdateValid && <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />}
+                {birthdateValid && <Check className="absolute right-0 top-3 h-4 w-4 text-green-500" />}
               </div>
             )}
 
-            {/* Gender */}
+            {/* Gender - Minimal style */}
             {birthdateValid && (
               <div className="animate-in fade-in slide-in-from-bottom-2">
                 <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger className="h-11 bg-background/50 border-border/30 rounded-xl">
+                  <SelectTrigger className="h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus:ring-0">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -478,7 +478,7 @@ export default function MultiStepAuthPage() {
               <Button
                 onClick={handleSignUp}
                 disabled={loading}
-                className="w-full h-11 rounded-xl conffo-confess-btn text-white"
+                className="w-full h-11 rounded-full conffo-confess-btn text-white mt-4"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Account'}
               </Button>

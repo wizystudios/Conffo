@@ -20,7 +20,7 @@ export default function HomePage() {
   });
 
   return (
-    <Layout>
+    <Layout showNavBar={true}>
       {/* Home should be a non-scrolling room hub; keep vertical padding minimal */}
       <div className="pb-2">
         {/* Search Bar - At top, easy to access */}
@@ -41,11 +41,11 @@ export default function HomePage() {
         {/* Rooms Grid - 2 column compact layout */}
         <div className="px-4">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div 
                   key={i} 
-                  className="aspect-[3/4] rounded-xl bg-muted/50 animate-pulse"
+                  className="aspect-[5/3] rounded-lg bg-muted/50 animate-pulse"
                   style={{ animationDelay: `${i * 50}ms` }}
                 />
               ))}
@@ -55,7 +55,7 @@ export default function HomePage() {
               <p className="text-muted-foreground">No rooms available yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5">
               {rooms.map((room, index) => (
                 <ConffoRoomCard key={room.id} room={room} index={index} />
               ))}

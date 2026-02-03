@@ -96,19 +96,22 @@ export function InlineAudioRecorder({ confessionId, onCommentPosted, userId }: I
 
     setIsUploading(true);
     try {
-      // Upload audio to storage
+      // Upload audio to storage - use the correct bucket name: comment_audio
       const fileName = `${userId}/${Date.now()}.webm`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('audio-comments')
-        .upload(fileName, audioBlob, { contentType: 'audio/webm' });
+        .from('comment_audio')
+        .upload(fileName, audioBlob, { 
+          contentType: 'audio/webm',
+          upsert: false
+        });
 
       if (uploadError) {
-        // Try creating the bucket first or use a different approach
-        throw uploadError;
+        console.error('Upload error:', uploadError);
+        throw new Error('Failed to upload audio file');
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('audio-comments')
+        .from('comment_audio')
         .getPublicUrl(fileName);
 
       // Create comment with audio
@@ -122,17 +125,20 @@ export function InlineAudioRecorder({ confessionId, onCommentPosted, userId }: I
           audio_duration_seconds: recordingTime
         });
 
-      if (commentError) throw commentError;
+      if (commentError) {
+        console.error('Comment error:', commentError);
+        throw commentError;
+      }
 
       toast({ title: 'Audio comment posted!' });
       haptic.success();
       onCommentPosted();
       cancelRecording();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error posting audio comment:', error);
       toast({
         title: 'Failed to post audio comment',
-        description: 'Please try again',
+        description: error?.message || 'Please try again',
         variant: 'destructive'
       });
     } finally {
