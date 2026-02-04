@@ -4,6 +4,7 @@ import { ArrowLeft, Users, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { ConffoConfessionCard } from '@/components/ConffoConfessionCard';
+import { DailyConfessionCapsule } from '@/components/DailyConfessionCapsule';
 import { SwipeableConfessionViewer } from '@/components/SwipeableConfessionViewer';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
@@ -37,6 +38,7 @@ export default function RoomPage() {
   
   const [activeView, setActiveView] = useState<'confessions' | 'communities'>('confessions');
   const [sortTab, setSortTab] = useState<'new' | 'supported' | 'discussed'>('new');
+  const [viewMode, setViewMode] = useState<'capsule' | 'feed'>('capsule');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
@@ -128,17 +130,18 @@ export default function RoomPage() {
     );
   }
 
-  // If a community is selected, show full-screen chat
+  // If a community is selected, show chat - centered on desktop
   if (selectedCommunity) {
     return (
-      <div className="fixed inset-0 z-50 bg-background">
-        <UnifiedChatInterface
-          community={selectedCommunity}
-          onBack={() => setSelectedCommunity(null)}
-          onShowMembers={() => setShowMembers(true)}
-          onAddMembers={() => setShowAddMembers(true)}
-        />
-        
+      <div className="fixed inset-0 z-50 bg-background lg:flex lg:items-center lg:justify-center">
+        <div className="h-full w-full lg:h-[90vh] lg:w-[600px] lg:max-w-[95vw] lg:rounded-2xl lg:overflow-hidden lg:border lg:border-border">
+          <UnifiedChatInterface
+            community={selectedCommunity}
+            onBack={() => setSelectedCommunity(null)}
+            onShowMembers={() => setShowMembers(true)}
+            onAddMembers={() => setShowAddMembers(true)}
+          />
+        </div>
         <CommunityMembersList
           isOpen={showMembers}
           onClose={() => setShowMembers(false)}
@@ -248,9 +251,33 @@ export default function RoomPage() {
             </button>
           </div>
 
-          {/* Sort tabs - only show for confessions view */}
+          {/* View mode toggle + Sort tabs - only show for confessions view */}
           {activeView === 'confessions' && (
             <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-hide">
+              {/* Capsule vs Feed toggle */}
+              <button
+                onClick={() => setViewMode('capsule')}
+                className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${
+                  viewMode === 'capsule'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground'
+                }`}
+              >
+                ✨ Capsule
+              </button>
+              <button
+                onClick={() => setViewMode('feed')}
+                className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${
+                  viewMode === 'feed'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground'
+                }`}
+              >
+                📜 Feed
+              </button>
+              
+              <div className="w-px h-4 bg-border/50 mx-1" />
+              
               {['new', 'supported', 'discussed'].map((tab) => (
                 <button
                   key={tab}
@@ -287,7 +314,17 @@ export default function RoomPage() {
                   <div key={i} className="conffo-glass-card h-32 animate-pulse" />
                 ))}
               </div>
+            ) : viewMode === 'capsule' ? (
+              /* Daily Capsule Mode - One confession at a time, no scrolling */
+              <div className="h-[calc(100vh-280px)]">
+                <DailyConfessionCapsule 
+                  confessions={sortedConfessions}
+                  onUpdate={handleConfessionSuccess}
+                  onComplete={() => setViewMode('feed')}
+                />
+              </div>
             ) : (
+              /* Traditional Feed Mode */
               <div className="pt-2">
                 {sortedConfessions.length > 0 ? (
                   sortedConfessions.map((confession, index) => (

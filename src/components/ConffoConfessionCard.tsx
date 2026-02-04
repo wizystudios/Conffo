@@ -1,6 +1,6 @@
 import { useState, memo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Star, Users, Mic } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, MessageCircle, Star, Users } from 'lucide-react';
 import { Confession } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -193,16 +193,14 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
           <span className="text-xs text-muted-foreground">{timeAgo} ago</span>
         </div>
 
-        {/* Content - Link to confession page */}
-        <Link to={`/confession/${confession.id}`}>
-          <p className="text-sm leading-relaxed mb-3 line-clamp-4">
-            {confession.content}
-          </p>
-        </Link>
+        {/* Content - No link to post page, content is read inline */}
+        <p className="text-sm leading-relaxed mb-3 line-clamp-4">
+          {confession.content}
+        </p>
 
-        {/* Media Display - Show if media exists */}
+        {/* Media Display - Show if media exists, no link to separate page */}
         {hasMedia && mediaUrls.length > 0 && (
-          <Link to={`/confession/${confession.id}`} className="block mb-3">
+          <div className="block mb-3">
             <div className="rounded-xl overflow-hidden">
               <MediaCarouselDisplay
                 media={mediaUrls.map((url, i) => ({
@@ -211,7 +209,7 @@ export const ConffoConfessionCard = memo(function ConffoConfessionCard({
                 }))}
               />
             </div>
-          </Link>
+          </div>
         )}
 
         {/* Footer with inline actions */}

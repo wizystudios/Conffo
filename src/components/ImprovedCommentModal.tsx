@@ -202,22 +202,23 @@ export function ImprovedCommentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border rounded-b-3xl">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Comments</h1>
-          <div className="w-8" />
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end lg:items-center lg:justify-center">
+      <div className="bg-background flex flex-col h-full w-full lg:h-[85vh] lg:w-[500px] lg:max-w-[90vw] lg:rounded-2xl lg:overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border lg:rounded-none">
+          <div className="flex items-center justify-between px-4 py-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Comments</h1>
+            <div className="w-8" />
+          </div>
         </div>
-      </div>
 
       {/* Post Preview - Compact */}
       {confessionAuthor && confessionContent && (
@@ -317,10 +318,11 @@ export function ImprovedCommentModal({
           </form>
         </div>
       ) : (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-3 text-center">
+        <div className="fixed bottom-0 left-0 right-0 lg:static bg-background border-t border-border p-3 text-center">
           <p className="text-muted-foreground text-xs">Sign in to comment</p>
         </div>
       )}
+      </div>
     </div>
   );
 }
