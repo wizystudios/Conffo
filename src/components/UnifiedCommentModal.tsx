@@ -320,10 +320,10 @@ export function UnifiedCommentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end lg:items-center lg:justify-center" onClick={onClose}>
       <div 
         ref={containerRef}
-        className="absolute bottom-0 left-0 right-0 bg-background rounded-t-3xl flex flex-col max-h-[85vh] transition-transform duration-300"
+        className="bg-background rounded-t-3xl lg:rounded-3xl flex flex-col max-h-[85vh] w-full lg:w-[500px] lg:max-w-[90vw] transition-transform duration-300"
         style={{ transform: `translateY(${swipeY}px)` }}
         onClick={(e) => e.stopPropagation()}
       >

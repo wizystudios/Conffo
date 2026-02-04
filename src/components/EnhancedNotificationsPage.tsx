@@ -227,9 +227,10 @@ export default function EnhancedNotificationsPage() {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background lg:pb-6">
+    <div ref={containerRef} className="min-h-screen bg-background lg:flex lg:items-start lg:justify-center lg:pt-6">
+      <div className="w-full lg:w-[500px] lg:max-w-[90vw] lg:bg-card lg:rounded-2xl lg:border lg:border-border lg:shadow-lg lg:overflow-hidden lg:max-h-[90vh] lg:flex lg:flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background">
+      <div className="sticky top-0 z-10 bg-background lg:bg-card">
         <div className="flex items-center justify-between px-4 py-2.5">
           <Button 
             variant="ghost" 
@@ -332,6 +333,7 @@ export default function EnhancedNotificationsPage() {
             </p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
