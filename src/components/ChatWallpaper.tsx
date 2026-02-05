@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface ChatWallpaperProps {
   children: React.ReactNode;
   className?: string;
+  pattern?: 'cosmic' | 'aurora' | 'sunset' | 'ocean' | 'forest' | 'midnight';
 }
 
-// Default patterns similar to WhatsApp/Telegram
-const DEFAULT_PATTERNS = [
-  'conffo', // Custom conffo pattern
-  'dots',
-  'circles',
-  'waves',
-  'geometric'
-];
+// Pattern class mapping
+const PATTERN_CLASSES: Record<string, string> = {
+  cosmic: 'chat-wallpaper-cosmic',
+  aurora: 'chat-wallpaper-aurora',
+  sunset: 'chat-wallpaper-sunset',
+  ocean: 'bg-gradient-to-br from-blue-900/10 via-teal-900/5 to-blue-900/10',
+  forest: 'bg-gradient-to-br from-green-900/10 via-emerald-900/5 to-green-900/10',
+  midnight: 'bg-gradient-to-br from-slate-900/15 via-gray-900/10 to-slate-900/15',
+};
 
-export function ChatWallpaper({ children, className = '' }: ChatWallpaperProps) {
+export function ChatWallpaper({ children, className = '', pattern = 'cosmic' }: ChatWallpaperProps) {
   const { user } = useAuth();
   const [wallpaperUrl, setWallpaperUrl] = useState<string | null>(null);
-  const [pattern, setPattern] = useState<string>('conffo');
 
   useEffect(() => {
     if (user?.id) {
@@ -30,53 +32,45 @@ export function ChatWallpaper({ children, className = '' }: ChatWallpaperProps) 
   const loadUserWallpaper = async () => {
     if (!user?.id) return;
     
-    // Check if user has a custom wallpaper
-    const { data } = await supabase.storage
-      .from('chat-wallpapers')
-      .list(user.id, { limit: 1 });
-    
-    if (data && data.length > 0) {
-      const { data: urlData } = supabase.storage
+    try {
+      // Check if user has a custom wallpaper
+      const { data } = await supabase.storage
         .from('chat-wallpapers')
-        .getPublicUrl(`${user.id}/${data[0].name}`);
-      setWallpaperUrl(urlData.publicUrl);
+        .list(user.id, { limit: 1 });
+      
+      if (data && data.length > 0) {
+        const { data: urlData } = supabase.storage
+          .from('chat-wallpapers')
+          .getPublicUrl(`${user.id}/${data[0].name}`);
+        setWallpaperUrl(urlData.publicUrl);
+      }
+    } catch (error) {
+      console.error('Error loading wallpaper:', error);
     }
   };
 
-  // Generate pattern SVG based on theme
-  const getPatternStyle = () => {
+  const getBackgroundStyle = () => {
     if (wallpaperUrl) {
       return {
         backgroundImage: `url(${wallpaperUrl})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
       };
     }
-
-    // Conffo-themed pattern with cosmic elements
-    if (pattern === 'conffo') {
-      return {
-        backgroundColor: 'hsl(var(--background))',
-        backgroundImage: `
-          radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-          radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.05) 0%, transparent 40%),
-          radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.02) 0%, transparent 60%),
-          url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
-        `,
-        backgroundRepeat: 'repeat'
-      };
-    }
-
     return {};
   };
 
   return (
     <div 
-      className={`relative ${className}`}
-      style={getPatternStyle()}
+      className={cn(
+        "relative",
+        !wallpaperUrl && PATTERN_CLASSES[pattern],
+        className
+      )}
+      style={getBackgroundStyle()}
     >
       {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-background/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-background/20 pointer-events-none" />
       {/* Content */}
       <div className="relative z-10 h-full">
         {children}

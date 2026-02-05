@@ -726,3 +726,106 @@
   border: 1px solid hsl(var(--border) / 0.4);
   border-radius: 1.5rem;
 }
+
+/* ==========================================
+   CONFESSION JOURNEY - EDITORIAL DESIGN
+   ========================================== */
+
+/* Serif typography for confessions */
+.font-serif {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+/* Warm, editorial background tones */
+.conffo-editorial-bg {
+  background: 
+    radial-gradient(ellipse at 30% 0%, hsl(35 30% 95% / 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, hsl(280 30% 95% / 0.2) 0%, transparent 50%),
+    hsl(var(--background));
+}
+
+.dark .conffo-editorial-bg {
+  background: 
+    radial-gradient(ellipse at 30% 0%, hsl(280 40% 15% / 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, hsl(260 30% 12% / 0.2) 0%, transparent 50%),
+    hsl(var(--background));
+}
+
+/* Calm motion for journey transitions */
+.conffo-journey-transition {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus ring for intentional interactions */
+.conffo-focus-ring {
+  position: relative;
+}
+
+.conffo-focus-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.conffo-focus-ring:focus-visible::after {
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+/* Magazine-style quote styling */
+blockquote {
+  position: relative;
+  font-style: normal;
+}
+
+blockquote::before {
+  content: '"';
+  position: absolute;
+  top: -0.5em;
+  left: -0.3em;
+  font-size: 3em;
+  font-family: Georgia, serif;
+  color: hsl(var(--primary) / 0.15);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Intentional consumption indicator */
+.conffo-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--muted));
+  transition: all 0.3s ease;
+}
+
+.conffo-progress-dot.active {
+  background: hsl(var(--primary));
+  transform: scale(1.2);
+}
+
+.conffo-progress-dot.completed {
+  background: hsl(var(--primary) / 0.6);
+}
+
+/* Chat wallpaper patterns */
+.chat-wallpaper-cosmic {
+  background:
+    radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.05) 0%, transparent 40%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.chat-wallpaper-aurora {
+  background:
+    linear-gradient(135deg, hsl(150 40% 15% / 0.1) 0%, hsl(200 50% 20% / 0.1) 100%),
+    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2340E0D0' fill-opacity='0.02'%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.chat-wallpaper-sunset {
+  background:
+    linear-gradient(180deg, hsl(30 60% 20% / 0.1) 0%, hsl(320 50% 25% / 0.1) 100%),
+    url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23FF6B6B' fill-opacity='0.02'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/svg%3E");
+}
