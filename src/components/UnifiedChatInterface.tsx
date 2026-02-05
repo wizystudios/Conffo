@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw, Clock, X, Reply, Users, Crown, Edit, MessageSquare } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw, Clock, X, Reply, Users, Crown, Edit, MessageSquare, Palette } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -31,6 +31,7 @@ import { ScheduleMessageModal } from '@/components/ScheduleMessageModal';
 import { QuickReplies } from '@/components/QuickReplies';
 import { CommunityEditModal } from '@/components/CommunityEditModal';
 import { CommunityTopicsModal } from '@/components/CommunityTopicsModal';
+import { ChatWallpaperSettings } from '@/components/ChatWallpaperSettings';
 import { haptic } from '@/utils/hapticFeedback';
 import { formatDistanceToNow } from 'date-fns';
 import { useCommunityReadReceipts } from '@/hooks/useCommunityReadReceipts';
@@ -110,7 +111,7 @@ export function UnifiedChatInterface({
   const [pullDistance, setPullDistance] = useState(0);
   const [isPulling, setIsPulling] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  
+  const [showWallpaperSettings, setShowWallpaperSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -510,6 +511,11 @@ export function UnifiedChatInterface({
                   )}
                 </>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowWallpaperSettings(true)}>
+                <Palette className="h-4 w-4 mr-2" />
+                Chat Wallpaper
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -843,6 +849,12 @@ export function UnifiedChatInterface({
           />
         </>
       )}
+
+      {/* Wallpaper Settings Modal */}
+      <ChatWallpaperSettings
+        isOpen={showWallpaperSettings}
+        onClose={() => setShowWallpaperSettings(false)}
+      />
     </div>
   );
 }

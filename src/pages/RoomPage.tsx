@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Shield } from 'lucide-react';
+import { ArrowLeft, Users, Shield, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { ConffoConfessionCard } from '@/components/ConffoConfessionCard';
-import { DailyConfessionCapsule } from '@/components/DailyConfessionCapsule';
-import { SwipeableConfessionViewer } from '@/components/SwipeableConfessionViewer';
+import { ConfessionJourney } from '@/components/ConfessionJourney';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
@@ -38,7 +37,6 @@ export default function RoomPage() {
   
   const [activeView, setActiveView] = useState<'confessions' | 'communities'>('confessions');
   const [sortTab, setSortTab] = useState<'new' | 'supported' | 'discussed'>('new');
-  const [viewMode, setViewMode] = useState<'capsule' | 'feed'>('capsule');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
@@ -251,33 +249,9 @@ export default function RoomPage() {
             </button>
           </div>
 
-          {/* View mode toggle + Sort tabs - only show for confessions view */}
+          {/* Sort tabs - only show for confessions view */}
           {activeView === 'confessions' && (
             <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-hide">
-              {/* Capsule vs Feed toggle */}
-              <button
-                onClick={() => setViewMode('capsule')}
-                className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${
-                  viewMode === 'capsule'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted/50 text-muted-foreground'
-                }`}
-              >
-                ✨ Capsule
-              </button>
-              <button
-                onClick={() => setViewMode('feed')}
-                className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${
-                  viewMode === 'feed'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted/50 text-muted-foreground'
-                }`}
-              >
-                📜 Feed
-              </button>
-              
-              <div className="w-px h-4 bg-border/50 mx-1" />
-              
               {['new', 'supported', 'discussed'].map((tab) => (
                 <button
                   key={tab}
@@ -307,41 +281,20 @@ export default function RoomPage() {
           </div>
         ) : (
           <>
-            {/* Confessions Content */}
+            {/* Confession Journey - Intentional, one at a time */}
             {isLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="conffo-glass-card h-32 animate-pulse" />
                 ))}
               </div>
-            ) : viewMode === 'capsule' ? (
-              /* Daily Capsule Mode - One confession at a time, no scrolling */
-              <div className="h-[calc(100vh-280px)]">
-                <DailyConfessionCapsule 
+            ) : (
+              <div className="h-[calc(100vh-220px)]">
+                <ConfessionJourney 
                   confessions={sortedConfessions}
                   onUpdate={handleConfessionSuccess}
-                  onComplete={() => setViewMode('feed')}
+                  onOpenComments={handleOpenComments}
                 />
-              </div>
-            ) : (
-              /* Traditional Feed Mode */
-              <div className="pt-2">
-                {sortedConfessions.length > 0 ? (
-                  sortedConfessions.map((confession, index) => (
-                    <ConffoConfessionCard 
-                      key={confession.id}
-                      confession={confession}
-                      onUpdate={handleConfessionSuccess}
-                      index={index}
-                    />
-                  ))
-                ) : (
-                  <div className="conffo-glass-card p-8 mx-4 text-center">
-                    <p className="text-muted-foreground">
-                      No confessions in this room yet. Be the first!
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </>
