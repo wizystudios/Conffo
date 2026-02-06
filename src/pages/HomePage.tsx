@@ -3,15 +3,11 @@ import { Search } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
 import { CommunitySearchModal } from '@/components/CommunitySearchModal';
-import { ActivityFeedCard } from '@/components/ActivityFeedCard';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
 
-// Home Page = Rooms List (as per design)
+// Home Page = Simple Rooms List
 export default function HomePage() {
-  const { isAuthenticated } = useAuth();
   const [showCommunitySearch, setShowCommunitySearch] = useState(false);
 
   const { data: rooms = [], isLoading } = useQuery({
@@ -21,31 +17,31 @@ export default function HomePage() {
 
   return (
     <Layout showNavBar={true}>
-      {/* Home should be a non-scrolling room hub; keep vertical padding minimal */}
-      <div className="pb-2">
-        {/* Search Bar - At top, easy to access */}
-        <div className="px-4 pt-2 pb-1.5">
-          <Button
-            variant="outline"
-            className="w-full h-9 rounded-full gap-2 justify-start px-4 bg-muted/30 border-border/30"
-            onClick={() => setShowCommunitySearch(true)}
-          >
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground text-sm">Search rooms...</span>
-          </Button>
+      <div className="max-w-lg mx-auto pb-20">
+        {/* Simple Header */}
+        <div className="px-4 py-4 border-b border-border/30">
+          <h1 className="text-xl font-bold text-center">Conffo</h1>
         </div>
 
-        {/* Activity Feed Cards - Small cards showing room/community updates */}
-        {isAuthenticated && <ActivityFeedCard />}
+        {/* Search Bar */}
+        <div className="px-4 py-3">
+          <button
+            onClick={() => setShowCommunitySearch(true)}
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm"
+          >
+            <Search className="h-4 w-4" />
+            <span>Search rooms...</span>
+          </button>
+        </div>
 
-        {/* Rooms Grid - 2 column compact layout */}
+        {/* Rooms List - Simple, no boxes */}
         <div className="px-4">
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-1.5">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div className="space-y-3 py-4">
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div 
                   key={i} 
-                  className="aspect-[5/3] rounded-lg bg-muted/50 animate-pulse"
+                  className="h-14 rounded-lg bg-muted/30 animate-pulse"
                   style={{ animationDelay: `${i * 50}ms` }}
                 />
               ))}
@@ -55,7 +51,7 @@ export default function HomePage() {
               <p className="text-muted-foreground">No rooms available yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="divide-y divide-border/30">
               {rooms.map((room, index) => (
                 <ConffoRoomCard key={room.id} room={room} index={index} />
               ))}

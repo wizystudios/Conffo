@@ -150,22 +150,29 @@ const ConfessionItem = memo(function ConfessionItem({
             </button>
           )}
 
-          {/* Media - Cinematic video or images */}
+          {/* Media - Show ALL media items */}
           {hasMedia && mediaUrls.length > 0 && (
-            <div className="mt-3 rounded-xl overflow-hidden">
-              {mediaTypes[0] === 'video' ? (
-                <CinematicVideoPlayer 
-                  src={mediaUrls[0]} 
-                  confessionId={confession.id}
-                />
-              ) : (
-                <img 
-                  src={mediaUrls[0]} 
-                  alt="Media" 
-                  className="w-full max-h-80 object-cover rounded-xl"
-                  loading="lazy"
-                />
-              )}
+            <div className="mt-3 space-y-2">
+              {mediaUrls.map((url, idx) => {
+                const type = mediaTypes[idx] || 'image';
+                return (
+                  <div key={idx} className="rounded-xl overflow-hidden">
+                    {type === 'video' ? (
+                      <CinematicVideoPlayer 
+                        src={url} 
+                        confessionId={confession.id}
+                      />
+                    ) : (
+                      <img 
+                        src={url} 
+                        alt={`Media ${idx + 1}`} 
+                        className="w-full max-h-80 object-cover rounded-xl"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
