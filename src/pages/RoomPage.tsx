@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeft, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
-import { ConffoConfessionCard } from '@/components/ConffoConfessionCard';
-import { ConfessionJourney } from '@/components/ConfessionJourney';
+import { TelegramConfessionList } from '@/components/TelegramConfessionList';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
@@ -281,21 +280,19 @@ export default function RoomPage() {
           </div>
         ) : (
           <>
-            {/* Confession Journey - Intentional, one at a time */}
+            {/* Telegram-style confession list - clean vertical scroll */}
             {isLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="conffo-glass-card h-32 animate-pulse" />
+                  <div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : (
-              <div className="h-[calc(100vh-220px)]">
-                <ConfessionJourney 
-                  confessions={sortedConfessions}
-                  onUpdate={handleConfessionSuccess}
-                  onOpenComments={handleOpenComments}
-                />
-              </div>
+              <TelegramConfessionList 
+                confessions={sortedConfessions}
+                onUpdate={handleConfessionSuccess}
+                onOpenComments={handleOpenComments}
+              />
             )}
           </>
         )}
