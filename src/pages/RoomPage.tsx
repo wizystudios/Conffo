@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { TelegramConfessionList } from '@/components/TelegramConfessionList';
@@ -15,7 +15,6 @@ import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { Community } from '@/services/communityService';
 import { ImprovedCommentModal } from '@/components/ImprovedCommentModal';
 import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Get room emoji icon
 const getRoomIcon = (name: string): string => {
@@ -41,7 +40,6 @@ export default function RoomPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [communitiesKey, setCommunitiesKey] = useState(0);
-  const [isJoined, setIsJoined] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [selectedConfessionId, setSelectedConfessionId] = useState<string | null>(null);
 
@@ -176,52 +174,9 @@ export default function RoomPage() {
             </div>
           </div>
           
-          {/* Member avatars + Action buttons - All in one compact row */}
-          <div className="flex items-center justify-between px-4 pb-2">
-            {/* Real member avatars */}
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {roomMembers && roomMembers.length > 0 ? (
-                  roomMembers.slice(0, 4).map((member) => (
-                    <Avatar key={member.id} className="h-6 w-6 border-2 border-background">
-                      <AvatarImage 
-                        src={member.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${member.id}`} 
-                        alt={member.username || 'Member'} 
-                      />
-                      <AvatarFallback className="text-[8px] bg-muted">
-                        {(member.username || 'U').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))
-                ) : (
-                  [1, 2, 3].map((i) => (
-                    <div key={i} className="h-6 w-6 rounded-full bg-muted border-2 border-background" />
-                  ))
-                )}
-              </div>
-              <span className="text-xs text-muted-foreground">{roomMembers?.length || 0}+ members</span>
-            </div>
-            
-            {/* Action buttons - small, in a row */}
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant={isJoined ? "secondary" : "default"}
-                size="sm"
-                onClick={() => setIsJoined(!isJoined)}
-                className="rounded-full px-3 h-7 text-xs"
-              >
-                {isJoined ? 'Joined' : 'Join'}
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full px-3 h-7 text-xs"
-              >
-                <Shield className="h-3 w-3 mr-1" />
-                Rules
-              </Button>
-            </div>
+          {/* Member count - simple text */}
+          <div className="px-4 pb-2">
+            <span className="text-xs text-muted-foreground">{roomMembers?.length || 0}+ members</span>
           </div>
 
           {/* Main View Toggle: Confessions vs Communities */}
