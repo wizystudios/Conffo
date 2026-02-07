@@ -72,7 +72,7 @@ export async function createCommunity(
     .single();
 
   if (error) {
-    console.error('Error creating community:', error);
+    console.error('Error creating community:', error.message, error.details, error.hint);
     return null;
   }
 

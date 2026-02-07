@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
-import { X, Users, Camera, Loader2 } from 'lucide-react';
+import { X, Users, Camera, Loader2, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { createCommunity } from '@/services/communityService';
 import { toast } from '@/hooks/use-toast';
 import { haptic } from '@/utils/hapticFeedback';
@@ -23,6 +24,7 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -83,6 +85,10 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
   const handleCreate = async () => {
     if (!name.trim()) {
       toast({ variant: 'destructive', description: 'Community name is required' });
+      return;
+    }
+    if (!acceptedTerms) {
+      toast({ variant: 'destructive', description: 'You must accept the community guidelines' });
       return;
     }
 
@@ -198,11 +204,34 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
             />
           </div>
 
+          {/* Community Guidelines */}
+          <div className="rounded-xl bg-muted/30 p-3 space-y-2">
+            <p className="text-xs font-semibold">Community Guidelines</p>
+            <ul className="text-[10px] text-muted-foreground space-y-1 list-disc list-inside">
+              <li>Be respectful to all members</li>
+              <li>No hate speech, harassment, or bullying</li>
+              <li>No spam, ads, or self-promotion</li>
+              <li>Keep content appropriate and relevant</li>
+              <li>Admins can remove members who violate rules</li>
+            </ul>
+            <div className="flex items-start gap-2 pt-1">
+              <Checkbox 
+                id="terms" 
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="terms" className="text-[10px] text-muted-foreground cursor-pointer leading-tight">
+                I agree to the community guidelines and will ensure my community follows these rules
+              </label>
+            </div>
+          </div>
+
           <div className="pt-2">
             <Button
               onClick={handleCreate}
-              disabled={!name.trim() || isCreating || isUploading}
-              className="w-full h-12 rounded-xl font-semibold conffo-ripple"
+              disabled={!name.trim() || isCreating || isUploading || !acceptedTerms}
+              className="w-full h-12 rounded-xl font-semibold"
             >
               {isCreating ? (
                 <>

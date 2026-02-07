@@ -18,13 +18,8 @@ export default function HomePage() {
   return (
     <Layout showNavBar={true}>
       <div className="max-w-lg mx-auto pb-20">
-        {/* Simple Header */}
-        <div className="px-4 py-4 border-b border-border/30">
-          <h1 className="text-xl font-bold text-center">Conffo</h1>
-        </div>
-
         {/* Search Bar */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 mt-14">
           <button
             onClick={() => setShowCommunitySearch(true)}
             className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm"

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
-import { TelegramConfessionList } from '@/components/TelegramConfessionList';
+import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
@@ -12,8 +12,8 @@ import { CommunityList } from '@/components/CommunityList';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
+import { CommunityOnboardingTour } from '@/components/CommunityOnboardingTour';
 import { Community } from '@/services/communityService';
-import { ImprovedCommentModal } from '@/components/ImprovedCommentModal';
 import { supabase } from '@/integrations/supabase/client';
 
 // Get room emoji icon
@@ -40,8 +40,7 @@ export default function RoomPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [communitiesKey, setCommunitiesKey] = useState(0);
-  const [showComments, setShowComments] = useState(false);
-  const [selectedConfessionId, setSelectedConfessionId] = useState<string | null>(null);
+  const [showOnboardingTour, setShowOnboardingTour] = useState(false);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -100,11 +99,8 @@ export default function RoomPage() {
 
   const handleCommunityCreated = () => {
     setCommunitiesKey(prev => prev + 1);
-  };
-
-  const handleOpenComments = (confessionId: string) => {
-    setSelectedConfessionId(confessionId);
-    setShowComments(true);
+    // Show onboarding tour for the creator
+    setShowOnboardingTour(true);
   };
   
   if (!roomInfo) {
@@ -235,19 +231,28 @@ export default function RoomPage() {
           </div>
         ) : (
           <>
-            {/* Telegram-style confession list - clean vertical scroll */}
+            {/* Unified confession cards - same as post page */}
             {isLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
               </div>
+            ) : sortedConfessions.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <p className="text-muted-foreground">No confessions in this room yet.</p>
+                <p className="text-xs text-muted-foreground mt-1">Be the first to share.</p>
+              </div>
             ) : (
-              <TelegramConfessionList 
-                confessions={sortedConfessions}
-                onUpdate={handleConfessionSuccess}
-                onOpenComments={handleOpenComments}
-              />
+              <div>
+                {sortedConfessions.map((confession) => (
+                  <InstagramConfessionCard
+                    key={confession.id}
+                    confession={confession}
+                    onUpdate={handleConfessionSuccess}
+                  />
+                ))}
+              </div>
             )}
           </>
         )}
@@ -261,24 +266,12 @@ export default function RoomPage() {
         onCreated={handleCommunityCreated}
       />
 
-      {/* Comments Modal */}
-      {selectedConfessionId && (() => {
-        const selectedConfession = sortedConfessions.find(c => c.id === selectedConfessionId);
-        return selectedConfession ? (
-          <ImprovedCommentModal
-            confessionId={selectedConfessionId}
-            confessionContent={selectedConfession.content}
-            confessionAuthor="Anonymous"
-            confessionMediaUrl={selectedConfession.mediaUrl || undefined}
-            confessionMediaType={selectedConfession.mediaType === 'audio' ? undefined : selectedConfession.mediaType}
-            isOpen={showComments}
-            onClose={() => {
-              setShowComments(false);
-              setSelectedConfessionId(null);
-            }}
-          />
-        ) : null;
-      })()}
+      {/* Community Onboarding Tour */}
+      <CommunityOnboardingTour
+        isOpen={showOnboardingTour}
+        onClose={() => setShowOnboardingTour(false)}
+        communityName={roomInfo?.name || 'Community'}
+      />
     </Layout>
   );
 }
