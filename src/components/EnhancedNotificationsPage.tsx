@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Check, Trash2, ArrowLeft, MessageCircle, Heart, UserPlus, Settings, AtSign, Filter } from 'lucide-react';
+import { Bell, Check, Trash2, ArrowLeft, MessageCircle, Heart, UserPlus, Settings, AtSign } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-type FilterType = 'all' | 'likes' | 'comments' | 'follows' | 'mentions' | 'messages';
+// No filter - show all notifications
 
 interface NotificationItemProps {
   notification: any;
@@ -135,7 +135,7 @@ export default function EnhancedNotificationsPage() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter] = useState('all');
   
   // Fetch notifications
   const { data: notifications = [], refetch: refetchNotifications } = useQuery({
@@ -174,16 +174,8 @@ export default function EnhancedNotificationsPage() {
     }
   }, []);
 
-  // Filter notifications
-  const filteredNotifications = notifications.filter((n) => {
-    if (filter === 'all') return true;
-    if (filter === 'likes') return n.type === 'new_reaction' || n.type === 'like';
-    if (filter === 'comments') return n.type === 'new_comment';
-    if (filter === 'follows') return n.type === 'follow';
-    if (filter === 'mentions') return n.type === 'mention';
-    if (filter === 'messages') return n.type === 'message' || n.type === 'community';
-    return true;
-  });
+  // Show all notifications - no filtering
+  const filteredNotifications = notifications;
   
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
   
@@ -252,33 +244,6 @@ export default function EnhancedNotificationsPage() {
             <Settings className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Filter Tabs */}
-        <div className="px-4 pb-2 overflow-x-auto no-scrollbar">
-          <div className="flex gap-1.5">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'likes', label: 'Likes', icon: Heart },
-              { key: 'comments', label: 'Replies', icon: MessageCircle },
-              { key: 'mentions', label: 'Mentions', icon: AtSign },
-              { key: 'follows', label: 'Followers', icon: UserPlus },
-              { key: 'messages', label: 'Messages', icon: MessageCircle },
-            ].map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key as FilterType)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors ${
-                  filter === key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                {Icon && <Icon className="h-3 w-3" />}
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
       
       {/* Actions */}
@@ -323,13 +288,9 @@ export default function EnhancedNotificationsPage() {
             <div className="relative mb-4">
               <Bell className="h-12 w-12 text-muted-foreground/40" />
             </div>
-            <h2 className="text-sm font-semibold mb-1">
-              {filter === 'all' ? 'All caught up!' : `No ${filter}`}
-            </h2>
+            <h2 className="text-sm font-semibold mb-1">All caught up!</h2>
             <p className="text-[10px] text-muted-foreground text-center max-w-sm">
-              {filter === 'all' 
-                ? 'When you get likes, replies, messages, or follows, they\'ll appear here.'
-                : `You don't have any ${filter} notifications yet.`}
+              When you get likes, replies, messages, or follows, they'll appear here.
             </p>
           </div>
         )}
