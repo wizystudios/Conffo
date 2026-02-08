@@ -2,11 +2,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, Plus, MessageSquare, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 export function BottomNavigation() {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { unreadCounts } = useUnreadMessages();
+  const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -45,8 +48,15 @@ export function BottomNavigation() {
         
         {/* Chats - Direct messages, not replies */}
         {isAuthenticated && (
-          <Link to="/chat" className="flex flex-col items-center py-1 px-3 gap-0.5">
-            <MessageSquare className={`h-5 w-5 ${isActive('/chat') ? 'text-primary' : 'text-muted-foreground'}`} />
+          <Link to="/chat" className="flex flex-col items-center py-1 px-3 gap-0.5 relative">
+            <div className="relative">
+              <MessageSquare className={`h-5 w-5 ${isActive('/chat') ? 'text-primary' : 'text-muted-foreground'}`} />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {totalUnread > 9 ? '9+' : totalUnread}
+                </span>
+              )}
+            </div>
             <span className={`text-[10px] ${isActive('/chat') ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
               Chats
             </span>

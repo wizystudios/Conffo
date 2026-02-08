@@ -57,22 +57,22 @@ export function HomeUserCircles() {
 
   return (
     <div className="px-4 py-3">
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-4 overflow-x-auto scrollbar-hide">
         {users.map((u: any) => (
           <button
             key={u.id}
             onClick={() => navigate(`/user/${u.id}`)}
-            className="flex flex-col items-center gap-1 shrink-0"
+            className="flex flex-col items-center gap-1.5 shrink-0"
           >
-            <div className="p-0.5 rounded-full bg-gradient-to-br from-primary/60 to-primary/20">
-              <Avatar className="h-14 w-14 border-2 border-background">
+            <div className="p-[2px] rounded-full bg-gradient-to-br from-red-500 via-pink-500 to-orange-400">
+              <Avatar className="h-[60px] w-[60px] border-2 border-background">
                 <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="text-sm">
                   {u.username?.charAt(0)?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
             </div>
-            <span className="text-[10px] text-muted-foreground truncate w-16 text-center">
+            <span className="text-[10px] text-muted-foreground truncate w-[68px] text-center">
               {u.username || 'User'}
             </span>
           </button>
