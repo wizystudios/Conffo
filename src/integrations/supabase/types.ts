@@ -167,6 +167,7 @@ export type Database = {
       }
       communities: {
         Row: {
+          conditions: string[] | null
           created_at: string
           creator_id: string
           description: string | null
@@ -177,6 +178,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          conditions?: string[] | null
           created_at?: string
           creator_id: string
           description?: string | null
@@ -187,6 +189,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          conditions?: string[] | null
           created_at?: string
           creator_id?: string
           description?: string | null

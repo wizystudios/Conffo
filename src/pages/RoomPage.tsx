@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ import { CommunityOnboardingTour } from '@/components/CommunityOnboardingTour';
 import { Community } from '@/services/communityService';
 import { supabase } from '@/integrations/supabase/client';
 
-// Get room emoji icon
 const getRoomIcon = (name: string): string => {
   const lower = name.toLowerCase();
   if (lower.includes('heart') || lower.includes('relationship') || lower.includes('love')) return '💔';
@@ -41,6 +40,9 @@ export default function RoomPage() {
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [communitiesKey, setCommunitiesKey] = useState(0);
   const [showOnboardingTour, setShowOnboardingTour] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -49,7 +51,6 @@ export default function RoomPage() {
   
   const roomInfo = rooms.find(r => r.id === roomId);
 
-  // Fetch room member avatars
   const { data: roomMembers } = useQuery({
     queryKey: ['room-members', roomId],
     queryFn: async () => {
@@ -61,7 +62,6 @@ export default function RoomPage() {
         .limit(20);
       
       const uniqueIds = [...new Set(recentPosts?.map(p => p.user_id).filter(Boolean) || [])].slice(0, 5);
-      
       if (uniqueIds.length === 0) return [];
       
       const { data: profiles } = await supabase
@@ -80,26 +80,34 @@ export default function RoomPage() {
     enabled: !!roomId,
   });
 
-  // Sort confessions based on active tab
+  // Hide header on scroll down
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY > lastScrollY.current && currentY > 100) {
+        setHeaderVisible(false);
+      } else {
+        setHeaderVisible(true);
+      }
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const sortedConfessions = [...confessions].sort((a, b) => {
-    if (sortTab === 'new') {
-      return b.timestamp - a.timestamp;
-    } else if (sortTab === 'supported') {
-      const aReactions = (a.reactions?.heart || 0) + (a.reactions?.like || 0);
-      const bReactions = (b.reactions?.heart || 0) + (b.reactions?.like || 0);
-      return bReactions - aReactions;
-    } else {
-      return (b.commentCount || 0) - (a.commentCount || 0);
+    if (sortTab === 'new') return b.timestamp - a.timestamp;
+    if (sortTab === 'supported') {
+      return ((b.reactions?.heart || 0) + (b.reactions?.like || 0)) - ((a.reactions?.heart || 0) + (a.reactions?.like || 0));
     }
+    return (b.commentCount || 0) - (a.commentCount || 0);
   });
   
-  const handleConfessionSuccess = () => {
-    refetch();
-  };
+  const handleConfessionSuccess = () => { refetch(); };
 
   const handleCommunityCreated = () => {
     setCommunitiesKey(prev => prev + 1);
-    // Show onboarding tour for the creator
     setShowOnboardingTour(true);
   };
   
@@ -107,21 +115,13 @@ export default function RoomPage() {
     return (
       <Layout>
         <div className="text-center py-10 px-4">
-          <div className="conffo-glass-card p-8">
-            <h1 className="text-xl font-bold mb-4">Room Not Found</h1>
-            <p className="text-muted-foreground mb-6">
-              The room you're looking for doesn't exist.
-            </p>
-            <Link to="/">
-              <Button>View All Rooms</Button>
-            </Link>
-          </div>
+          <h1 className="text-xl font-bold mb-4">Room Not Found</h1>
+          <Link to="/"><Button>View All Rooms</Button></Link>
         </div>
       </Layout>
     );
   }
 
-  // If a community is selected, show chat - centered on desktop
   if (selectedCommunity) {
     return (
       <div className="fixed inset-0 z-50 bg-background lg:flex lg:items-center lg:justify-center">
@@ -133,20 +133,8 @@ export default function RoomPage() {
             onAddMembers={() => setShowAddMembers(true)}
           />
         </div>
-        <CommunityMembersList
-          isOpen={showMembers}
-          onClose={() => setShowMembers(false)}
-          communityId={selectedCommunity.id}
-          creatorId={selectedCommunity.creatorId}
-        />
-        
-        <CommunityMembersList
-          isOpen={showAddMembers}
-          onClose={() => setShowAddMembers(false)}
-          communityId={selectedCommunity.id}
-          creatorId={selectedCommunity.creatorId}
-          isAddMode
-        />
+        <CommunityMembersList isOpen={showMembers} onClose={() => setShowMembers(false)} communityId={selectedCommunity.id} creatorId={selectedCommunity.creatorId} />
+        <CommunityMembersList isOpen={showAddMembers} onClose={() => setShowAddMembers(false)} communityId={selectedCommunity.id} creatorId={selectedCommunity.creatorId} isAddMode />
       </div>
     );
   }
@@ -156,8 +144,13 @@ export default function RoomPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto pb-24">
-        {/* Header - Clean, no notification icon */}
-        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-lg border-b border-border/30">
+        {/* Header - hides on scroll */}
+        <div 
+          ref={headerRef}
+          className={`sticky z-20 bg-background/95 backdrop-blur-lg border-b border-border/30 transition-all duration-300 ${
+            headerVisible ? 'top-0 opacity-100' : '-top-40 opacity-0'
+          }`}
+        >
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/')}>
@@ -168,50 +161,23 @@ export default function RoomPage() {
                 <h1 className="font-bold">{roomInfo.name}</h1>
               </div>
             </div>
-          </div>
-          
-          {/* Member count - simple text */}
-          <div className="px-4 pb-2">
             <span className="text-xs text-muted-foreground">{roomMembers?.length || 0}+ members</span>
           </div>
 
-          {/* Main View Toggle: Confessions vs Communities */}
+          {/* View Toggle */}
           <div className="flex gap-1 mx-4 mb-2 p-0.5 bg-muted/30 rounded-full">
-            <button
-              onClick={() => setActiveView('confessions')}
-              className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${
-                activeView === 'confessions'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground'
-              }`}
-            >
+            <button onClick={() => setActiveView('confessions')} className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${activeView === 'confessions' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
               Confessions
             </button>
-            <button
-              onClick={() => setActiveView('communities')}
-              className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${
-                activeView === 'communities'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground'
-              }`}
-            >
+            <button onClick={() => setActiveView('communities')} className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${activeView === 'communities' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
               Communities
             </button>
           </div>
 
-          {/* Sort tabs - only show for confessions view */}
           {activeView === 'confessions' && (
             <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-hide">
               {['new', 'supported', 'discussed'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSortTab(tab as any)}
-                  className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${
-                    sortTab === tab
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-muted/50 text-muted-foreground'
-                  }`}
-                >
+                <button key={tab} onClick={() => setSortTab(tab as any)} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${sortTab === tab ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
                   {tab === 'new' ? 'New' : tab === 'supported' ? 'Top' : 'Discussed'}
                 </button>
               ))}
@@ -219,24 +185,16 @@ export default function RoomPage() {
           )}
         </div>
 
-        {/* Content based on active view */}
+        {/* Content */}
         {activeView === 'communities' ? (
           <div className="p-4">
-            <CommunityList 
-              key={communitiesKey}
-              roomId={roomId || ''} 
-              onSelectCommunity={setSelectedCommunity}
-              onCreateCommunity={() => setShowCreateCommunity(true)}
-            />
+            <CommunityList key={communitiesKey} roomId={roomId || ''} onSelectCommunity={setSelectedCommunity} onCreateCommunity={() => setShowCreateCommunity(true)} />
           </div>
         ) : (
           <>
-            {/* Unified confession cards - same as post page */}
             {isLoading ? (
               <div className="p-4 space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />
-                ))}
+                {[1, 2, 3].map((i) => (<div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />))}
               </div>
             ) : sortedConfessions.length === 0 ? (
               <div className="text-center py-16 px-4">
@@ -244,13 +202,9 @@ export default function RoomPage() {
                 <p className="text-xs text-muted-foreground mt-1">Be the first to share.</p>
               </div>
             ) : (
-              <div>
+              <div className="divide-y divide-border/10">
                 {sortedConfessions.map((confession) => (
-                  <InstagramConfessionCard
-                    key={confession.id}
-                    confession={confession}
-                    onUpdate={handleConfessionSuccess}
-                  />
+                  <InstagramConfessionCard key={confession.id} confession={confession} onUpdate={handleConfessionSuccess} />
                 ))}
               </div>
             )}
@@ -258,20 +212,8 @@ export default function RoomPage() {
         )}
       </div>
       
-      {/* Create Community Modal */}
-      <CreateCommunityModal
-        isOpen={showCreateCommunity}
-        onClose={() => setShowCreateCommunity(false)}
-        roomId={roomId || ''}
-        onCreated={handleCommunityCreated}
-      />
-
-      {/* Community Onboarding Tour */}
-      <CommunityOnboardingTour
-        isOpen={showOnboardingTour}
-        onClose={() => setShowOnboardingTour(false)}
-        communityName={roomInfo?.name || 'Community'}
-      />
+      <CreateCommunityModal isOpen={showCreateCommunity} onClose={() => setShowCreateCommunity(false)} roomId={roomId || ''} onCreated={handleCommunityCreated} />
+      <CommunityOnboardingTour isOpen={showOnboardingTour} onClose={() => setShowOnboardingTour(false)} communityName={roomInfo?.name || 'Community'} />
     </Layout>
   );
 }

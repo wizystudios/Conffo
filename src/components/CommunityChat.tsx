@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Mic, Image, MoreVertical, Users, UserPlus, X, Play, Reply, Shield, Crown, Edit, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ interface CommunityChatProps {
 
 export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, onShowRequests }: CommunityChatProps) {
   const { user } = useAuth();
+  const chatNavigate = useNavigate();
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -376,17 +378,21 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
                 onClick={() => !isOwn && handleReply(msg)}
               >
                 {!isOwn && (
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarImage src={msg.senderAvatar} />
-                    <AvatarFallback className="text-xs">
-                      {msg.senderName?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <button onClick={(e) => { e.stopPropagation(); chatNavigate(`/user/${msg.senderId}`); }}>
+                    <Avatar className="h-8 w-8 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
+                      <AvatarImage src={msg.senderAvatar} />
+                      <AvatarFallback className="text-xs">
+                        {msg.senderName?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
                 )}
                 
                 <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
                   {!isOwn && (
-                    <p className="text-xs text-muted-foreground mb-0.5 ml-1">{msg.senderName}</p>
+                    <button onClick={(e) => { e.stopPropagation(); chatNavigate(`/user/${msg.senderId}`); }} className="text-xs text-muted-foreground mb-0.5 ml-1 hover:underline text-left">
+                      {msg.senderName}
+                    </button>
                   )}
                   
                   {/* Reply quote */}
