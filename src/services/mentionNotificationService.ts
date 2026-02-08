@@ -79,10 +79,21 @@ export async function createMentionNotifications(
       .maybeSingle();
     
     if (mentionedUser && mentionedUser.id !== authorId) {
-      // Create notification for mentioned user
-      const notificationContent = type === 'confession'
-        ? `@${authorName} mentioned you in a confession`
-        : `@${authorName} mentioned you in a message`;
+      if (type === 'confession') {
+        // Send DM with post preview instead of plain notification
+        const confessionPreview = content.substring(0, 100) + (content.length > 100 ? '...' : '');
+        const dmContent = `📌 @${authorName} mentioned you:\n\n"${confessionPreview}"\n\n👁 View Confession • 🔖 Save`;
+        
+        await supabase.from('messages').insert({
+          sender_id: authorId,
+          receiver_id: mentionedUser.id,
+          content: dmContent,
+          message_type: 'text',
+        });
+      }
+      
+      // Also create notification
+      const notificationContent = `@${authorName} mentioned you in a confession`;
       
       await createNotification(
         mentionedUser.id,

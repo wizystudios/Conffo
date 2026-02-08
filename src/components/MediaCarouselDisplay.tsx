@@ -21,8 +21,6 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  if (!media || media.length === 0) return null;
-
   // Reset loaded state when index changes
   useEffect(() => {
     setIsImageLoaded(false);
@@ -54,6 +52,8 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
     return () => observer.disconnect();
   }, [currentIndex, media]);
 
+  if (!media || media.length === 0) return null;
+
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? media.length - 1 : prev - 1));
   };
@@ -83,8 +83,8 @@ export function MediaCarouselDisplay({ media }: MediaCarouselDisplayProps) {
   const currentMedia = media[currentIndex];
 
   return (
-    <div ref={containerRef} className="relative w-full bg-muted/10">
-      {/* Fixed aspect ratio container - no extra spacing */}
+    <div ref={containerRef} className="relative w-full">
+      {/* Auto-fit container - tighter spacing */}
       <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
         {currentMedia.type === 'image' ? (
           <>

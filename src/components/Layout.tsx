@@ -107,7 +107,7 @@ function LayoutContent({ children, hideBottomNav, showNavBar = false }: LayoutPr
       {/* Mobile Layout */}
       <div className="lg:hidden">
         {showNavBar && <NavBar />}
-        <main className={`flex-grow ${showNavBar ? 'pt-11' : 'pt-0'} pb-12`}>
+        <main className={`flex-grow ${showNavBar ? 'pt-12' : 'pt-0'} pb-14`}>
           <div className="w-full max-w-2xl mx-auto px-0 sm:px-4">
             {children}
           </div>

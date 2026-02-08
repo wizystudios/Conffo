@@ -18,8 +18,8 @@ export default function HomePage() {
   return (
     <Layout showNavBar={true}>
       <div className="max-w-lg mx-auto pb-20">
-        {/* Search Bar */}
-        <div className="px-4 py-3 mt-14">
+        {/* Search Bar - tight below navbar */}
+        <div className="px-4 pt-1 pb-2">
           <button
             onClick={() => setShowCommunitySearch(true)}
             className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm"

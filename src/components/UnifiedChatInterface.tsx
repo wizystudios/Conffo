@@ -31,7 +31,7 @@ import { ScheduleMessageModal } from '@/components/ScheduleMessageModal';
 import { QuickReplies } from '@/components/QuickReplies';
 import { CommunityEditModal } from '@/components/CommunityEditModal';
 import { CommunityTopicsModal } from '@/components/CommunityTopicsModal';
-import { ChatWallpaperSettings } from '@/components/ChatWallpaperSettings';
+import { ChatWallpaperSettings, getChatWallpaperPreference } from '@/components/ChatWallpaperSettings';
 import { haptic } from '@/utils/hapticFeedback';
 import { formatDistanceToNow } from 'date-fns';
 import { useCommunityReadReceipts } from '@/hooks/useCommunityReadReceipts';
@@ -112,6 +112,7 @@ export function UnifiedChatInterface({
   const [isPulling, setIsPulling] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showWallpaperSettings, setShowWallpaperSettings] = useState(false);
+  const [wallpaperPref, setWallpaperPref] = useState(getChatWallpaperPreference());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -440,84 +441,89 @@ export function UnifiedChatInterface({
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <div className="flex flex-col items-center pt-4 pb-2 bg-background">
-        <button 
-          className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
-          onClick={() => {
-            if (!isCommunityChat && targetUserId) {
-              navigate(`/user/${targetUserId}`);
-            }
-          }}
-        >
-          <div className="relative">
-            <Avatar className="h-14 w-14 border-2 border-border">
-              <AvatarImage src={displayAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${isCommunityChat ? community?.id : targetUserId}`} />
-              <AvatarFallback>{displayName?.charAt(0) || 'U'}</AvatarFallback>
-            </Avatar>
-            {!isCommunityChat && <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />}
-            {isCommunityChat && (
-              <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
-                <Users className="h-3 w-3 text-primary-foreground" />
-              </div>
-            )}
-          </div>
-          <h3 className="font-semibold text-xs">{displayName}</h3>
-          {isCommunityChat && (
-            <span className="text-[10px] text-muted-foreground">
-              {memberCount} members{activeTopic && ` • 📌 ${activeTopic}`}
-            </span>
-          )}
-          {!isCommunityChat && isTargetOnline && <span className="text-[10px] text-green-500">Active now</span>}
-        </button>
+      {/* Header - redesigned with accent line */}
+      <div className="bg-background border-b border-border/30">
+        {/* Accent line at top */}
+        <div className="h-[2px] bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
         
-        <div className="flex items-center gap-4 mt-2">
-          <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSearch(true)}>
-            <Search className="h-4 w-4" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {!isCommunityChat && (
-                <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
-              )}
+        <div className="flex flex-col items-center pt-3 pb-2">
+          <button 
+            className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => {
+              if (!isCommunityChat && targetUserId) {
+                navigate(`/user/${targetUserId}`);
+              }
+            }}
+          >
+            <div className="relative">
+              <Avatar className="h-12 w-12 border-2 border-primary/20">
+                <AvatarImage src={displayAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${isCommunityChat ? community?.id : targetUserId}`} />
+                <AvatarFallback>{displayName?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              {!isCommunityChat && <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />}
               {isCommunityChat && (
-                <>
-                  <DropdownMenuItem onClick={onShowMembers}>
-                    <Users className="h-4 w-4 mr-2" />
-                    View Members
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={onAddMembers}>Add Members</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowEditModal(true)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Community
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Manage Topics
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={onShowRequests}>Join Requests</DropdownMenuItem>
-                    </>
-                  )}
-                </>
+                <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
+                  <Users className="h-3 w-3 text-primary-foreground" />
+                </div>
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowWallpaperSettings(true)}>
-                <Palette className="h-4 w-4 mr-2" />
-                Chat Wallpaper
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+            <h3 className="font-semibold text-xs">{displayName}</h3>
+            {isCommunityChat && (
+              <span className="text-[10px] text-muted-foreground">
+                {memberCount} members{activeTopic && ` • 📌 ${activeTopic}`}
+              </span>
+            )}
+            {!isCommunityChat && isTargetOnline && <span className="text-[10px] text-primary">Active now</span>}
+          </button>
+          
+          <div className="flex items-center gap-4 mt-1.5">
+            <Button variant="ghost" size="icon" onClick={onBack || (() => navigate('/chat'))} className="h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSearch(true)}>
+              <Search className="h-4 w-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {!isCommunityChat && (
+                  <DropdownMenuItem onClick={() => navigate(`/user/${targetUserId}`)}>View Profile</DropdownMenuItem>
+                )}
+                {isCommunityChat && (
+                  <>
+                    <DropdownMenuItem onClick={onShowMembers}>
+                      <Users className="h-4 w-4 mr-2" />
+                      View Members
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem onClick={onAddMembers}>Add Members</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Community
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Manage Topics
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={onShowRequests}>Join Requests</DropdownMenuItem>
+                      </>
+                    )}
+                  </>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowWallpaperSettings(true)}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Chat Wallpaper
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -530,18 +536,24 @@ export function UnifiedChatInterface({
         />
       )}
 
-      {/* Messages - with cosmic background pattern */}
+      {/* Messages area with wallpaper */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain touch-pan-y relative" 
+        className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain touch-pan-y relative rounded-t-2xl -mt-1" 
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          backgroundColor: 'hsl(var(--background))',
-          backgroundImage: `
-            radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.05) 0%, transparent 40%),
-            url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
-          `
+          ...(wallpaperPref.type === 'custom' ? {
+            backgroundImage: `url(${wallpaperPref.value})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          } : {
+            backgroundColor: 'hsl(var(--background))',
+            backgroundImage: `
+              radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.05) 0%, transparent 40%),
+              url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
+            `,
+          }),
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -854,6 +866,9 @@ export function UnifiedChatInterface({
       <ChatWallpaperSettings
         isOpen={showWallpaperSettings}
         onClose={() => setShowWallpaperSettings(false)}
+        onWallpaperChange={(url, pattern) => {
+          setWallpaperPref(getChatWallpaperPreference());
+        }}
       />
     </div>
   );

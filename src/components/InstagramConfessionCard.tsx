@@ -450,9 +450,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Caption ABOVE media - Ultra-small Glacial Indifference, 1-line clamp + see more */}
+      {/* Caption ABOVE media */}
       {confession.content && (
-        <div className="px-4 pb-1">
+        <div className="px-4 pb-0">
           <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "'Glacial Indifference', sans-serif" }}>
             <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
             {displayContent}
@@ -460,18 +460,28 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
           {shouldTruncate && (
             <button 
               onClick={() => setShowFullContent(!showFullContent)}
-              className="text-muted-foreground text-[10px] mt-0.5 hover:text-foreground"
+              className="text-muted-foreground text-[10px] hover:text-foreground"
               style={{ fontFamily: "'Glacial Indifference', sans-serif" }}
             >
               {showFullContent ? 'see less' : 'see more'}
             </button>
           )}
+          {/* Mentions on new line - blue & bold */}
+          {confession.content.match(/@\w+/g) && (
+            <div className="mt-0.5">
+              {confession.content.match(/@\w+/g)?.map((mention, i) => (
+                <span key={i} className="text-blue-500 font-bold text-[11px] mr-1">
+                  {mention}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
       
-      {/* Media Carousel with Double Tap - Reels-style overlay for videos */}
+      {/* Media Carousel - no extra spacing */}
       {mediaArray.length > 0 && (
-        <div className="relative">
+        <div className="relative mt-1">
           <DoubleTapHeart 
             onDoubleTap={() => handleReaction('heart')} 
             isLiked={isLiked}
@@ -500,8 +510,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Actions */}
-      <div className="px-4 pt-1 pb-3">
+      {/* Actions - tight spacing */}
+      <div className="px-4 pt-1 pb-2">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
