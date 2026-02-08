@@ -3,10 +3,10 @@ import { Search } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
 import { CommunitySearchModal } from '@/components/CommunitySearchModal';
+import { HomeUserCircles } from '@/components/HomeUserCircles';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
 
-// Home Page = Simple Rooms List
 export default function HomePage() {
   const [showCommunitySearch, setShowCommunitySearch] = useState(false);
 
@@ -29,16 +29,12 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Rooms List - Simple, no boxes */}
+        {/* Rooms List */}
         <div className="px-4">
           {isLoading ? (
             <div className="space-y-3 py-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div 
-                  key={i} 
-                  className="h-14 rounded-lg bg-muted/30 animate-pulse"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                />
+                <div key={i} className="h-14 rounded-lg bg-muted/30 animate-pulse" style={{ animationDelay: `${i * 50}ms` }} />
               ))}
             </div>
           ) : rooms.length === 0 ? (
@@ -53,6 +49,9 @@ export default function HomePage() {
             </div>
           )}
         </div>
+
+        {/* User Circles - before bottom nav */}
+        <HomeUserCircles />
 
         <CommunitySearchModal
           isOpen={showCommunitySearch}

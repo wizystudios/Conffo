@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 interface ConnectionsPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectUser?: (userId: string) => void;
 }
 
 interface Connection {
@@ -18,7 +19,7 @@ interface Connection {
   avatar_url: string | null;
 }
 
-export function ConnectionsPickerModal({ isOpen, onClose }: ConnectionsPickerModalProps) {
+export function ConnectionsPickerModal({ isOpen, onClose, onSelectUser: onSelectUserProp }: ConnectionsPickerModalProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -65,8 +66,12 @@ export function ConnectionsPickerModal({ isOpen, onClose }: ConnectionsPickerMod
   };
 
   const handleSelectUser = (userId: string) => {
-    onClose();
-    navigate(`/chat/${userId}`);
+    if (onSelectUserProp) {
+      onSelectUserProp(userId);
+    } else {
+      onClose();
+      navigate(`/chat/${userId}`);
+    }
   };
 
   const filteredConnections = connections.filter(c =>
