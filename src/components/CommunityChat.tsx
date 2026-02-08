@@ -319,14 +319,15 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
                   Edit Community
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Manage Topics
-                </DropdownMenuItem>
-                
                 <DropdownMenuSeparator />
               </>
             )}
+
+            {/* Topics visible to ALL members */}
+            <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Discussion Topics
+            </DropdownMenuItem>
 
             {canManageRequests && onShowRequests && (
               <DropdownMenuItem onClick={onShowRequests}>
@@ -589,6 +590,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
         isOpen={showTopicsModal}
         onClose={() => setShowTopicsModal(false)}
         communityId={community.id}
+        isAdmin={isAdmin}
       />
     </div>
   );

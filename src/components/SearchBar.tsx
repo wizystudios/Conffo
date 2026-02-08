@@ -23,16 +23,16 @@ export function SearchBar({ onClose }: SearchBarProps) {
 
   return (
     <>
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search users, confessions, or rooms..."
+            placeholder="Search users, posts, rooms..."
             value={query}
-            onChange={() => {}} // Read-only, just triggers modal
+            onChange={() => {}}
             onClick={handleInputClick}
             onFocus={handleInputClick}
-            className="pl-10 pr-10 cursor-pointer"
+            className="pl-10 pr-10 rounded-full bg-muted/50 border-none cursor-pointer h-9 text-xs"
             readOnly
           />
         </div>
