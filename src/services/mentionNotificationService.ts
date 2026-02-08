@@ -14,15 +14,8 @@ interface NotificationPreferences {
   communities?: boolean;
 }
 
-/**
- * Check if a user has a specific notification type enabled
- * For now, we can only check local storage for the author's preferences
- * In the future, this could be stored in the database per user
- */
 async function isNotificationEnabled(userId: string, type: keyof NotificationPreferences): Promise<boolean> {
-  // Default to true if no settings found
   try {
-    // For now, we check local storage - in production this would be a DB query per user
     const stored = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
     if (!stored) return true;
     const settings = JSON.parse(stored) as NotificationPreferences;
@@ -33,11 +26,8 @@ async function isNotificationEnabled(userId: string, type: keyof NotificationPre
 }
 
 /**
- * Creates notifications for all @mentions in content
- * @param content The content to scan for mentions
- * @param authorId The ID of the user who created the content
- * @param relatedId The ID of the related content (confession/message)
- * @param type The type of content ('confession' or 'message')
+ * Creates notifications for all @mentions in content.
+ * For confessions: sends a DM with a rich post preview card (View Confession • Save).
  */
 export async function createMentionNotifications(
   content: string,
@@ -45,11 +35,9 @@ export async function createMentionNotifications(
   relatedId: string,
   type: 'confession' | 'message' = 'confession'
 ) {
-  // Check if mentions notifications are enabled
   const mentionsEnabled = await isNotificationEnabled(authorId, 'mentions');
   if (!mentionsEnabled) return;
   
-  // Extract @mentions from content
   const mentionRegex = /@(\w+)/g;
   const mentions: string[] = [];
   let match;
@@ -60,7 +48,6 @@ export async function createMentionNotifications(
   
   if (mentions.length === 0) return;
   
-  // Get author's profile for the notification message
   const { data: authorProfile } = await supabase
     .from('profiles')
     .select('username')
@@ -69,9 +56,7 @@ export async function createMentionNotifications(
   
   const authorName = authorProfile?.username || 'Someone';
   
-  // Process each mention
   for (const mention of mentions) {
-    // Check if it's a user mention
     const { data: mentionedUser } = await supabase
       .from('profiles')
       .select('id, username')
@@ -80,9 +65,12 @@ export async function createMentionNotifications(
     
     if (mentionedUser && mentionedUser.id !== authorId) {
       if (type === 'confession') {
-        // Send DM with post preview instead of plain notification
-        const confessionPreview = content.substring(0, 100) + (content.length > 100 ? '...' : '');
-        const dmContent = `📌 @${authorName} mentioned you:\n\n"${confessionPreview}"\n\n👁 View Confession • 🔖 Save`;
+        // Build a clean, concise DM with the confession link
+        const confessionUrl = `${window.location.origin}/confession/${relatedId}`;
+        const cleanContent = content.replace(/@\w+/g, '').trim();
+        const preview = cleanContent.substring(0, 80) + (cleanContent.length > 80 ? '...' : '');
+        
+        const dmContent = `📌 @${authorName} mentioned you:\n"${preview}"\n\n👁 View Confession: ${confessionUrl}`;
         
         await supabase.from('messages').insert({
           sender_id: authorId,
@@ -92,7 +80,6 @@ export async function createMentionNotifications(
         });
       }
       
-      // Also create notification
       const notificationContent = `@${authorName} mentioned you in a confession`;
       
       await createNotification(
@@ -103,7 +90,6 @@ export async function createMentionNotifications(
       );
     }
     
-    // Check if it's a community mention (for confessions shared to communities)
     const { data: community } = await supabase
       .from('communities')
       .select('id, name, creator_id')
@@ -111,7 +97,6 @@ export async function createMentionNotifications(
       .maybeSingle();
     
     if (community && community.creator_id !== authorId) {
-      // Notify community creator
       const notificationContent = `@${authorName} shared a confession to ${community.name}`;
       
       await createNotification(
@@ -124,12 +109,6 @@ export async function createMentionNotifications(
   }
 }
 
-/**
- * Creates a notification for a reply in chat
- * @param replyToMessage The original message being replied to
- * @param replySenderId The ID of the user sending the reply
- * @param messageId The ID of the reply message
- */
 export async function createReplyNotification(
   replyToMessage: { sender_id: string; senderId?: string; content: string },
   replySenderId: string,
@@ -137,14 +116,11 @@ export async function createReplyNotification(
 ) {
   const originalSenderId = replyToMessage.sender_id || replyToMessage.senderId;
   
-  // Don't notify if replying to yourself
   if (originalSenderId === replySenderId) return;
   
-  // Check if replies notifications are enabled
   const repliesEnabled = await isNotificationEnabled(replySenderId, 'replies');
   if (!repliesEnabled) return;
   
-  // Get reply sender's profile
   const { data: senderProfile } = await supabase
     .from('profiles')
     .select('username')
@@ -162,24 +138,15 @@ export async function createReplyNotification(
   );
 }
 
-/**
- * Creates a notification for a new direct message
- * @param receiverId The ID of the message receiver
- * @param senderId The ID of the message sender
- * @param messageId The ID of the message
- * @param preview Short preview of the message content
- */
 export async function createMessageNotification(
   receiverId: string,
   senderId: string,
   messageId: string,
   preview: string
 ) {
-  // Check if message notifications are enabled
   const messagesEnabled = await isNotificationEnabled(senderId, 'messages');
   if (!messagesEnabled) return;
   
-  // Get sender's profile
   const { data: senderProfile } = await supabase
     .from('profiles')
     .select('username')
@@ -196,11 +163,7 @@ export async function createMessageNotification(
     messageId
   );
 
-  // Also check for mentions in the message
   await createMentionNotifications(preview, senderId, messageId, 'message');
 }
 
-/**
- * Exports the isNotificationEnabled function for external use
- */
 export { isNotificationEnabled };

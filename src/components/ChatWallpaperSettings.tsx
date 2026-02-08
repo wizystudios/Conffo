@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, X, Palette, Check } from 'lucide-react';
+import { Upload, X, Palette, Check, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,9 +21,21 @@ const PRESET_PATTERNS = [
   { id: 'midnight', name: 'Midnight', gradient: 'from-slate-900/30 via-gray-900/20 to-slate-900/30' },
 ];
 
+const GALLERY_WALLPAPERS = [
+  { id: 'cosmic-tree', name: 'Cosmic Tree', url: '/wallpapers/cosmic-tree.png' },
+  { id: 'penguin-heart', name: 'Penguin', url: '/wallpapers/penguin-heart.png' },
+  { id: 'dark-hoodie', name: 'Dark Hoodie', url: '/wallpapers/dark-hoodie.png' },
+  { id: 'mountain-lake', name: 'Mountain Lake', url: '/wallpapers/mountain-lake.png' },
+  { id: 'shiva-statue', name: 'Shiva', url: '/wallpapers/shiva-statue.png' },
+  { id: 'fuji-galaxy', name: 'Mt. Fuji', url: '/wallpapers/fuji-galaxy.png' },
+  { id: 'reflection-tree', name: 'Reflection', url: '/wallpapers/reflection-tree.png' },
+  { id: 'glowing-tree', name: 'Glow', url: '/wallpapers/glowing-tree.png' },
+  { id: 'cracked-glass', name: 'Cracked', url: '/wallpapers/cracked-glass.png' },
+];
+
 const WALLPAPER_STORAGE_KEY = 'conffo_chat_wallpaper';
 
-export function getChatWallpaperPreference(): { type: 'pattern' | 'custom'; value: string } {
+export function getChatWallpaperPreference(): { type: 'pattern' | 'custom' | 'gallery'; value: string } {
   try {
     const stored = localStorage.getItem(WALLPAPER_STORAGE_KEY);
     if (stored) return JSON.parse(stored);
@@ -35,17 +47,18 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
   const { user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
-  const [selectedPattern, setSelectedPattern] = useState<string>('cosmic');
+  const [selectedType, setSelectedType] = useState<'pattern' | 'custom' | 'gallery'>('pattern');
+  const [selectedValue, setSelectedValue] = useState<string>('cosmic');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved preference
   useEffect(() => {
-    const pref = getChatWallpaperPreference();
-    if (pref.type === 'custom') {
-      setCustomWallpaper(pref.value);
-      setSelectedPattern('custom');
-    } else {
-      setSelectedPattern(pref.value);
+    if (isOpen) {
+      const pref = getChatWallpaperPreference();
+      setSelectedType(pref.type);
+      setSelectedValue(pref.value);
+      if (pref.type === 'custom') {
+        setCustomWallpaper(pref.value);
+      }
     }
   }, [isOpen]);
 
@@ -79,7 +92,8 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
         .getPublicUrl(filePath);
 
       setCustomWallpaper(urlData.publicUrl);
-      setSelectedPattern('custom');
+      setSelectedType('custom');
+      setSelectedValue(urlData.publicUrl);
       toast.success('Wallpaper uploaded!');
     } catch (error) {
       console.error('Upload error:', error);
@@ -90,13 +104,16 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
   };
 
   const handlePatternSelect = (patternId: string) => {
-    setSelectedPattern(patternId);
-    if (patternId !== 'custom') {
-      setCustomWallpaper(null);
-    }
+    setSelectedType('pattern');
+    setSelectedValue(patternId);
   };
 
-  const handleRemoveWallpaper = async () => {
+  const handleGallerySelect = (wallpaper: typeof GALLERY_WALLPAPERS[0]) => {
+    setSelectedType('gallery');
+    setSelectedValue(wallpaper.url);
+  };
+
+  const handleRemoveCustom = async () => {
     if (!user) return;
     try {
       const { data } = await supabase.storage.from('chat-wallpapers').list(user.id);
@@ -106,8 +123,9 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
         }
       }
       setCustomWallpaper(null);
-      setSelectedPattern('cosmic');
-      toast.success('Wallpaper removed');
+      setSelectedType('pattern');
+      setSelectedValue('cosmic');
+      toast.success('Custom wallpaper removed');
     } catch (error) {
       console.error('Remove error:', error);
       toast.error('Failed to remove wallpaper');
@@ -115,18 +133,31 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
   };
 
   const handleApply = () => {
-    if (selectedPattern === 'custom' && customWallpaper) {
-      localStorage.setItem(WALLPAPER_STORAGE_KEY, JSON.stringify({ type: 'custom', value: customWallpaper }));
-      onWallpaperChange?.(customWallpaper);
+    const pref = { type: selectedType, value: selectedValue };
+    localStorage.setItem(WALLPAPER_STORAGE_KEY, JSON.stringify(pref));
+    
+    if (selectedType === 'custom') {
+      onWallpaperChange?.(selectedValue);
+    } else if (selectedType === 'gallery') {
+      onWallpaperChange?.(selectedValue);
     } else {
-      localStorage.setItem(WALLPAPER_STORAGE_KEY, JSON.stringify({ type: 'pattern', value: selectedPattern }));
-      onWallpaperChange?.(null, selectedPattern);
+      onWallpaperChange?.(null, selectedValue);
     }
     toast.success('Wallpaper applied!');
     onClose();
   };
 
   if (!isOpen) return null;
+
+  const getPreviewStyle = () => {
+    if (selectedType === 'custom' && customWallpaper) {
+      return { backgroundImage: `url(${customWallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+    }
+    if (selectedType === 'gallery') {
+      return { backgroundImage: `url(${selectedValue})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+    }
+    return {};
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
@@ -148,6 +179,39 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
           </button>
         </div>
 
+        {/* Gallery Wallpapers */}
+        <div className="mb-5">
+          <h3 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+            <ImageIcon className="h-3.5 w-3.5" />
+            Gallery
+          </h3>
+          <div className="grid grid-cols-3 gap-2.5">
+            {GALLERY_WALLPAPERS.map((wallpaper) => (
+              <button
+                key={wallpaper.id}
+                onClick={() => handleGallerySelect(wallpaper)}
+                className={cn(
+                  "aspect-[3/4] rounded-xl relative overflow-hidden border-2 transition-all",
+                  selectedType === 'gallery' && selectedValue === wallpaper.url
+                    ? "border-primary ring-2 ring-primary/30"
+                    : "border-transparent hover:border-border"
+                )}
+              >
+                <img src={wallpaper.url} alt={wallpaper.name} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-0 flex items-end p-1.5">
+                  <span className="text-[9px] font-medium text-white">{wallpaper.name}</span>
+                </div>
+                {selectedType === 'gallery' && selectedValue === wallpaper.url && (
+                  <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Preset patterns */}
         <div className="mb-5">
           <h3 className="text-xs font-medium text-muted-foreground mb-2">Patterns</h3>
@@ -158,7 +222,7 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
                 onClick={() => handlePatternSelect(pattern.id)}
                 className={cn(
                   "aspect-square rounded-xl relative overflow-hidden border-2 transition-all",
-                  selectedPattern === pattern.id 
+                  selectedType === 'pattern' && selectedValue === pattern.id 
                     ? "border-primary ring-2 ring-primary/30" 
                     : "border-transparent hover:border-border"
                 )}
@@ -167,7 +231,7 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
                 <div className="absolute inset-0 flex items-end p-2">
                   <span className="text-[10px] font-medium">{pattern.name}</span>
                 </div>
-                {selectedPattern === pattern.id && (
+                {selectedType === 'pattern' && selectedValue === pattern.id && (
                   <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                     <Check className="h-3 w-3 text-primary-foreground" />
                   </div>
@@ -183,12 +247,21 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
 
           {customWallpaper ? (
-            <div className="relative aspect-video rounded-xl overflow-hidden border">
+            <div 
+              className={cn(
+                "relative aspect-video rounded-xl overflow-hidden border-2 cursor-pointer transition-all",
+                selectedType === 'custom' ? "border-primary ring-2 ring-primary/30" : "border-transparent"
+              )}
+              onClick={() => { setSelectedType('custom'); setSelectedValue(customWallpaper); }}
+            >
               <img src={customWallpaper} alt="Custom wallpaper" className="w-full h-full object-cover" />
-              <button onClick={handleRemoveWallpaper} className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm">
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleRemoveCustom(); }} 
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm"
+              >
                 <X className="h-4 w-4" />
               </button>
-              {selectedPattern === 'custom' && (
+              {selectedType === 'custom' && (
                 <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                   <Check className="h-3 w-3 text-primary-foreground" />
                 </div>
@@ -218,12 +291,12 @@ export function ChatWallpaperSettings({ isOpen, onClose, onWallpaperChange }: Ch
           <h3 className="text-xs font-medium text-muted-foreground mb-2">Preview</h3>
           <div 
             className="aspect-video rounded-xl overflow-hidden border relative"
-            style={customWallpaper && selectedPattern === 'custom' ? { backgroundImage: `url(${customWallpaper})`, backgroundSize: 'cover' } : {}}
+            style={getPreviewStyle()}
           >
-            {!(customWallpaper && selectedPattern === 'custom') && (
+            {selectedType === 'pattern' && (
               <div className={cn(
                 "absolute inset-0 bg-gradient-to-br",
-                PRESET_PATTERNS.find(p => p.id === selectedPattern)?.gradient || PRESET_PATTERNS[0].gradient
+                PRESET_PATTERNS.find(p => p.id === selectedValue)?.gradient || PRESET_PATTERNS[0].gradient
               )} />
             )}
             <div className="absolute inset-0 p-4 flex flex-col justify-end gap-2">

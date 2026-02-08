@@ -37,10 +37,10 @@ export function EnhancedSearchBar({ onClose, onResultClick }: EnhancedSearchBarP
             type="text"
             placeholder="Search users, posts, rooms..."
             value={query}
-            onChange={() => {}} // Read-only, just triggers modal
+            onChange={() => {}}
             onClick={handleInputClick}
             onFocus={handleInputClick}
-            className="pl-10 pr-10 rounded-full bg-muted/50 border-none cursor-pointer"
+            className="pl-10 pr-10 rounded-full bg-muted/50 border-none cursor-pointer h-9 text-xs"
             readOnly
           />
         </div>

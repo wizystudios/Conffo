@@ -506,14 +506,15 @@ export function UnifiedChatInterface({
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Community
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Manage Topics
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={onShowRequests}>Join Requests</DropdownMenuItem>
                       </>
                     )}
+                    {/* Topics visible to all members */}
+                    <DropdownMenuItem onClick={() => setShowTopicsModal(true)}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Discussion Topics
+                    </DropdownMenuItem>
                   </>
                 )}
                 <DropdownMenuSeparator />
@@ -539,10 +540,10 @@ export function UnifiedChatInterface({
       {/* Messages area with wallpaper */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain touch-pan-y relative rounded-t-2xl -mt-1" 
+        className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain touch-pan-y relative" 
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          ...(wallpaperPref.type === 'custom' ? {
+          ...((wallpaperPref.type === 'custom' || wallpaperPref.type === 'gallery') ? {
             backgroundImage: `url(${wallpaperPref.value})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -858,6 +859,7 @@ export function UnifiedChatInterface({
             isOpen={showTopicsModal}
             onClose={() => setShowTopicsModal(false)}
             communityId={community.id}
+            isAdmin={isAdmin}
           />
         </>
       )}
