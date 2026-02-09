@@ -285,9 +285,20 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
         
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold text-sm truncate">{community.name}</h2>
-          <p className="text-xs text-muted-foreground">
-            {memberCount} members{activeTopic && ` • 📌 ${activeTopic}`}
-          </p>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span>{memberCount} members</span>
+            {activeTopic && (
+              <>
+                <span>•</span>
+                <button 
+                  onClick={() => setShowTopicsModal(true)}
+                  className="text-primary font-bold truncate max-w-[140px] hover:underline"
+                >
+                  📌 {activeTopic}
+                </button>
+              </>
+            )}
+          </div>
         </div>
         
         <DropdownMenu>

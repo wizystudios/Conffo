@@ -450,13 +450,12 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </DropdownMenu>
       </div>
       
-      {/* Caption ABOVE media */}
+      {/* Caption ABOVE media - zero bottom spacing */}
       {confession.content && (
-        <div className="px-4 pb-0">
-          <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "'Glacial Indifference', sans-serif" }}>
+        <div className="px-4 mb-0 pb-0">
+          <p className="text-[11px] leading-snug break-words overflow-hidden mb-0" style={{ fontFamily: "'Glacial Indifference', sans-serif" }}>
             <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
             {(() => {
-              // Render content with inline blue bold mentions
               const parts = displayContent.split(/(@\w+)/g);
               return parts.map((part, i) => 
                 part.startsWith('@') ? (
@@ -479,9 +478,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Media Carousel - zero spacing */}
+      {/* Media Carousel - zero spacing from caption */}
       {mediaArray.length > 0 && (
-        <div className="relative mt-0">
+        <div className="relative mt-0 pt-0">
           <DoubleTapHeart 
             onDoubleTap={() => handleReaction('heart')} 
             isLiked={isLiked}
@@ -510,8 +509,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         </div>
       )}
       
-      {/* Actions - zero gap */}
-      <div className="px-4 pt-0 pb-2">
+      {/* Actions - zero gap from media */}
+      <div className="px-4 pt-1 pb-2">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
