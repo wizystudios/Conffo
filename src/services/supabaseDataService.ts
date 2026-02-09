@@ -358,9 +358,18 @@ export const distributeConfessionMentions = async (params: {
       .maybeSingle();
 
     if (profile?.id && profile.id !== params.senderId) {
+      // Get sender username
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', params.senderId)
+        .maybeSingle();
+      const senderName = senderProfile?.username || 'Someone';
+      const cleanContent = params.content.replace(/@\w+/g, '').trim();
+      const preview = cleanContent.substring(0, 80) + (cleanContent.length > 80 ? '...' : '');
       await sendMessage(
         profile.id,
-        `📝 Check my confession: ${link}`,
+        `📌 @${senderName} mentioned you:\n"${preview}"\n\n👁 View Confession: ${link}`,
         'text'
       );
     }

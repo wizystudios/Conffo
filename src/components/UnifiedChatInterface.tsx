@@ -440,9 +440,21 @@ export function UnifiedChatInterface({
     : (targetProfile?.avatar_url || targetAvatarUrl);
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div 
+      className="flex flex-col h-screen relative"
+      style={{
+        ...((wallpaperPref.type === 'custom' || wallpaperPref.type === 'gallery') ? {
+          backgroundImage: `url(${wallpaperPref.value})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        } : {
+          backgroundColor: 'hsl(var(--background))',
+        }),
+      }}
+    >
       {/* Header - redesigned with accent line */}
-      <div className="bg-background border-b border-border/30">
+      <div className="bg-background/80 backdrop-blur-md border-b border-border/30">
         {/* Accent line at top */}
         <div className="h-[2px] bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
         
@@ -537,24 +549,12 @@ export function UnifiedChatInterface({
         />
       )}
 
-      {/* Messages area with wallpaper */}
+      {/* Messages area - transparent so wallpaper from parent shows through */}
       <div 
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain touch-pan-y relative" 
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          ...((wallpaperPref.type === 'custom' || wallpaperPref.type === 'gallery') ? {
-            backgroundImage: `url(${wallpaperPref.value})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          } : {
-            backgroundColor: 'hsl(var(--background))',
-            backgroundImage: `
-              radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.05) 0%, transparent 40%),
-              url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
-            `,
-          }),
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -677,7 +677,7 @@ export function UnifiedChatInterface({
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-background border-t border-border">
+      <div className="p-3 bg-background/80 backdrop-blur-md border-t border-border">
         {showVoiceRecorder ? (
           <VoiceRecorder
             onRecordingComplete={handleVoiceComplete}

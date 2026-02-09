@@ -13,12 +13,12 @@ interface ChatWallpaperSettingsProps {
 }
 
 const PRESET_PATTERNS = [
-  { id: 'cosmic', name: 'Cosmic', gradient: 'from-purple-900/20 via-indigo-900/10 to-purple-900/20' },
-  { id: 'aurora', name: 'Aurora', gradient: 'from-green-900/20 via-cyan-900/10 to-blue-900/20' },
-  { id: 'sunset', name: 'Sunset', gradient: 'from-orange-900/20 via-pink-900/10 to-purple-900/20' },
-  { id: 'ocean', name: 'Ocean', gradient: 'from-blue-900/20 via-teal-900/10 to-blue-900/20' },
-  { id: 'forest', name: 'Forest', gradient: 'from-green-900/20 via-emerald-900/10 to-green-900/20' },
-  { id: 'midnight', name: 'Midnight', gradient: 'from-slate-900/30 via-gray-900/20 to-slate-900/30' },
+  { id: 'cosmic', name: 'Cosmic', gradient: 'from-foreground/10 via-muted/20 to-foreground/10' },
+  { id: 'aurora', name: 'Aurora', gradient: 'from-muted/30 via-accent/20 to-muted/30' },
+  { id: 'sunset', name: 'Sunset', gradient: 'from-destructive/10 via-muted/10 to-foreground/10' },
+  { id: 'ocean', name: 'Ocean', gradient: 'from-primary/10 via-accent/15 to-primary/10' },
+  { id: 'forest', name: 'Forest', gradient: 'from-accent/20 via-muted/15 to-accent/20' },
+  { id: 'midnight', name: 'Midnight', gradient: 'from-foreground/20 via-foreground/10 to-foreground/20' },
 ];
 
 const GALLERY_WALLPAPERS = [

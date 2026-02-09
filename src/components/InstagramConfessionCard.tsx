@@ -441,7 +441,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               {isSaved ? 'Unsave' : 'Save'}
             </DropdownMenuItem>
             {user?.id === confession.userId && (
-              <DropdownMenuItem onClick={handleDelete} className="text-red-500">
+              <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                 <Flag className="h-4 w-4 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -460,7 +460,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
               const parts = displayContent.split(/(@\w+)/g);
               return parts.map((part, i) => 
                 part.startsWith('@') ? (
-                  <span key={i} className="text-blue-500 font-bold">{part}</span>
+                  <span key={i} className="text-primary font-bold">{part}</span>
                 ) : (
                   <span key={i}>{part}</span>
                 )
