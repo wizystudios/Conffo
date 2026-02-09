@@ -482,7 +482,18 @@ export function UnifiedChatInterface({
             <h3 className="font-semibold text-xs">{displayName}</h3>
             {isCommunityChat && (
               <span className="text-[10px] text-muted-foreground">
-                {memberCount} members{activeTopic && ` • 📌 ${activeTopic}`}
+                {memberCount} members
+                {activeTopic && (
+                  <>
+                    {' • '}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setShowTopicsModal(true); }}
+                      className="text-primary font-bold hover:underline"
+                    >
+                      📌 {activeTopic}
+                    </button>
+                  </>
+                )}
               </span>
             )}
             {!isCommunityChat && isTargetOnline && <span className="text-[10px] text-primary">Active now</span>}

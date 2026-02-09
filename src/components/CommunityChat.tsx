@@ -292,7 +292,7 @@ export function CommunityChat({ community, onBack, onShowMembers, onAddMembers, 
                 <span>•</span>
                 <button 
                   onClick={() => setShowTopicsModal(true)}
-                  className="text-primary font-bold truncate max-w-[140px] hover:underline"
+                  className="text-primary font-bold truncate max-w-[140px] hover:underline inline-flex items-center gap-0.5"
                 >
                   📌 {activeTopic}
                 </button>
