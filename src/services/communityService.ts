@@ -59,6 +59,18 @@ export async function createCommunity(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // Validate room exists before creating
+  const { data: roomExists } = await supabase
+    .from('rooms')
+    .select('id')
+    .eq('id', roomId)
+    .maybeSingle();
+
+  if (!roomExists) {
+    console.error('Room not found:', roomId);
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('communities')
     .insert({
@@ -72,7 +84,7 @@ export async function createCommunity(
     .single();
 
   if (error) {
-    console.error('Error creating community:', error.message, error.details, error.hint);
+    console.error('Error creating community:', error.message, error.details, error.hint, 'roomId:', roomId);
     return null;
   }
 

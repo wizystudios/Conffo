@@ -64,21 +64,8 @@ export async function createMentionNotifications(
       .maybeSingle();
     
     if (mentionedUser && mentionedUser.id !== authorId) {
-      if (type === 'confession') {
-        // Build a clean, concise DM with the confession link
-        const confessionUrl = `${window.location.origin}/confession/${relatedId}`;
-        const cleanContent = content.replace(/@\w+/g, '').trim();
-        const preview = cleanContent.substring(0, 80) + (cleanContent.length > 80 ? '...' : '');
-        
-        const dmContent = `📌 @${authorName} mentioned you:\n"${preview}"\n\n👁 View Confession: ${confessionUrl}`;
-        
-        await supabase.from('messages').insert({
-          sender_id: authorId,
-          receiver_id: mentionedUser.id,
-          content: dmContent,
-          message_type: 'text',
-        });
-      }
+      // DMs for confessions are handled by distributeConfessionMentions in supabaseDataService.ts
+      // Only send notification here, not a duplicate DM
       
       const notificationContent = `@${authorName} mentioned you in a confession`;
       
