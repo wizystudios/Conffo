@@ -107,6 +107,10 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
       toast({ variant: 'destructive', description: 'Add at least one community condition' });
       return;
     }
+    if (!roomId) {
+      toast({ variant: 'destructive', description: 'Invalid room. Please go back and try again.' });
+      return;
+    }
 
     setIsCreating(true);
     try {
@@ -136,11 +140,11 @@ export function CreateCommunityModal({ isOpen, onClose, roomId, onCreated }: Cre
         onCreated();
         onClose();
       } else {
-        toast({ variant: 'destructive', description: 'Failed to create community' });
+        toast({ variant: 'destructive', description: 'Failed to create community. Make sure you are in a valid room.' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating community:', error);
-      toast({ variant: 'destructive', description: 'Failed to create community' });
+      toast({ variant: 'destructive', description: error?.message || 'Failed to create community' });
     } finally {
       setIsCreating(false);
     }

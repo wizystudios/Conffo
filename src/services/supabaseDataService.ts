@@ -345,7 +345,7 @@ export const distributeConfessionMentions = async (params: {
         community_id: community.id,
         sender_id: params.senderId,
         message_type: 'text',
-        content: `📝 Confession shared: ${excerpt}${excerpt.length === 80 ? '…' : ''}\n${link}`,
+        content: `📌 Confession shared:\n"${excerpt}${excerpt.length === 80 ? '…' : ''}"\n\n👁 View Confession: ${link}`,
       });
       continue;
     }
@@ -394,10 +394,9 @@ export const addConfession = async (
     
     if (error) throw error;
 
-    // Best-effort mention distribution and notifications
+    // Best-effort mention distribution (handles both user DMs and community cross-posts)
     if (confession?.id) {
       distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
-      createMentionNotifications(content, userId, confession.id, 'confession').catch(() => {});
     }
   } catch (error) {
     console.error('Error adding confession:', error);
@@ -434,7 +433,6 @@ export const addConfessionWithMedia = async (
 
     if (confession?.id) {
       distributeConfessionMentions({ confessionId: confession.id, content, senderId: userId }).catch(() => {});
-      createMentionNotifications(content, userId, confession.id, 'confession').catch(() => {});
     }
   } catch (error) {
     console.error('Error adding confession with media:', error);

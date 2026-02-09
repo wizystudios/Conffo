@@ -1,8 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
@@ -161,28 +167,33 @@ export default function RoomPage() {
                 <h1 className="font-bold">{roomInfo.name}</h1>
               </div>
             </div>
-            <span className="text-xs text-muted-foreground">{roomMembers?.length || 0}+ members</span>
-          </div>
-
-          {/* View Toggle */}
-          <div className="flex gap-1 mx-4 mb-2 p-0.5 bg-muted/30 rounded-full">
-            <button onClick={() => setActiveView('confessions')} className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${activeView === 'confessions' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-              Confessions
-            </button>
-            <button onClick={() => setActiveView('communities')} className={`flex-1 py-1.5 rounded-full text-xs font-medium transition-all ${activeView === 'communities' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-              Communities
-            </button>
-          </div>
-
-          {activeView === 'confessions' && (
-            <div className="flex items-center gap-1.5 px-4 pb-2 overflow-x-auto scrollbar-hide">
-              {['new', 'supported', 'discussed'].map((tab) => (
-                <button key={tab} onClick={() => setSortTab(tab as any)} className={`px-3 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap ${sortTab === tab ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
-                  {tab === 'new' ? 'New' : tab === 'supported' ? 'Top' : 'Discussed'}
+            
+            {/* Dropdown for view/sort options */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg bg-muted/30">
+                  {activeView === 'confessions' 
+                    ? (sortTab === 'new' ? 'New' : sortTab === 'supported' ? 'Top' : 'Discussed')
+                    : 'Communities'}
+                  <ChevronDown className="h-3.5 w-3.5" />
                 </button>
-              ))}
-            </div>
-          )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => { setActiveView('confessions'); setSortTab('new'); }}>
+                  Confessions — New
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setActiveView('confessions'); setSortTab('supported'); }}>
+                  Confessions — Top
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setActiveView('confessions'); setSortTab('discussed'); }}>
+                  Confessions — Discussed
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveView('communities')}>
+                  Communities
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Content */}
