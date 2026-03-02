@@ -438,6 +438,40 @@ export function EnhancedProfileSettings() {
         </CardContent>
       </Card>
 
+      {/* Help & Support */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Help & Support
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2 text-sm">
+            <div className="p-3 rounded-xl bg-muted/50">
+              <p className="font-medium mb-1">📧 Contact Support</p>
+              <p className="text-xs text-muted-foreground">Email us at support@conffo.app for any issues</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/50">
+              <p className="font-medium mb-1">🛡️ Report a Problem</p>
+              <p className="text-xs text-muted-foreground">Use the report button on any post or message to flag content</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/50">
+              <p className="font-medium mb-1">💡 Feature Requests</p>
+              <p className="text-xs text-muted-foreground">We'd love your feedback! Reach out via the support email</p>
+            </div>
+            <div className="p-3 rounded-xl bg-muted/50">
+              <p className="font-medium mb-1">📄 Terms & Privacy</p>
+              <div className="flex gap-2 mt-1">
+                <a href="/terms" className="text-xs text-primary hover:underline">Terms of Service</a>
+                <span className="text-xs text-muted-foreground">•</span>
+                <a href="/privacy" className="text-xs text-primary hover:underline">Privacy Policy</a>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Save Button */}
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={isSaving} size="lg">

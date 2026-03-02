@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    /* Conffo Light Theme - Pure Black & White (Minimalist) */
+    /* Conffo Light Theme - White, Dark & Green */
     --background: 0 0% 100%;
     --foreground: 0 0% 5%;
 
@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 5%;
 
-    --primary: 0 0% 10%;
+    --primary: 152 69% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
@@ -24,30 +24,30 @@
     --muted: 0 0% 94%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 92%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 152 30% 94%;
+    --accent-foreground: 152 69% 30%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 0% 10%;
+    --ring: 152 69% 40%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 0 0% 10%;
+    --sidebar-primary: 152 69% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 94%;
-    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-accent: 152 30% 94%;
+    --sidebar-accent-foreground: 152 69% 30%;
     --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 0 0% 10%;
+    --sidebar-ring: 152 69% 40%;
   }
 
   .dark {
-    /* Conffo Dark Theme - Pure Black & White (Minimalist) */
+    /* Conffo Dark Theme - Dark, White & Green */
     --background: 0 0% 4%;
     --foreground: 0 0% 95%;
 
@@ -57,8 +57,8 @@
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 0 0% 95%;
-    --primary-foreground: 0 0% 5%;
+    --primary: 152 69% 45%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 95%;
@@ -66,24 +66,24 @@
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 152 30% 15%;
+    --accent-foreground: 152 69% 65%;
 
     --destructive: 0 62% 35%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 0 0% 95%;
+    --ring: 152 69% 45%;
     
     --sidebar-background: 0 0% 4%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 0% 95%;
-    --sidebar-primary-foreground: 0 0% 5%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-primary: 152 69% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 152 30% 15%;
+    --sidebar-accent-foreground: 152 69% 65%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 0 0% 95%;
+    --sidebar-ring: 152 69% 45%;
   }
 }
 

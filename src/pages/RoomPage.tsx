@@ -1,14 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { BottomSlideModal } from '@/components/BottomSlideModal';
 import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
@@ -46,6 +41,7 @@ export default function RoomPage() {
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [communitiesKey, setCommunitiesKey] = useState(0);
   const [showOnboardingTour, setShowOnboardingTour] = useState(false);
+  const [showNavSheet, setShowNavSheet] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -168,31 +164,16 @@ export default function RoomPage() {
               </div>
             </div>
             
-            {/* Dropdown for view/sort options */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg bg-muted/30">
-                  {activeView === 'confessions' 
-                    ? (sortTab === 'new' ? 'New' : sortTab === 'supported' ? 'Top' : 'Discussed')
-                    : 'Communities'}
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={() => { setActiveView('confessions'); setSortTab('new'); }}>
-                  Confessions — New
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setActiveView('confessions'); setSortTab('supported'); }}>
-                  Confessions — Top
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setActiveView('confessions'); setSortTab('discussed'); }}>
-                  Confessions — Discussed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveView('communities')}>
-                  Communities
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Bottom sheet trigger */}
+            <button 
+              onClick={() => setShowNavSheet(true)}
+              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted/50"
+            >
+              {activeView === 'confessions' 
+                ? (sortTab === 'new' ? 'New' : sortTab === 'supported' ? 'Top' : 'Discussed')
+                : 'Communities'}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
 
@@ -225,6 +206,45 @@ export default function RoomPage() {
       
       <CreateCommunityModal isOpen={showCreateCommunity} onClose={() => setShowCreateCommunity(false)} roomId={roomId || ''} onCreated={handleCommunityCreated} />
       <CommunityOnboardingTour isOpen={showOnboardingTour} onClose={() => setShowOnboardingTour(false)} communityName={roomInfo?.name || 'Community'} />
+      
+      {/* Navigation Bottom Sheet */}
+      <BottomSlideModal isOpen={showNavSheet} onClose={() => setShowNavSheet(false)} title="Navigate">
+        <div className="px-4 pb-6 space-y-2">
+          <p className="text-xs text-muted-foreground px-2 pt-1 pb-2 uppercase tracking-wider font-medium">Confessions</p>
+          {[
+            { label: 'New', icon: <MessageSquare className="h-4 w-4" />, sort: 'new' as const },
+            { label: 'Top', icon: <TrendingUp className="h-4 w-4" />, sort: 'supported' as const },
+            { label: 'Discussed', icon: <MessageCircle className="h-4 w-4" />, sort: 'discussed' as const },
+          ].map((item) => (
+            <button
+              key={item.sort}
+              onClick={() => { setActiveView('confessions'); setSortTab(item.sort); setShowNavSheet(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                activeView === 'confessions' && sortTab === item.sort
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              {item.icon}
+              <span className="font-medium text-sm">{item.label}</span>
+            </button>
+          ))}
+          
+          <div className="h-px bg-border my-3" />
+          
+          <button
+            onClick={() => { setActiveView('communities'); setShowNavSheet(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+              activeView === 'communities'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            <span className="font-medium text-sm">Communities</span>
+          </button>
+        </div>
+      </BottomSlideModal>
     </Layout>
   );
 }
