@@ -345,7 +345,7 @@ export const distributeConfessionMentions = async (params: {
         community_id: community.id,
         sender_id: params.senderId,
         message_type: 'text',
-        content: `📌 Confession shared:\n"${excerpt}${excerpt.length === 80 ? '…' : ''}"\n\n👁 View Confession: ${link}`,
+        content: `Confession shared:\n"${excerpt}${excerpt.length === 80 ? '…' : ''}"\n\n👁 View Confession: ${link}`,
       });
       continue;
     }
@@ -369,7 +369,7 @@ export const distributeConfessionMentions = async (params: {
       const preview = cleanContent.substring(0, 80) + (cleanContent.length > 80 ? '...' : '');
       await sendMessage(
         profile.id,
-        `📌 @${senderName} mentioned you:\n"${preview}"\n\n👁 View Confession: ${link}`,
+        `@${senderName} mentioned you:\n"${preview}"\n\n👁 View Confession: ${link}`,
         'text'
       );
     }

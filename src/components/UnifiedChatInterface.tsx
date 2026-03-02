@@ -481,20 +481,20 @@ export function UnifiedChatInterface({
             </div>
             <h3 className="font-semibold text-xs">{displayName}</h3>
             {isCommunityChat && (
-              <span className="text-[10px] text-muted-foreground">
-                {memberCount} members
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span>{memberCount} members</span>
                 {activeTopic && (
                   <>
-                    {' • '}
+                    <span className="mx-0.5">•</span>
                     <button 
                       onClick={(e) => { e.stopPropagation(); setShowTopicsModal(true); }}
-                      className="text-primary font-bold hover:underline"
+                      className="text-primary font-bold hover:underline truncate max-w-[120px]"
                     >
-                      📌 {activeTopic}
+                      {activeTopic}
                     </button>
                   </>
                 )}
-              </span>
+              </div>
             )}
             {!isCommunityChat && isTargetOnline && <span className="text-[10px] text-primary">Active now</span>}
           </button>

@@ -168,19 +168,58 @@ export function ModernMessageBubble({
           )}
           
           {message.message_type === 'text' ? (
-            <div
-              className={`px-3 py-2 ${
-                isOwn
-                  ? 'bg-[#007AFF] text-white rounded-[20px] rounded-br-[4px]'
-                  : 'bg-[#E5E5EA] text-gray-900 rounded-[20px] rounded-bl-[4px]'
-              }`}
-            >
-              <p className="text-xs leading-relaxed break-words">{message.content}</p>
-            </div>
+            (() => {
+              // Detect mention card messages (confession links)
+              const confessionLinkMatch = message.content.match(/👁\s*View Confession:\s*(\/confession\/[\w-]+)/);
+              const isMentionCard = message.content.includes('mentioned you') && confessionLinkMatch;
+              
+              if (isMentionCard) {
+                const confessionPath = confessionLinkMatch![1];
+                const lines = message.content.split('\n').filter(Boolean);
+                const mentionLine = lines[0] || '';
+                const quoteLine = lines.find(l => l.startsWith('"')) || lines[1] || '';
+                
+                return (
+                  <div
+                    className={`rounded-2xl overflow-hidden border cursor-pointer hover:shadow-md transition-shadow ${
+                      isOwn ? 'border-primary/30 bg-primary/10' : 'border-border bg-card'
+                    }`}
+                    onClick={() => window.location.href = confessionPath}
+                  >
+                    <div className="px-3 py-2.5 space-y-1.5">
+                      <p className="text-[11px] font-semibold text-primary">{mentionLine.replace('📌 ', '')}</p>
+                      {quoteLine && (
+                        <p className="text-[11px] text-muted-foreground italic line-clamp-2">{quoteLine}</p>
+                      )}
+                      <div className="flex gap-2 pt-1">
+                        <button 
+                          className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold"
+                          onClick={(e) => { e.stopPropagation(); window.location.href = confessionPath; }}
+                        >
+                          👁 View Confession
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div
+                  className={`px-3 py-2 ${
+                    isOwn
+                      ? 'bg-primary text-primary-foreground rounded-[20px] rounded-br-[4px]'
+                      : 'bg-muted text-foreground rounded-[20px] rounded-bl-[4px]'
+                  }`}
+                >
+                  <p className="text-xs leading-relaxed break-words">{message.content}</p>
+                </div>
+              );
+            })()
           ) : message.message_type === 'image' ? (
             <div 
               className={`rounded-2xl overflow-hidden max-w-[280px] ${
-                isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
+                isOwn ? 'bg-primary' : 'bg-muted'
               }`}
             >
               <a 
@@ -199,14 +238,14 @@ export function ModernMessageBubble({
               {/* Caption below image - like WhatsApp */}
               {message.content && message.content !== message.media_url && !message.content.match(/^(image|video|Voice message)/i) && (
                 <p className={`px-3 py-2 text-xs leading-relaxed break-words ${
-                  isOwn ? 'text-white' : 'text-gray-900'
+                  isOwn ? 'text-primary-foreground' : 'text-foreground'
                 }`}>{message.content}</p>
               )}
             </div>
           ) : message.message_type === 'video' ? (
             <div 
               className={`rounded-2xl overflow-hidden max-w-[280px] ${
-                isOwn ? 'bg-[#007AFF]' : 'bg-[#E5E5EA]'
+                isOwn ? 'bg-primary' : 'bg-muted'
               }`}
             >
               <video
@@ -219,7 +258,7 @@ export function ModernMessageBubble({
               {/* Caption below video - like WhatsApp */}
               {message.content && message.content !== message.media_url && !message.content.match(/^(image|video|Voice message)/i) && (
                 <p className={`px-3 py-2 text-xs leading-relaxed break-words ${
-                  isOwn ? 'text-white' : 'text-gray-900'
+                  isOwn ? 'text-primary-foreground' : 'text-foreground'
                 }`}>{message.content}</p>
               )}
             </div>
@@ -234,7 +273,7 @@ export function ModernMessageBubble({
               rel="noopener noreferrer"
               download
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl hover:opacity-90 transition-opacity ${
-                isOwn ? 'bg-[#007AFF] text-white' : 'bg-[#E5E5EA] text-gray-900'
+                isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
               }`}
             >
               <FileText className="h-5 w-5" />
