@@ -106,7 +106,7 @@ export default function ConfessionPage() {
             </Button>
           </Link>
           
-          <h1 className="font-semibold">Post</h1>
+          <h1 className="font-semibold">Confession</h1>
           
           {user && (
             <DropdownMenu>
