@@ -188,7 +188,7 @@ export function ImmersivePostViewer({
               />
             ) : (
               <img 
-                src={currentConfession.mediaUrl || currentConfession.mediaFiles?.[0]?.url} 
+                src={currentConfession.mediaUrl || currentConfession.mediaUrls?.[0]} 
                 className="w-full h-full object-cover"
                 alt=""
               />
@@ -204,7 +204,7 @@ export function ImmersivePostViewer({
           {/* Author */}
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10 border-2 border-white/30">
-              <AvatarImage src={authorAvatar || `https://api.dicebear.com/7.x/micah/svg?seed=${currentConfession.userId || 'anon'}`} />
+              <AvatarImage src={authorAvatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${currentConfession.userId || 'anon'}`} />
               <AvatarFallback className="bg-white/20 text-white text-sm">
                 {authorName.charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -279,6 +279,7 @@ export function ImmersivePostViewer({
           onClose={() => setShowComments(false)}
           confessionId={currentConfession.id}
           confessionContent={currentConfession.content}
+          confessionAuthor={authorName}
         />
       )}
     </div>
