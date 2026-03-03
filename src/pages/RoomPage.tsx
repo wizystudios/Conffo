@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { BottomSlideModal } from '@/components/BottomSlideModal';
-import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
@@ -16,6 +15,8 @@ import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { CommunityOnboardingTour } from '@/components/CommunityOnboardingTour';
 import { Community } from '@/services/communityService';
 import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
 
 const getRoomIcon = (name: string): string => {
   const lower = name.toLowerCase();
@@ -27,11 +28,16 @@ const getRoomIcon = (name: string): string => {
   return '💬';
 };
 
+interface RoomUser {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+}
+
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
   const [activeView, setActiveView] = useState<'confessions' | 'communities'>('confessions');
   const [sortTab, setSortTab] = useState<'new' | 'supported' | 'discussed'>('new');
@@ -42,9 +48,9 @@ export default function RoomPage() {
   const [communitiesKey, setCommunitiesKey] = useState(0);
   const [showOnboardingTour, setShowOnboardingTour] = useState(false);
   const [showNavSheet, setShowNavSheet] = useState(false);
-  const [headerVisible, setHeaderVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const headerRef = useRef<HTMLDivElement>(null);
+  const [immersiveUser, setImmersiveUser] = useState<RoomUser | null>(null);
+  const [showAllImmersive, setShowAllImmersive] = useState(false);
+  const [immersiveStartIndex, setImmersiveStartIndex] = useState(0);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -53,17 +59,19 @@ export default function RoomPage() {
   
   const roomInfo = rooms.find(r => r.id === roomId);
 
-  const { data: roomMembers } = useQuery({
-    queryKey: ['room-members', roomId],
+  // Get users who posted in this room
+  const { data: roomUsers = [] } = useQuery({
+    queryKey: ['room-users', roomId],
     queryFn: async () => {
       const { data: recentPosts } = await supabase
         .from('confessions')
         .select('user_id')
         .eq('room_id', roomId)
         .not('user_id', 'is', null)
-        .limit(20);
+        .order('created_at', { ascending: false })
+        .limit(50);
       
-      const uniqueIds = [...new Set(recentPosts?.map(p => p.user_id).filter(Boolean) || [])].slice(0, 5);
+      const uniqueIds = [...new Set(recentPosts?.map(p => p.user_id).filter(Boolean) || [])].slice(0, 20);
       if (uniqueIds.length === 0) return [];
       
       const { data: profiles } = await supabase
@@ -71,7 +79,7 @@ export default function RoomPage() {
         .select('id, avatar_url, username')
         .in('id', uniqueIds);
       
-      return profiles || [];
+      return (profiles || []) as RoomUser[];
     },
     enabled: !!roomId,
   });
@@ -82,35 +90,39 @@ export default function RoomPage() {
     enabled: !!roomId,
   });
 
-  // Hide header on scroll down
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      if (currentY > lastScrollY.current && currentY > 100) {
-        setHeaderVisible(false);
-      } else {
-        setHeaderVisible(true);
+  const sortedConfessions = useMemo(() => {
+    return [...confessions].sort((a, b) => {
+      if (sortTab === 'new') return b.timestamp - a.timestamp;
+      if (sortTab === 'supported') {
+        return ((b.reactions?.heart || 0) + (b.reactions?.like || 0)) - ((a.reactions?.heart || 0) + (a.reactions?.like || 0));
       }
-      lastScrollY.current = currentY;
-    };
+      return (b.commentCount || 0) - (a.commentCount || 0);
+    });
+  }, [confessions, sortTab]);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const sortedConfessions = [...confessions].sort((a, b) => {
-    if (sortTab === 'new') return b.timestamp - a.timestamp;
-    if (sortTab === 'supported') {
-      return ((b.reactions?.heart || 0) + (b.reactions?.like || 0)) - ((a.reactions?.heart || 0) + (a.reactions?.like || 0));
-    }
-    return (b.commentCount || 0) - (a.commentCount || 0);
-  });
+  // Get posts for a specific user
+  const userPosts = useMemo(() => {
+    if (!immersiveUser) return [];
+    return sortedConfessions.filter(c => c.userId === immersiveUser.id);
+  }, [immersiveUser, sortedConfessions]);
   
   const handleConfessionSuccess = () => { refetch(); };
 
   const handleCommunityCreated = () => {
     setCommunitiesKey(prev => prev + 1);
     setShowOnboardingTour(true);
+  };
+
+  const handleUserCircleTap = (u: RoomUser) => {
+    const posts = sortedConfessions.filter(c => c.userId === u.id);
+    if (posts.length > 0) {
+      setImmersiveUser(u);
+    }
+  };
+
+  const handleViewAll = () => {
+    setImmersiveStartIndex(0);
+    setShowAllImmersive(true);
   };
   
   if (!roomInfo) {
@@ -146,13 +158,8 @@ export default function RoomPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto pb-24">
-        {/* Header - hides on scroll */}
-        <div 
-          ref={headerRef}
-          className={`sticky z-20 bg-background/95 backdrop-blur-lg border-b border-border/30 transition-all duration-300 ${
-            headerVisible ? 'top-0 opacity-100' : '-top-40 opacity-0'
-          }`}
-        >
+        {/* Header */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-lg border-b border-border/30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button onClick={() => navigate('/')}>
@@ -164,7 +171,6 @@ export default function RoomPage() {
               </div>
             </div>
             
-            {/* Bottom sheet trigger */}
             <button 
               onClick={() => setShowNavSheet(true)}
               className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted/50"
@@ -184,6 +190,60 @@ export default function RoomPage() {
           </div>
         ) : (
           <>
+            {/* User circles - Circle-to-Immersive architecture */}
+            {roomUsers.length > 0 && (
+              <div className="px-4 py-3 border-b border-border/30">
+                <div className="flex items-center gap-4 overflow-x-auto scrollbar-thin">
+                  {/* View All button */}
+                  <button 
+                    onClick={handleViewAll}
+                    className="flex flex-col items-center min-w-16"
+                  >
+                    <div className="h-14 w-14 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center bg-primary/5">
+                      <span className="text-lg">👁</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground mt-1">View All</span>
+                  </button>
+                  
+                  {roomUsers.map((u) => {
+                    const postCount = sortedConfessions.filter(c => c.userId === u.id).length;
+                    if (postCount === 0) return null;
+                    return (
+                      <button 
+                        key={u.id} 
+                        onClick={() => handleUserCircleTap(u)}
+                        className="flex flex-col items-center min-w-16"
+                      >
+                        <div className="relative">
+                          <div className="h-14 w-14 rounded-full p-[2px] bg-gradient-to-tr from-primary to-primary/50">
+                            <Avatar className="h-full w-full border-2 border-background">
+                              <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
+                              <AvatarFallback className="text-xs">{u.username?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <span className="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
+                            {postCount}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1 truncate w-16 text-center">
+                          {u.username || 'User'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Summary info */}
+            {!isLoading && sortedConfessions.length > 0 && (
+              <div className="px-4 py-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{sortedConfessions.length}</span> confessions • Tap a circle to explore
+                </p>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map((i) => (<div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />))}
@@ -193,13 +253,7 @@ export default function RoomPage() {
                 <p className="text-muted-foreground">No confessions in this room yet.</p>
                 <p className="text-xs text-muted-foreground mt-1">Be the first to share.</p>
               </div>
-            ) : (
-              <div className="divide-y divide-border/10">
-                {sortedConfessions.map((confession) => (
-                  <InstagramConfessionCard key={confession.id} confession={confession} onUpdate={handleConfessionSuccess} />
-                ))}
-              </div>
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -245,6 +299,27 @@ export default function RoomPage() {
           </button>
         </div>
       </BottomSlideModal>
+
+      {/* Immersive viewer for user circle tap */}
+      {immersiveUser && userPosts.length > 0 && (
+        <ImmersivePostViewer
+          confessions={userPosts}
+          onClose={() => setImmersiveUser(null)}
+          onUpdate={handleConfessionSuccess}
+          userName={immersiveUser.username || 'Anonymous'}
+          userAvatar={immersiveUser.avatar_url || ''}
+        />
+      )}
+
+      {/* Immersive viewer for all posts */}
+      {showAllImmersive && sortedConfessions.length > 0 && (
+        <ImmersivePostViewer
+          confessions={sortedConfessions}
+          startIndex={immersiveStartIndex}
+          onClose={() => setShowAllImmersive(false)}
+          onUpdate={handleConfessionSuccess}
+        />
+      )}
     </Layout>
   );
 }

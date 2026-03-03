@@ -145,7 +145,7 @@ export default function CreatePostPage() {
       setUploadProgress(100);
 
       toast({ title: "Confession shared!", description: "Your confession has been shared." });
-      navigate('/browse', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Error submitting confession:', error);
       toast({ title: "Failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
