@@ -14,7 +14,11 @@ interface FollowedUser {
   hasStory: boolean;
 }
 
-export function FollowingUsersBar() {
+interface FollowingUsersBarProps {
+  onUserTap?: (userId: string, username: string, avatar: string) => void;
+}
+
+export function FollowingUsersBar({ onUserTap }: FollowingUsersBarProps) {
   const { user, isAuthenticated } = useAuth();
   const [followedUsers, setFollowedUsers] = useState<FollowedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
