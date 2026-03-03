@@ -14,7 +14,11 @@ interface FollowedUser {
   hasStory: boolean;
 }
 
-export function FollowingUsersBar() {
+interface FollowingUsersBarProps {
+  onUserTap?: (userId: string, username: string, avatar: string) => void;
+}
+
+export function FollowingUsersBar({ onUserTap }: FollowingUsersBarProps) {
   const { user, isAuthenticated } = useAuth();
   const [followedUsers, setFollowedUsers] = useState<FollowedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,8 +83,8 @@ export function FollowingUsersBar() {
                 size="md"
               />
             ) : (
-              <Link to={`/user/${followedUser.id}`}>
-                <Avatar className="h-12 w-12 border-2 border-transparent hover:border-muted transition-colors">
+              <button onClick={() => onUserTap?.(followedUser.id, followedUser.username || 'User', followedUser.avatar_url || '')}>
+                <Avatar className="h-12 w-12 border-2 border-transparent hover:border-primary transition-colors">
                   <AvatarImage 
                     src={followedUser.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${followedUser.id}`} 
                     alt={followedUser.username || 'User'} 
@@ -89,7 +93,7 @@ export function FollowingUsersBar() {
                     {followedUser.username?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-              </Link>
+              </button>
             )}
             <span className="text-xs text-center mt-1 truncate w-16">
               {followedUser.username || 'User'}

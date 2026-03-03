@@ -10,13 +10,15 @@ import { ConfessionForm } from '@/components/ConfessionForm';
 import { getOptimizedConfessions } from '@/services/optimizedDataService';
 import { useRealTimeConfessions } from '@/hooks/useRealTimeConfessions';
 import { getTrendingConfessions } from '@/services/supabaseDataService';
+import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
+import { Confession } from '@/types';
 
 export default function PerformanceOptimizedHome() {
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('recent');
   const [showConfessionForm, setShowConfessionForm] = useState(false);
+  const [immersiveUser, setImmersiveUser] = useState<{ id: string; username: string; avatar: string } | null>(null);
 
-  // Optimized data fetching with intelligent caching
   const { 
     data: recentConfessions = [], 
     isLoading: isLoadingRecent,
@@ -24,9 +26,9 @@ export default function PerformanceOptimizedHome() {
   } = useQuery({
     queryKey: ['optimized-confessions', 'recent', user?.id],
     queryFn: () => getOptimizedConfessions(undefined, user?.id, 30),
-    staleTime: 60000, // 1 minute - less aggressive than before
-    refetchOnWindowFocus: false, // Reduce unnecessary refetches
-    refetchInterval: false, // We'll use real-time instead
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
   });
 
   const { 
@@ -37,33 +39,35 @@ export default function PerformanceOptimizedHome() {
     queryKey: ['trending-confessions', user?.id],
     queryFn: () => getTrendingConfessions(30, user?.id),
     enabled: activeTab === 'trending',
-    staleTime: 300000, // 5 minutes for trending
+    staleTime: 300000,
     refetchOnWindowFocus: false,
   });
 
-  // Real-time updates for recent confessions
   const liveRecentConfessions = useRealTimeConfessions(recentConfessions);
 
-  // Memoize current confessions to prevent unnecessary re-renders
   const currentConfessions = useMemo(() => {
     return activeTab === 'recent' ? liveRecentConfessions : trendingConfessions;
   }, [activeTab, liveRecentConfessions, trendingConfessions]);
 
   const isLoading = activeTab === 'recent' ? isLoadingRecent : isLoadingTrending;
 
+  // Get posts for a specific user (for immersive viewer)
+  const userPosts = useMemo(() => {
+    if (!immersiveUser) return [];
+    return currentConfessions.filter(c => c.userId === immersiveUser.id);
+  }, [immersiveUser, currentConfessions]);
+
   const handleConfessionSuccess = () => {
-    // Only refetch if necessary - real-time will handle recent updates
     if (activeTab === 'trending') {
       refetchTrending();
     } else {
-      refetchRecent(); // Fallback for reliability
+      refetchRecent();
     }
     setShowConfessionForm(false);
   };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Only fetch trending data when tab is actually switched
     if (value === 'trending') {
       refetchTrending();
     }
@@ -73,26 +77,30 @@ export default function PerformanceOptimizedHome() {
     window.dispatchEvent(new Event('create-story'));
   };
 
-  // Performance monitoring
-  useEffect(() => {
-    const perfObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      entries.forEach((entry) => {
-        if (entry.entryType === 'measure') {
-          console.log(`${entry.name}: ${entry.duration}ms`);
-        }
-      });
-    });
-    
-    perfObserver.observe({ entryTypes: ['measure'] });
-    
-    return () => perfObserver.disconnect();
-  }, []);
+  // Handle circle tap → open immersive viewer for that user
+  const handleUserCircleTap = (userId: string, username: string, avatar: string) => {
+    const posts = currentConfessions.filter(c => c.userId === userId);
+    if (posts.length > 0) {
+      setImmersiveUser({ id: userId, username, avatar });
+    }
+  };
+
+  // Handle tap on a post → open immersive viewer starting at that post
+  const [immersiveStartIndex, setImmersiveStartIndex] = useState(0);
+  const [showAllImmersive, setShowAllImmersive] = useState(false);
+
+  const handlePostTap = (confessionId: string) => {
+    const index = currentConfessions.findIndex(c => c.id === confessionId);
+    if (index >= 0) {
+      setImmersiveStartIndex(index);
+      setShowAllImmersive(true);
+    }
+  };
 
   return (
     <Layout>
       <div className="max-w-lg mx-auto">
-        {/* Sticky header with reduced re-renders */}
+        {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border mb-0">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-4">
@@ -140,20 +148,21 @@ export default function PerformanceOptimizedHome() {
           </div>
         </div>
 
-        {/* Following users bar */}
-        {isAuthenticated && <FollowingUsersBar />}
+        {/* Following users bar - tapping opens immersive viewer */}
+        {isAuthenticated && (
+          <FollowingUsersBar onUserTap={handleUserCircleTap} />
+        )}
 
-        {/* Confession form with performance optimization */}
+        {/* Confession form */}
         {showConfessionForm && isAuthenticated && (
           <div className="mb-4 mx-4">
             <ConfessionForm onSuccess={handleConfessionSuccess} />
           </div>
         )}
 
-        {/* Optimized confession list */}
+        {/* Confession list */}
         <div className="pb-20">
           {isLoading ? (
-            // Simplified loading state
             <div className="flex justify-center py-8">
               <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
@@ -182,6 +191,27 @@ export default function PerformanceOptimizedHome() {
           )}
         </div>
       </div>
+
+      {/* Immersive viewer for user circle tap */}
+      {immersiveUser && userPosts.length > 0 && (
+        <ImmersivePostViewer
+          confessions={userPosts}
+          onClose={() => setImmersiveUser(null)}
+          onUpdate={refetchRecent}
+          userName={immersiveUser.username}
+          userAvatar={immersiveUser.avatar}
+        />
+      )}
+
+      {/* Immersive viewer for all posts */}
+      {showAllImmersive && (
+        <ImmersivePostViewer
+          confessions={currentConfessions}
+          startIndex={immersiveStartIndex}
+          onClose={() => setShowAllImmersive(false)}
+          onUpdate={refetchRecent}
+        />
+      )}
     </Layout>
   );
 }
