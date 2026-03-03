@@ -139,9 +139,9 @@ export function ImmersivePostViewer({
   if (!currentConfession) return null;
 
   const timeAgo = formatDistanceToNow(new Date(currentConfession.timestamp), { addSuffix: true });
-  const authorName = currentConfession.author?.username || userName || 'Anonymous';
-  const authorAvatar = currentConfession.author?.avatar_url || userAvatar;
-  const hasMedia = currentConfession.mediaUrl || (currentConfession.mediaFiles && currentConfession.mediaFiles.length > 0);
+  const authorName = userName || 'Anonymous';
+  const authorAvatarUrl = userAvatar;
+  const hasMedia = currentConfession.mediaUrl || (currentConfession.mediaUrls && currentConfession.mediaUrls.length > 0);
 
   return (
     <div className="fixed inset-0 z-[100] bg-black">
