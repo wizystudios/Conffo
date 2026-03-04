@@ -6,10 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/Layout';
+import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
+import { Confession } from '@/types';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const [immersiveData, setImmersiveData] = useState<{ confessions: Confession[]; startIndex: number } | null>(null);
 
   // Search results
   const { data: searchResults, isLoading } = useQuery({
@@ -33,16 +36,15 @@ export default function SearchPage() {
     staleTime: 30000,
   });
 
-  // Discover content - popular users and trending posts
+  // Discover content
   const { data: discoverData } = useQuery({
     queryKey: ['discover-content'],
     queryFn: async () => {
       const [usersRes, postsRes] = await Promise.all([
         supabase.from('profiles').select('id, username, avatar_url, bio').not('avatar_url', 'is', null).limit(10),
         supabase.from('confessions').select('id, content, media_url, media_type, room_id, created_at, user_id, rooms(name)')
-          .not('media_url', 'is', null)
           .order('created_at', { ascending: false })
-          .limit(20),
+          .limit(30),
       ]);
       return {
         users: usersRes.data || [],
@@ -51,6 +53,24 @@ export default function SearchPage() {
     },
     staleTime: 60000,
   });
+
+  const mapToConfessions = (posts: any[]): Confession[] => {
+    return posts.map((p: any) => ({
+      id: p.id,
+      content: p.content,
+      room: p.room_id as any,
+      userId: p.user_id || '',
+      timestamp: new Date(p.created_at).getTime(),
+      reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
+      commentCount: 0,
+      mediaUrl: p.media_url,
+      mediaType: p.media_type,
+    }));
+  };
+
+  const openImmersive = (posts: any[], index: number) => {
+    setImmersiveData({ confessions: mapToConfessions(posts), startIndex: index });
+  };
 
   return (
     <Layout>
@@ -120,13 +140,13 @@ export default function SearchPage() {
               </div>
             )}
 
-            {/* Posts */}
+            {/* Confessions - tap opens immersive */}
             {searchResults.posts.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Confessions</p>
                 <div className="grid grid-cols-2 gap-1">
-                  {searchResults.posts.map((post: any) => (
-                    <Link key={post.id} to={`/confession/${post.id}`} className="relative aspect-square rounded-sm overflow-hidden bg-muted/50">
+                  {searchResults.posts.map((post: any, idx: number) => (
+                    <button key={post.id} onClick={() => openImmersive(searchResults.posts, idx)} className="relative aspect-square rounded-sm overflow-hidden bg-muted/50 text-left">
                       {post.media_url ? (
                         post.media_type === 'video' ? (
                           <video src={post.media_url} className="w-full h-full object-cover" />
@@ -141,7 +161,7 @@ export default function SearchPage() {
                       <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black/60">
                         <p className="text-[9px] text-white/80">#{post.rooms?.name || 'room'}</p>
                       </div>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -156,9 +176,9 @@ export default function SearchPage() {
             )}
           </div>
         ) : (
-          /* Discover - Snapchat-style Grid */
+          /* Discover Grid */
           <div className="mt-2">
-            {/* Quick Actions */}
+            {/* Quick Room Links */}
             <div className="px-4 mb-3 flex gap-2 overflow-x-auto scrollbar-hide">
               {['random', 'relationships', 'work', 'family', 'friends', 'school'].map(r => (
                 <Link key={r} to={`/room/${r}`} className="px-3 py-1.5 rounded-full bg-muted/50 text-xs font-medium whitespace-nowrap text-muted-foreground hover:bg-muted transition-colors">
@@ -167,17 +187,19 @@ export default function SearchPage() {
               ))}
             </div>
 
-            {/* Friends / Following - horizontal scroll */}
+            {/* People circles */}
             {discoverData?.users && discoverData.users.length > 0 && (
               <div className="mb-4">
                 <p className="text-xs font-semibold text-muted-foreground px-4 mb-2 uppercase tracking-wider">People</p>
                 <div className="flex gap-3 overflow-x-auto px-4 scrollbar-hide pb-2">
                   {discoverData.users.map((u: any) => (
                     <button key={u.id} onClick={() => navigate(`/user/${u.id}`)} className="flex flex-col items-center gap-1 shrink-0 w-16">
-                      <Avatar className="h-14 w-14 border-2 border-border/30">
-                        <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
-                        <AvatarFallback>{u.username?.charAt(0)?.toUpperCase() || 'A'}</AvatarFallback>
-                      </Avatar>
+                      <div className="p-[2px] rounded-full bg-gradient-to-br from-primary to-primary/60">
+                        <Avatar className="h-14 w-14 border-2 border-background">
+                          <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
+                          <AvatarFallback>{u.username?.charAt(0)?.toUpperCase() || 'A'}</AvatarFallback>
+                        </Avatar>
+                      </div>
                       <span className="text-[10px] text-muted-foreground truncate w-full text-center">{u.username || 'User'}</span>
                     </button>
                   ))}
@@ -185,18 +207,17 @@ export default function SearchPage() {
               </div>
             )}
 
-            {/* Discover Grid - 2 column masonry-like */}
+            {/* Discover Grid - tap opens immersive */}
             <div className="px-4">
               <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Discover</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {discoverData?.posts.map((post: any, idx: number) => {
-                  // Alternate between tall and short cards
                   const isTall = idx % 3 === 0;
                   return (
-                    <Link 
-                      key={post.id} 
-                      to={`/confession/${post.id}`}
-                      className={`relative rounded-lg overflow-hidden bg-card border border-border/10 ${isTall ? 'row-span-2 aspect-[3/4]' : 'aspect-square'}`}
+                    <button
+                      key={post.id}
+                      onClick={() => openImmersive(discoverData.posts, idx)}
+                      className={`relative rounded-lg overflow-hidden bg-card border border-border/10 text-left ${isTall ? 'row-span-2 aspect-[3/4]' : 'aspect-square'}`}
                     >
                       {post.media_url ? (
                         post.media_type === 'video' ? (
@@ -215,7 +236,7 @@ export default function SearchPage() {
                         </p>
                         <p className="text-[9px] text-white/60">#{post.rooms?.name || 'confession'}</p>
                       </div>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
@@ -223,6 +244,15 @@ export default function SearchPage() {
           </div>
         )}
       </div>
+
+      {/* Immersive Viewer */}
+      {immersiveData && (
+        <ImmersivePostViewer
+          confessions={immersiveData.confessions}
+          startIndex={immersiveData.startIndex}
+          onClose={() => setImmersiveData(null)}
+        />
+      )}
     </Layout>
   );
 }

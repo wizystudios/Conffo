@@ -4,7 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
-export function HomeUserCircles() {
+interface HomeUserCirclesProps {
+  onUserTap?: (userId: string, username: string, avatar: string) => void;
+}
+
+export function HomeUserCircles({ onUserTap }: HomeUserCirclesProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -12,7 +16,6 @@ export function HomeUserCircles() {
     queryKey: ['home-user-circles', user?.id],
     queryFn: async () => {
       if (!user) {
-        // If not logged in, show some active users
         const { data } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -21,7 +24,6 @@ export function HomeUserCircles() {
         return data || [];
       }
 
-      // Get user's connections (fans + crew)
       const [{ data: fans }, { data: crew }] = await Promise.all([
         supabase.from('user_follows').select('follower_id').eq('following_id', user.id),
         supabase.from('user_follows').select('following_id').eq('follower_id', user.id),
@@ -33,7 +35,6 @@ export function HomeUserCircles() {
       ids.delete(user.id);
 
       if (ids.size === 0) {
-        // Fallback to active users
         const { data } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -55,16 +56,24 @@ export function HomeUserCircles() {
 
   if (users.length === 0) return null;
 
+  const handleTap = (u: any) => {
+    if (onUserTap) {
+      onUserTap(u.id, u.username || 'User', u.avatar_url || '');
+    } else {
+      navigate(`/user/${u.id}`);
+    }
+  };
+
   return (
     <div className="px-4 py-3">
       <div className="flex gap-4 overflow-x-auto scrollbar-hide">
         {users.map((u: any) => (
           <button
             key={u.id}
-            onClick={() => navigate(`/user/${u.id}`)}
+            onClick={() => handleTap(u)}
             className="flex flex-col items-center gap-1.5 shrink-0"
           >
-            <div className="p-[2px] rounded-full bg-gradient-to-br from-red-500 via-pink-500 to-orange-400">
+            <div className="p-[2px] rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary/60">
               <Avatar className="h-[60px] w-[60px] border-2 border-background">
                 <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
                 <AvatarFallback className="text-sm">
