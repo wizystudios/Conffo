@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Heart, MessageCircle, Share2, Bookmark, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Heart, MessageCircle, Share2, Bookmark, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Confession } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +8,9 @@ import { useQuery } from '@tanstack/react-query';
 import { haptic } from '@/utils/hapticFeedback';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UnifiedCommentModal } from '@/components/UnifiedCommentModal';
+import { ShareConfessionModal } from '@/components/ShareConfessionModal';
+import { MentionText } from '@/components/MentionText';
+import { useNavigate } from 'react-router-dom';
 
 interface ImmersivePostViewerProps {
   confessions: Confession[];
@@ -31,17 +34,59 @@ export function ImmersivePostViewer({
   const [touchDeltaY, setTouchDeltaY] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
   const [doubleTapPos, setDoubleTapPos] = useState({ x: 0, y: 0 });
+  const [mediaIndex, setMediaIndex] = useState(0);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef(0);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentConfession = confessions[currentIndex];
 
-  // Auto-advance timer (8 seconds per post, like Stories)
   const AUTO_ADVANCE_MS = 8000;
+
+  // Fetch multi-media for current confession
+  const { data: mediaItems = [] } = useQuery({
+    queryKey: ['confession-media', currentConfession?.id],
+    queryFn: async () => {
+      if (!currentConfession) return [];
+      const { data } = await supabase
+        .from('confession_media')
+        .select('media_url, media_type, order_index')
+        .eq('confession_id', currentConfession.id)
+        .order('order_index');
+      return data || [];
+    },
+    enabled: !!currentConfession,
+  });
+
+  // Fetch author profile
+  const { data: authorProfile } = useQuery({
+    queryKey: ['immersive-author', currentConfession?.userId],
+    queryFn: async () => {
+      if (!currentConfession?.userId) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', currentConfession.userId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!currentConfession?.userId,
+  });
+
+  // Reset media index when confession changes
+  useEffect(() => { setMediaIndex(0); }, [currentIndex]);
+
+  // Determine all media for this confession
+  const allMedia = mediaItems.length > 0 
+    ? mediaItems.map(m => ({ url: m.media_url, type: m.media_type }))
+    : currentConfession?.mediaUrl 
+      ? [{ url: currentConfession.mediaUrl, type: currentConfession.mediaType || 'image' }]
+      : [];
 
   const startAutoAdvance = useCallback(() => {
     if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
@@ -52,20 +97,16 @@ export function ImmersivePostViewer({
         setCurrentIndex(prev => prev + 1);
         setTimeout(() => setIsAnimating(false), 300);
       } else {
-        onClose(); // Close at end
+        onClose();
       }
     }, AUTO_ADVANCE_MS);
   }, [currentIndex, confessions.length, onClose]);
 
-  // Restart auto-advance on index change
   useEffect(() => {
     startAutoAdvance();
-    return () => {
-      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
-    };
+    return () => { if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current); };
   }, [currentIndex, startAutoAdvance]);
 
-  // Pause auto-advance when comments open
   useEffect(() => {
     if (showComments && autoAdvanceTimerRef.current) {
       clearTimeout(autoAdvanceTimerRef.current);
@@ -74,7 +115,6 @@ export function ImmersivePostViewer({
     }
   }, [showComments, startAutoAdvance]);
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
@@ -86,7 +126,6 @@ export function ImmersivePostViewer({
     };
   }, []);
 
-  // Reactions
   const { data: reactionData, refetch: refetchReactions } = useQuery({
     queryKey: ['immersive-reactions', currentConfession?.id],
     queryFn: async () => {
@@ -134,21 +173,15 @@ export function ImmersivePostViewer({
     onUpdate?.();
   };
 
-  // Double-tap to like
   const handleDoubleTap = (e: React.TouchEvent | React.MouseEvent) => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      // Double tap detected
       const clientX = 'touches' in e ? e.changedTouches?.[0]?.clientX || 0 : (e as React.MouseEvent).clientX;
       const clientY = 'touches' in e ? e.changedTouches?.[0]?.clientY || 0 : (e as React.MouseEvent).clientY;
       setDoubleTapPos({ x: clientX, y: clientY });
       setShowDoubleTapHeart(true);
       setTimeout(() => setShowDoubleTapHeart(false), 800);
-
-      if (!reactionData?.userHasLiked) {
-        handleLike();
-      }
-      // Reset auto-advance on interaction
+      if (!reactionData?.userHasLiked) handleLike();
       startAutoAdvance();
     }
     lastTapRef.current = now;
@@ -162,15 +195,13 @@ export function ImmersivePostViewer({
     setTimeout(() => setIsAnimating(false), 300);
   }, [confessions.length, isAnimating]);
 
-  // Touch handlers for vertical swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
     setTouchDeltaY(0);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    const delta = e.touches[0].clientY - touchStartY;
-    setTouchDeltaY(delta);
+    setTouchDeltaY(e.touches[0].clientY - touchStartY);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -178,14 +209,12 @@ export function ImmersivePostViewer({
       if (touchDeltaY < 0) goTo(currentIndex + 1);
       else goTo(currentIndex - 1);
     } else {
-      // Check for double tap
       handleDoubleTap(e);
     }
     setTouchDeltaY(0);
     setTouchStartY(0);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown' || e.key === ' ') goTo(currentIndex + 1);
@@ -199,40 +228,30 @@ export function ImmersivePostViewer({
   if (!currentConfession) return null;
 
   const timeAgo = formatDistanceToNow(new Date(currentConfession.timestamp), { addSuffix: true });
-  const authorName = userName || 'Anonymous';
-  const authorAvatarUrl = userAvatar;
-  const hasMedia = currentConfession.mediaUrl || (currentConfession.mediaUrls && currentConfession.mediaUrls.length > 0);
-
-  // Progress bar width for auto-advance
-  const progressPercent = ((currentIndex) / Math.max(confessions.length - 1, 1)) * 100;
+  const authorName = userName || authorProfile?.username || 'Anonymous';
+  const authorAvatarUrl = userAvatar || authorProfile?.avatar_url;
+  const currentMedia = allMedia[mediaIndex];
 
   return (
     <div className="fixed inset-0 z-[100] bg-black">
-      {/* Close button */}
-      <button 
-        onClick={onClose}
-        className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors"
-      >
+      {/* Close */}
+      <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 backdrop-blur-sm text-white">
         <X className="h-5 w-5" />
       </button>
 
-      {/* Progress bars (Instagram Stories style) */}
+      {/* Progress bars */}
       <div className="absolute top-4 left-4 right-14 z-50 flex gap-1">
         {confessions.map((_, i) => (
           <div key={i} className="h-0.5 flex-1 rounded-full bg-white/20 overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all ${
-                i < currentIndex ? 'bg-white w-full' : i === currentIndex ? 'bg-white animate-[progress_8s_linear]' : 'w-0'
-              }`}
-              style={i === currentIndex ? { 
-                animation: `progress ${AUTO_ADVANCE_MS}ms linear forwards` 
-              } : i < currentIndex ? { width: '100%' } : { width: '0%' }}
+              className="h-full rounded-full bg-white"
+              style={i < currentIndex ? { width: '100%' } : i === currentIndex ? { animation: `progress ${AUTO_ADVANCE_MS}ms linear forwards` } : { width: '0%' }}
             />
           </div>
         ))}
       </div>
 
-      {/* Main content area */}
+      {/* Main content */}
       <div
         ref={containerRef}
         className="h-full w-full flex flex-col justify-center items-center relative"
@@ -245,21 +264,13 @@ export function ImmersivePostViewer({
           transition: touchDeltaY === 0 ? 'transform 0.3s ease-out' : 'none',
         }}
       >
-        {/* Background media or gradient */}
-        {hasMedia ? (
+        {/* Background */}
+        {currentMedia ? (
           <div className="absolute inset-0">
-            {currentConfession.mediaType === 'video' ? (
-              <video 
-                src={currentConfession.mediaUrl} 
-                className="w-full h-full object-cover"
-                autoPlay muted loop playsInline
-              />
+            {currentMedia.type === 'video' ? (
+              <video src={currentMedia.url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
             ) : (
-              <img 
-                src={currentConfession.mediaUrl || currentConfession.mediaUrls?.[0]} 
-                className="w-full h-full object-cover"
-                alt=""
-              />
+              <img src={currentMedia.url} className="w-full h-full object-cover" alt="" />
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
           </div>
@@ -267,38 +278,51 @@ export function ImmersivePostViewer({
           <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--primary))] via-black/90 to-black" />
         )}
 
-        {/* Double-tap heart animation */}
+        {/* Media carousel dots + arrows */}
+        {allMedia.length > 1 && (
+          <>
+            <div className="absolute top-14 left-0 right-0 z-50 flex justify-center gap-1.5">
+              {allMedia.map((_, i) => (
+                <button key={i} onClick={(e) => { e.stopPropagation(); setMediaIndex(i); }} className={`h-1.5 rounded-full transition-all ${i === mediaIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} />
+              ))}
+            </div>
+            {mediaIndex > 0 && (
+              <button onClick={(e) => { e.stopPropagation(); setMediaIndex(prev => prev - 1); }} className="absolute left-2 top-1/2 -translate-y-1/2 z-50 p-1.5 rounded-full bg-black/30 backdrop-blur-sm">
+                <ChevronLeft className="h-5 w-5 text-white" />
+              </button>
+            )}
+            {mediaIndex < allMedia.length - 1 && (
+              <button onClick={(e) => { e.stopPropagation(); setMediaIndex(prev => prev + 1); }} className="absolute right-14 top-1/2 -translate-y-1/2 z-50 p-1.5 rounded-full bg-black/30 backdrop-blur-sm">
+                <ChevronRight className="h-5 w-5 text-white" />
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Double-tap heart */}
         {showDoubleTapHeart && (
-          <div 
-            className="absolute z-50 pointer-events-none animate-scale-in"
-            style={{ left: doubleTapPos.x - 40, top: doubleTapPos.y - 40 }}
-          >
+          <div className="absolute z-50 pointer-events-none animate-scale-in" style={{ left: doubleTapPos.x - 40, top: doubleTapPos.y - 40 }}>
             <Heart className="h-20 w-20 text-red-500 fill-red-500 animate-ping" />
           </div>
         )}
 
         {/* Content overlay */}
         <div className="absolute bottom-24 left-0 right-16 px-5 z-10">
-          {/* Author */}
-          <div className="flex items-center gap-3 mb-4">
+          <button onClick={(e) => { e.stopPropagation(); if (currentConfession.userId) navigate(`/user/${currentConfession.userId}`); }} className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10 border-2 border-white/30">
               <AvatarImage src={authorAvatarUrl || `https://api.dicebear.com/7.x/micah/svg?seed=${currentConfession.userId || 'anon'}`} />
-              <AvatarFallback className="bg-white/20 text-white text-sm">
-                {authorName.charAt(0).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback className="bg-white/20 text-white text-sm">{authorName.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div>
+            <div className="text-left">
               <p className="text-white font-semibold text-sm">{authorName}</p>
               <p className="text-white/60 text-xs">{timeAgo}</p>
             </div>
+          </button>
+
+          <div className="text-white text-base leading-relaxed mb-3 line-clamp-6">
+            <MentionText content={currentConfession.content} className="text-white" />
           </div>
 
-          {/* Text */}
-          <p className="text-white text-base leading-relaxed mb-3 line-clamp-6">
-            {currentConfession.content}
-          </p>
-
-          {/* Tags */}
           {currentConfession.tags && currentConfession.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {currentConfession.tags.map((tag, i) => (
@@ -308,7 +332,7 @@ export function ImmersivePostViewer({
           )}
         </div>
 
-        {/* Right side actions (TikTok style) */}
+        {/* Right side actions */}
         <div className="absolute right-3 bottom-28 z-10 flex flex-col items-center gap-6">
           <button onClick={(e) => { e.stopPropagation(); handleLike(); }} className="flex flex-col items-center gap-1">
             <div className={`p-2.5 rounded-full ${reactionData?.userHasLiked ? 'bg-red-500/20' : 'bg-white/10'} backdrop-blur-sm`}>
@@ -324,13 +348,13 @@ export function ImmersivePostViewer({
             <span className="text-white text-xs font-medium">{commentCount}</span>
           </button>
 
-          <button className="flex flex-col items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); }} className="flex flex-col items-center gap-1">
             <div className="p-2.5 rounded-full bg-white/10 backdrop-blur-sm">
               <Bookmark className="h-6 w-6 text-white" />
             </div>
           </button>
 
-          <button className="flex flex-col items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); setShowShare(true); }} className="flex flex-col items-center gap-1">
             <div className="p-2.5 rounded-full bg-white/10 backdrop-blur-sm">
               <Share2 className="h-6 w-6 text-white" />
             </div>
@@ -350,7 +374,7 @@ export function ImmersivePostViewer({
         )}
       </div>
 
-      {/* Comments modal */}
+      {/* Comments */}
       {showComments && currentConfession && (
         <UnifiedCommentModal
           isOpen={showComments}
@@ -361,7 +385,16 @@ export function ImmersivePostViewer({
         />
       )}
 
-      {/* Progress bar animation keyframes */}
+      {/* Share modal */}
+      {showShare && currentConfession && (
+        <ShareConfessionModal
+          open={showShare}
+          onOpenChange={setShowShare}
+          confessionId={currentConfession.id}
+          confessionContent={currentConfession.content}
+        />
+      )}
+
       <style>{`
         @keyframes progress {
           from { width: 0%; }
