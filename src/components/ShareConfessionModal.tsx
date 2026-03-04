@@ -80,7 +80,7 @@ export function ShareConfessionModal({ open, onOpenChange, confessionId, confess
             message_type: 'text',
           });
         } else {
-          await sendMessage(user.id, id, shareText);
+          await sendMessage(id, shareText, 'text');
         }
       }
       toast({ title: 'Shared!', description: `Sent to ${selectedIds.length} ${selectedIds.length === 1 ? 'recipient' : 'recipients'}` });
