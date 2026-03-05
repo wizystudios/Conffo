@@ -171,8 +171,15 @@ export function ImmersivePostViewer({
     onUpdate?.();
   };
 
+  const goTo = useCallback((index: number) => {
+    if (index < 0 || index >= confessions.length || isAnimating) return;
+    setIsAnimating(true);
+    haptic.light();
+    setCurrentIndex(index);
+    setTimeout(() => setIsAnimating(false), 300);
+  }, [confessions.length, isAnimating]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+
     setTouchStartY(e.touches[0].clientY);
     setTouchDeltaY(0);
   };
