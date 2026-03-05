@@ -35,13 +35,11 @@ export function ImmersivePostViewer({
   const [isAnimating, setIsAnimating] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
-  const [doubleTapPos, setDoubleTapPos] = useState({ x: 0, y: 0 });
   const [mediaIndex, setMediaIndex] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastTapRef = useRef(0);
+  
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentConfession = confessions[currentIndex];
@@ -173,20 +171,6 @@ export function ImmersivePostViewer({
     onUpdate?.();
   };
 
-  const handleDoubleTap = (e: React.TouchEvent | React.MouseEvent) => {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      const clientX = 'touches' in e ? e.changedTouches?.[0]?.clientX || 0 : (e as React.MouseEvent).clientX;
-      const clientY = 'touches' in e ? e.changedTouches?.[0]?.clientY || 0 : (e as React.MouseEvent).clientY;
-      setDoubleTapPos({ x: clientX, y: clientY });
-      setShowDoubleTapHeart(true);
-      setTimeout(() => setShowDoubleTapHeart(false), 800);
-      if (!reactionData?.userHasLiked) handleLike();
-      startAutoAdvance();
-    }
-    lastTapRef.current = now;
-  };
-
   const goTo = useCallback((index: number) => {
     if (index < 0 || index >= confessions.length || isAnimating) return;
     setIsAnimating(true);
@@ -204,12 +188,10 @@ export function ImmersivePostViewer({
     setTouchDeltaY(e.touches[0].clientY - touchStartY);
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchEnd = () => {
     if (Math.abs(touchDeltaY) > 80) {
       if (touchDeltaY < 0) goTo(currentIndex + 1);
       else goTo(currentIndex - 1);
-    } else {
-      handleDoubleTap(e);
     }
     setTouchDeltaY(0);
     setTouchStartY(0);
@@ -258,7 +240,7 @@ export function ImmersivePostViewer({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onClick={handleDoubleTap}
+        
         style={{
           transform: `translateY(${touchDeltaY * 0.3}px)`,
           transition: touchDeltaY === 0 ? 'transform 0.3s ease-out' : 'none',
@@ -299,12 +281,6 @@ export function ImmersivePostViewer({
           </>
         )}
 
-        {/* Double-tap heart */}
-        {showDoubleTapHeart && (
-          <div className="absolute z-50 pointer-events-none animate-scale-in" style={{ left: doubleTapPos.x - 40, top: doubleTapPos.y - 40 }}>
-            <Heart className="h-20 w-20 text-red-500 fill-red-500 animate-ping" />
-          </div>
-        )}
 
         {/* Content overlay */}
         <div className="absolute bottom-24 left-0 right-16 px-5 z-10">
