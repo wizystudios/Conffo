@@ -179,7 +179,7 @@ export function ImmersivePostViewer({
     setTimeout(() => setIsAnimating(false), 300);
   }, [confessions.length, isAnimating]);
 
-
+  const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
     setTouchDeltaY(0);
   };
