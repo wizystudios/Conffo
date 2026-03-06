@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Mail, Lock, User, Calendar, Check, Loader2, Phone, ChevronRight, Globe } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Calendar, Loader2, Phone, ChevronRight, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
 import { CountrySelector } from '@/components/CountrySelector';
@@ -26,7 +26,6 @@ export default function MultiStepAuthPage() {
   const [signupStepIndex, setSignupStepIndex] = useState(0);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   
-  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -116,18 +115,18 @@ export default function MultiStepAuthPage() {
       try {
         setLoading(true);
         const normalized = normalizePhone(phoneNumber);
-        const { data: profile, error: lookupError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('id')
           .or(`contact_phone.eq.${normalized},contact_phone.eq.${phoneNumber}`)
           .maybeSingle();
-        if (lookupError || !profile?.id) throw new Error('No account found with this phone number');
+        if (!profile?.id) throw new Error('No account found with this phone number');
         const { data: userWithEmail } = await supabase
           .from('profiles')
           .select('contact_email')
           .eq('id', profile.id)
           .maybeSingle();
-        if (!userWithEmail?.contact_email) throw new Error('Please add your email in profile settings to enable phone login');
+        if (!userWithEmail?.contact_email) throw new Error('Add email in settings to enable phone login');
         Object.keys(localStorage).forEach((key) => {
           if (key.startsWith('supabase.auth.') || key.includes('sb-')) localStorage.removeItem(key);
         });
@@ -213,22 +212,28 @@ export default function MultiStepAuthPage() {
     }
   };
 
+  const stepTitles: Record<string, { title: string; sub?: string }> = {
+    email: { title: 'Your email' },
+    password: { title: 'Create password', sub: 'Min 6 characters' },
+    username: { title: 'Username', sub: '3-30 characters' },
+    country: { title: 'Country' },
+    birthdate: { title: 'Birthday', sub: 'Must be 13+' },
+    gender: { title: 'Gender' },
+  };
+
   const renderSigninStep = () => {
     if (signinStep === 'identifier') {
       return (
-        <div className="space-y-6" onKeyDown={handleKeyDown}>
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold">Welcome back</h2>
-            <p className="text-sm text-muted-foreground">Enter your {signinMethod === 'email' ? 'email' : 'phone number'}</p>
-          </div>
+        <div className="space-y-8" onKeyDown={handleKeyDown}>
+          <h2 className="text-2xl font-bold text-center">Welcome back</h2>
 
           <div className="flex gap-4 justify-center">
             <button onClick={() => setSigninMethod('email')}
-              className={`text-sm flex items-center gap-1.5 px-3 py-1.5 transition-colors ${signinMethod === 'email' ? 'bg-primary/20 text-primary' : 'text-muted-foreground'}`}>
+              className={`text-sm flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors ${signinMethod === 'email' ? 'bg-primary/15 text-primary font-medium' : 'text-muted-foreground'}`}>
               <Mail className="h-3.5 w-3.5" /> Email
             </button>
             <button onClick={() => setSigninMethod('phone')}
-              className={`text-sm flex items-center gap-1.5 px-3 py-1.5 transition-colors ${signinMethod === 'phone' ? 'bg-primary/20 text-primary' : 'text-muted-foreground'}`}>
+              className={`text-sm flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors ${signinMethod === 'phone' ? 'bg-primary/15 text-primary font-medium' : 'text-muted-foreground'}`}>
               <Phone className="h-3.5 w-3.5" /> Phone
             </button>
           </div>
@@ -236,24 +241,24 @@ export default function MultiStepAuthPage() {
           {signinMethod === 'email' ? (
             <div className="relative">
               <Mail className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-              <Input type="email" placeholder="your@email.com" value={email}
+              <input type="email" placeholder="your@email.com" value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
+                className="w-full pl-7 h-11 bg-transparent border-0 border-b border-border/50 outline-none focus:border-primary text-base transition-colors"
                 autoFocus />
             </div>
           ) : (
             <div className="relative">
               <Phone className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-              <Input type="tel" placeholder="+1234567890" value={phoneNumber}
+              <input type="tel" placeholder="+1234567890" value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
+                className="w-full pl-7 h-11 bg-transparent border-0 border-b border-border/50 outline-none focus:border-primary text-base transition-colors"
                 autoFocus />
             </div>
           )}
 
           <Button onClick={handleSigninNext}
             disabled={signinMethod === 'email' ? !emailValid : !phoneValid}
-            className="w-full h-11 conffo-confess-btn text-white">
+            className="w-full h-12 bg-primary text-primary-foreground text-base font-semibold">
             Next <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
@@ -261,19 +266,19 @@ export default function MultiStepAuthPage() {
     }
 
     return (
-      <div className="space-y-6" onKeyDown={handleKeyDown}>
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Enter password</h2>
-          <p className="text-sm text-muted-foreground">
+      <div className="space-y-8" onKeyDown={handleKeyDown}>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Password</h2>
+          <p className="text-xs text-muted-foreground mt-1">
             {signinMethod === 'email' ? email : phoneNumber}
           </p>
         </div>
 
         <div className="relative">
           <Lock className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-          <Input type="password" placeholder="Password" value={password}
+          <input type="password" placeholder="Password" value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
+            className="w-full pl-7 h-11 bg-transparent border-0 border-b border-border/50 outline-none focus:border-primary text-base transition-colors"
             autoFocus />
         </div>
 
@@ -282,7 +287,7 @@ export default function MultiStepAuthPage() {
         </button>
 
         <Button onClick={handleSignIn} disabled={!passwordValid || loading}
-          className="w-full h-11 conffo-confess-btn text-white">
+          className="w-full h-12 bg-primary text-primary-foreground text-base font-semibold">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign In'}
         </Button>
       </div>
@@ -292,122 +297,85 @@ export default function MultiStepAuthPage() {
   const renderSignupStep = () => {
     const stepNumber = signupStepIndex + 1;
     const totalSteps = SIGNUP_STEPS.length;
+    const info = stepTitles[currentSignupStep];
 
-    const stepContent = () => {
+    const icons: Record<string, React.ReactNode> = {
+      email: <Mail className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />,
+      password: <Lock className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />,
+      username: <User className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />,
+      birthdate: <Calendar className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />,
+    };
+
+    const renderField = () => {
       switch (currentSignupStep) {
         case 'email':
-          return (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Your email</h2>
-                <p className="text-sm text-muted-foreground">We'll use this to sign you in</p>
-              </div>
-              <div className="relative">
-                <Mail className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-                <Input type="email" placeholder="your@email.com" value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
-                  autoFocus />
-              </div>
-            </>
-          );
         case 'password':
-          return (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Create password</h2>
-                <p className="text-sm text-muted-foreground">At least 6 characters</p>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-                <Input type="password" placeholder="Password" value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
-                  autoFocus />
-              </div>
-            </>
-          );
         case 'username':
           return (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Pick a username</h2>
-                <p className="text-sm text-muted-foreground">3-30 characters</p>
-              </div>
-              <div className="relative">
-                <User className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-                <Input type="text" placeholder="username" value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
-                  autoFocus />
-              </div>
-            </>
+            <div className="relative">
+              {icons[currentSignupStep]}
+              <input
+                type={currentSignupStep === 'email' ? 'email' : currentSignupStep === 'password' ? 'password' : 'text'}
+                placeholder={currentSignupStep === 'email' ? 'your@email.com' : currentSignupStep === 'password' ? '••••••' : 'username'}
+                value={currentSignupStep === 'email' ? email : currentSignupStep === 'password' ? password : username}
+                onChange={(e) => {
+                  if (currentSignupStep === 'email') setEmail(e.target.value);
+                  else if (currentSignupStep === 'password') setPassword(e.target.value);
+                  else setUsername(e.target.value);
+                }}
+                className="w-full pl-7 h-11 bg-transparent border-0 border-b border-border/50 outline-none focus:border-primary text-base transition-colors"
+                autoFocus
+              />
+            </div>
           );
         case 'country':
-          return (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Where are you from?</h2>
-                <p className="text-sm text-muted-foreground">Select your country</p>
-              </div>
-              <CountrySelector value={country} onChange={setCountry} />
-            </>
-          );
+          return <CountrySelector value={country} onChange={setCountry} />;
         case 'birthdate':
           return (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Date of birth</h2>
-                <p className="text-sm text-muted-foreground">You must be at least 13 years old</p>
-              </div>
-              <div className="relative">
-                <Calendar className="absolute left-0 top-3 h-4 w-4 text-muted-foreground" />
-                <Input type="date" value={birthdate}
-                  onChange={(e) => setBirthdate(e.target.value)}
-                  className="pl-7 h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus-visible:ring-0 focus-visible:border-primary"
-                  max={new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                  autoFocus />
-              </div>
-            </>
+            <div className="relative">
+              {icons.birthdate}
+              <input type="date" value={birthdate}
+                onChange={(e) => setBirthdate(e.target.value)}
+                className="w-full pl-7 h-11 bg-transparent border-0 border-b border-border/50 outline-none focus:border-primary text-base transition-colors"
+                max={new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                autoFocus />
+            </div>
           );
         case 'gender':
           return (
-            <>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">Gender</h2>
-                <p className="text-sm text-muted-foreground">Select your gender</p>
-              </div>
-              <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger className="h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus:ring-0">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                  <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                </SelectContent>
-              </Select>
-            </>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger className="h-11 bg-transparent border-0 border-b border-border/50 rounded-none focus:ring-0">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+              </SelectContent>
+            </Select>
           );
       }
     };
 
     return (
-      <div className="space-y-6" onKeyDown={handleKeyDown}>
-        {/* Progress bar */}
-        <div className="flex gap-1">
+      <div className="space-y-8" onKeyDown={handleKeyDown}>
+        {/* Progress dots */}
+        <div className="flex gap-1.5 justify-center">
           {SIGNUP_STEPS.map((_, i) => (
-            <div key={i} className={`h-1 flex-1 transition-all ${i <= signupStepIndex ? 'bg-primary' : 'bg-muted'}`} />
+            <div key={i} className={`h-1.5 w-1.5 rounded-full transition-all ${i <= signupStepIndex ? 'bg-primary scale-110' : 'bg-muted'}`} />
           ))}
         </div>
 
-        <p className="text-xs text-muted-foreground text-center">Step {stepNumber} of {totalSteps}</p>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">{info.title}</h2>
+          {info.sub && <p className="text-xs text-muted-foreground mt-1">{info.sub}</p>}
+        </div>
 
-        {stepContent()}
+        {renderField()}
 
         <Button onClick={handleSignupNext} disabled={!canProceedSignup() || loading}
-          className="w-full h-11 conffo-confess-btn text-white">
+          className="w-full h-12 bg-primary text-primary-foreground text-base font-semibold">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 
             signupStepIndex === SIGNUP_STEPS.length - 1 ? 'Create Account' : 'Next'}
           {!loading && signupStepIndex < SIGNUP_STEPS.length - 1 && <ChevronRight className="h-4 w-4 ml-1" />}
@@ -417,10 +385,10 @@ export default function MultiStepAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background flex items-center justify-center px-6 py-8">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-8">
+      <div className="w-full max-w-sm space-y-8">
         {/* Back button */}
-        <Button variant="ghost" size="icon"
+        <button
           onClick={() => {
             if (authMode === 'signin' && signinStep === 'password') {
               setSigninStep('identifier');
@@ -433,14 +401,13 @@ export default function MultiStepAuthPage() {
             }
             navigate('/');
           }}
-          className="absolute top-4 left-4">
+          className="p-2 -ml-2">
           <ArrowLeft className="h-5 w-5" />
-        </Button>
+        </button>
 
         {/* Logo */}
-        <div className="text-center pt-8">
-          <h1 className="text-3xl font-bold conffo-text-gradient mb-2">Conffo</h1>
-          <p className="text-sm text-muted-foreground">Share Your Confessions Anonymously</p>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold conffo-text-gradient">Conffo</h1>
         </div>
 
         {/* Mode Toggle */}
@@ -456,17 +423,15 @@ export default function MultiStepAuthPage() {
         </div>
 
         {authError && (
-          <div className="py-2 text-center">
-            <p className="text-sm text-destructive">{authError}</p>
-          </div>
+          <p className="text-sm text-destructive text-center">{authError}</p>
         )}
 
         {authMode === 'signin' ? renderSigninStep() : renderSignupStep()}
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-center text-[10px] text-muted-foreground">
           By continuing, you agree to our{' '}
-          <button onClick={() => navigate('/terms')} className="text-primary hover:underline">Terms</button>{' '}and{' '}
-          <button onClick={() => navigate('/privacy')} className="text-primary hover:underline">Privacy Policy</button>
+          <button onClick={() => navigate('/terms')} className="text-primary hover:underline">Terms</button>{' & '}
+          <button onClick={() => navigate('/privacy')} className="text-primary hover:underline">Privacy</button>
         </p>
       </div>
 
