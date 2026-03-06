@@ -51,6 +51,7 @@ export default function RoomPage() {
   const [immersiveUser, setImmersiveUser] = useState<RoomUser | null>(null);
   const [showAllImmersive, setShowAllImmersive] = useState(false);
   const [immersiveStartIndex, setImmersiveStartIndex] = useState(0);
+  const [viewedUserIds, setViewedUserIds] = useState<Set<string>>(new Set());
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -59,7 +60,6 @@ export default function RoomPage() {
   
   const roomInfo = rooms.find(r => r.id === roomId);
 
-  // Get users who posted in this room
   const { data: roomUsers = [] } = useQuery({
     queryKey: ['room-users', roomId],
     queryFn: async () => {
@@ -100,7 +100,6 @@ export default function RoomPage() {
     });
   }, [confessions, sortTab]);
 
-  // Get posts for a specific user
   const userPosts = useMemo(() => {
     if (!immersiveUser) return [];
     return sortedConfessions.filter(c => c.userId === immersiveUser.id);
@@ -117,6 +116,8 @@ export default function RoomPage() {
     const posts = sortedConfessions.filter(c => c.userId === u.id);
     if (posts.length > 0) {
       setImmersiveUser(u);
+      // Mark as viewed
+      setViewedUserIds(prev => new Set([...prev, u.id]));
     }
   };
 
@@ -173,7 +174,7 @@ export default function RoomPage() {
             
             <button 
               onClick={() => setShowNavSheet(true)}
-              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full bg-muted/50"
+              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-muted/50"
             >
               {activeView === 'confessions' 
                 ? (sortTab === 'new' ? 'New' : sortTab === 'supported' ? 'Top' : 'Discussed')
@@ -190,32 +191,33 @@ export default function RoomPage() {
           </div>
         ) : (
           <>
-            {/* User circles - Circle-to-Immersive architecture */}
+            {/* User grid - like search page layout */}
             {roomUsers.length > 0 && (
               <div className="px-4 py-3 border-b border-border/30">
-                <div className="flex items-center gap-4 overflow-x-auto scrollbar-thin">
+                <div className="grid grid-cols-5 gap-3">
                   {/* View All button */}
                   <button 
                     onClick={handleViewAll}
-                    className="flex flex-col items-center min-w-16"
+                    className="flex flex-col items-center"
                   >
                     <div className="h-14 w-14 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center bg-primary/5">
                       <span className="text-lg">👁</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground mt-1">View All</span>
+                    <span className="text-[10px] text-muted-foreground mt-1">All</span>
                   </button>
                   
                   {roomUsers.map((u) => {
                     const postCount = sortedConfessions.filter(c => c.userId === u.id).length;
                     if (postCount === 0) return null;
+                    const isViewed = viewedUserIds.has(u.id);
                     return (
                       <button 
                         key={u.id} 
                         onClick={() => handleUserCircleTap(u)}
-                        className="flex flex-col items-center min-w-16"
+                        className="flex flex-col items-center"
                       >
                         <div className="relative">
-                          <div className="h-14 w-14 rounded-full p-[2px] bg-gradient-to-tr from-primary to-primary/50">
+                          <div className={`h-14 w-14 rounded-full p-[2px] ${isViewed ? 'bg-muted' : 'bg-gradient-to-tr from-primary to-primary/50'}`}>
                             <Avatar className="h-full w-full border-2 border-background">
                               <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
                               <AvatarFallback className="text-xs">{u.username?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
@@ -225,7 +227,7 @@ export default function RoomPage() {
                             {postCount}
                           </span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground mt-1 truncate w-16 text-center">
+                        <span className="text-[10px] text-muted-foreground mt-1 truncate w-14 text-center">
                           {u.username || 'User'}
                         </span>
                       </button>
@@ -239,7 +241,7 @@ export default function RoomPage() {
             {!isLoading && sortedConfessions.length > 0 && (
               <div className="px-4 py-3 text-center">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">{sortedConfessions.length}</span> confessions • Tap a circle to explore
+                  <span className="font-semibold text-foreground">{sortedConfessions.length}</span> confessions
                 </p>
               </div>
             )}
@@ -250,8 +252,7 @@ export default function RoomPage() {
               </div>
             ) : sortedConfessions.length === 0 ? (
               <div className="text-center py-16 px-4">
-                <p className="text-muted-foreground">No confessions in this room yet.</p>
-                <p className="text-xs text-muted-foreground mt-1">Be the first to share.</p>
+                <p className="text-muted-foreground">No confessions yet.</p>
               </div>
             ) : null}
           </>
@@ -273,7 +274,7 @@ export default function RoomPage() {
             <button
               key={item.sort}
               onClick={() => { setActiveView('confessions'); setSortTab(item.sort); setShowNavSheet(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeView === 'confessions' && sortTab === item.sort
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-muted'
@@ -288,7 +289,7 @@ export default function RoomPage() {
           
           <button
             onClick={() => { setActiveView('communities'); setShowNavSheet(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
               activeView === 'communities'
                 ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-muted'

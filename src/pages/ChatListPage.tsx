@@ -35,6 +35,7 @@ interface ChatUser {
   type: 'user' | 'community';
   community?: Community;
   isCreator?: boolean;
+  hasUnseenConfessions?: boolean;
 }
 
 export default function ChatListPage() {
@@ -64,17 +65,31 @@ export default function ChatListPage() {
     enabled: !!user?.id,
   });
 
+  // Check which users have recent confessions
+  const { data: usersWithConfessions = new Set<string>() } = useQuery({
+    queryKey: ['users-with-confessions'],
+    queryFn: async () => {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from('confessions')
+        .select('user_id')
+        .not('user_id', 'is', null)
+        .gte('created_at', oneDayAgo);
+      return new Set((data || []).map(c => c.user_id).filter(Boolean));
+    },
+    staleTime: 60000,
+  });
+
   const { data: followedUsers = [], isLoading } = useQuery({
     queryKey: ['followed-users', user?.id, blockedUserIds.length],
     queryFn: async () => {
       if (!user) return [];
       
-      const { data: follows, error: followsError } = await supabase
+      const { data: follows } = await supabase
         .from('user_follows')
         .select('following_id')
         .eq('follower_id', user.id);
 
-      if (followsError) throw followsError;
       if (!follows || follows.length === 0) return [];
       
       const followingIds = follows
@@ -83,12 +98,10 @@ export default function ChatListPage() {
       
       if (followingIds.length === 0) return [];
       
-      const { data: profiles, error: profilesError } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
         .in('id', followingIds);
-
-      if (profilesError) throw profilesError;
 
       const usersWithMessages = await Promise.all(
         (profiles || []).map(async (profile) => {
@@ -116,7 +129,8 @@ export default function ChatListPage() {
             lastMessage,
             lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : undefined,
             unreadCount: unreadCounts[profile.id] || 0,
-            type: 'user' as const
+            type: 'user' as const,
+            hasUnseenConfessions: usersWithConfessions.has(profile.id),
           };
         })
       );
@@ -146,9 +160,7 @@ export default function ChatListPage() {
     return b.lastMessageTime.getTime() - a.lastMessageTime.getTime();
   });
 
-  const refetchCommunities = () => {
-    // Refetch communities after creating one
-  };
+  const refetchCommunities = () => {};
 
   const filteredChats = allChats.filter(c =>
     c.username?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -164,7 +176,6 @@ export default function ChatListPage() {
     );
   }
 
-  // Full screen community chat - use UnifiedChatInterface for full feature parity with DMs
   if (selectedCommunity) {
     return (
       <div className="fixed inset-0 z-50 bg-background">
@@ -175,24 +186,9 @@ export default function ChatListPage() {
           onAddMembers={() => setShowAddMembers(true)}
           onShowRequests={() => setShowRequests(true)}
         />
-        <CommunityMembersList
-          isOpen={showMembers}
-          onClose={() => setShowMembers(false)}
-          communityId={selectedCommunity.id}
-          creatorId={selectedCommunity.creatorId}
-        />
-        <CommunityMembersList
-          isOpen={showAddMembers}
-          onClose={() => setShowAddMembers(false)}
-          communityId={selectedCommunity.id}
-          creatorId={selectedCommunity.creatorId}
-          isAddMode
-        />
-        <JoinRequestsModal
-          isOpen={showRequests}
-          onClose={() => setShowRequests(false)}
-          communityId={selectedCommunity.id}
-        />
+        <CommunityMembersList isOpen={showMembers} onClose={() => setShowMembers(false)} communityId={selectedCommunity.id} creatorId={selectedCommunity.creatorId} />
+        <CommunityMembersList isOpen={showAddMembers} onClose={() => setShowAddMembers(false)} communityId={selectedCommunity.id} creatorId={selectedCommunity.creatorId} isAddMode />
+        <JoinRequestsModal isOpen={showRequests} onClose={() => setShowRequests(false)} communityId={selectedCommunity.id} />
       </div>
     );
   }
@@ -217,7 +213,7 @@ export default function ChatListPage() {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-0 rounded-xl h-9 text-sm"
+              className="pl-10 bg-muted/50 border-0 h-9 text-sm"
             />
           </div>
         </div>
@@ -283,10 +279,15 @@ export default function ChatListPage() {
                 to={`/chat/${chat.id}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/30"
               >
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={chat.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${chat.id}`} />
-                  <AvatarFallback>{chat.username.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  {/* Green ring if user has recent confessions, otherwise normal */}
+                  <div className={`rounded-full p-[2px] ${chat.hasUnseenConfessions ? 'bg-gradient-to-tr from-primary to-primary/50' : ''}`}>
+                    <Avatar className={`h-12 w-12 ${chat.hasUnseenConfessions ? 'border-2 border-background' : ''}`}>
+                      <AvatarImage src={chat.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${chat.id}`} />
+                      <AvatarFallback>{chat.username.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
@@ -343,7 +344,6 @@ export default function ChatListPage() {
         </DropdownMenu>
       </div>
 
-      {/* Create Community Modal */}
       <CreateCommunityModal
         isOpen={showCreateCommunity}
         onClose={() => setShowCreateCommunity(false)}
@@ -351,7 +351,6 @@ export default function ChatListPage() {
         onCreated={refetchCommunities}
       />
 
-      {/* New Message Modal - Select from connections */}
       <ConnectionsPickerModal
         isOpen={showNewMessage}
         onClose={() => setShowNewMessage(false)}
