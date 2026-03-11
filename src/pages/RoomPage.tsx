@@ -32,6 +32,8 @@ interface RoomUser {
   id: string;
   username: string | null;
   avatar_url: string | null;
+  postCount: number;
+  latestPost?: string;
 }
 
 export default function RoomPage() {
@@ -60,30 +62,6 @@ export default function RoomPage() {
   
   const roomInfo = rooms.find(r => r.id === roomId);
 
-  const { data: roomUsers = [] } = useQuery({
-    queryKey: ['room-users', roomId],
-    queryFn: async () => {
-      const { data: recentPosts } = await supabase
-        .from('confessions')
-        .select('user_id')
-        .eq('room_id', roomId)
-        .not('user_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      const uniqueIds = [...new Set(recentPosts?.map(p => p.user_id).filter(Boolean) || [])].slice(0, 20);
-      if (uniqueIds.length === 0) return [];
-      
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, avatar_url, username')
-        .in('id', uniqueIds);
-      
-      return (profiles || []) as RoomUser[];
-    },
-    enabled: !!roomId,
-  });
-  
   const { data: confessions = [], isLoading, refetch } = useQuery({
     queryKey: ['confessions', roomId, user?.id],
     queryFn: () => getConfessions(roomId as Room, user?.id),
@@ -100,6 +78,52 @@ export default function RoomPage() {
     });
   }, [confessions, sortTab]);
 
+  // Build user list from confessions with post counts
+  const roomUsers = useMemo(() => {
+    const userMap = new Map<string, RoomUser>();
+    for (const c of sortedConfessions) {
+      if (!c.userId) continue;
+      const existing = userMap.get(c.userId);
+      if (existing) {
+        existing.postCount++;
+      } else {
+        userMap.set(c.userId, {
+          id: c.userId,
+          username: null,
+          avatar_url: null,
+          postCount: 1,
+          latestPost: c.content?.substring(0, 40),
+        });
+      }
+    }
+    return Array.from(userMap.values());
+  }, [sortedConfessions]);
+
+  // Fetch profiles for the user list
+  const { data: userProfiles = {} } = useQuery({
+    queryKey: ['room-user-profiles', roomId, roomUsers.map(u => u.id).join(',')],
+    queryFn: async () => {
+      const ids = roomUsers.map(u => u.id);
+      if (ids.length === 0) return {};
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, avatar_url, username')
+        .in('id', ids);
+      const map: Record<string, { username: string | null; avatar_url: string | null }> = {};
+      (data || []).forEach(p => { map[p.id] = { username: p.username, avatar_url: p.avatar_url }; });
+      return map;
+    },
+    enabled: roomUsers.length > 0,
+  });
+
+  const enrichedUsers = useMemo(() => {
+    return roomUsers.map(u => ({
+      ...u,
+      username: userProfiles[u.id]?.username || u.username,
+      avatar_url: userProfiles[u.id]?.avatar_url || u.avatar_url,
+    })).slice(0, 20);
+  }, [roomUsers, userProfiles]);
+
   const userPosts = useMemo(() => {
     if (!immersiveUser) return [];
     return sortedConfessions.filter(c => c.userId === immersiveUser.id);
@@ -112,11 +136,10 @@ export default function RoomPage() {
     setShowOnboardingTour(true);
   };
 
-  const handleUserCircleTap = (u: RoomUser) => {
+  const handleUserTap = (u: RoomUser) => {
     const posts = sortedConfessions.filter(c => c.userId === u.id);
     if (posts.length > 0) {
       setImmersiveUser(u);
-      // Mark as viewed
       setViewedUserIds(prev => new Set([...prev, u.id]));
     }
   };
@@ -191,58 +214,64 @@ export default function RoomPage() {
           </div>
         ) : (
           <>
-            {/* User grid - like search page layout */}
-            {roomUsers.length > 0 && (
-              <div className="px-4 py-3 border-b border-border/30">
-                <div className="grid grid-cols-5 gap-3">
-                  {/* View All button */}
-                  <button 
-                    onClick={handleViewAll}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="h-14 w-14 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center bg-primary/5">
-                      <span className="text-lg">👁</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground mt-1">All</span>
-                  </button>
-                  
-                  {roomUsers.map((u) => {
-                    const postCount = sortedConfessions.filter(c => c.userId === u.id).length;
-                    if (postCount === 0) return null;
-                    const isViewed = viewedUserIds.has(u.id);
-                    return (
-                      <button 
-                        key={u.id} 
-                        onClick={() => handleUserCircleTap(u)}
-                        className="flex flex-col items-center"
-                      >
-                        <div className="relative">
-                          <div className={`h-14 w-14 rounded-full p-[2px] ${isViewed ? 'bg-muted' : 'bg-gradient-to-tr from-primary to-primary/50'}`}>
-                            <Avatar className="h-full w-full border-2 border-background">
-                              <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
-                              <AvatarFallback className="text-xs">{u.username?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
-                            </Avatar>
-                          </div>
-                          <span className="absolute -bottom-0.5 -right-0.5 bg-primary text-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
-                            {postCount}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground mt-1 truncate w-14 text-center">
-                          {u.username || 'User'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* WhatsApp-style status list */}
+            {enrichedUsers.length > 0 && (
+              <div className="border-b border-border/30">
+                {/* View All row */}
+                <button
+                  onClick={handleViewAll}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="h-12 w-12 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center bg-primary/5 shrink-0">
+                    <span className="text-lg">👁</span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-sm">View all</p>
+                    <p className="text-[11px] text-muted-foreground">{sortedConfessions.length} confessions</p>
+                  </div>
+                </button>
 
-            {/* Summary info */}
-            {!isLoading && sortedConfessions.length > 0 && (
-              <div className="px-4 py-3 text-center">
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">{sortedConfessions.length}</span> confessions
-                </p>
+                {enrichedUsers.map((u) => {
+                  const isViewed = viewedUserIds.has(u.id);
+                  // Calculate segments for multi-post ring (like WhatsApp)
+                  const segmentCount = Math.min(u.postCount, 8);
+                  
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => handleUserTap(u)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="relative shrink-0">
+                        <div
+                          className="h-12 w-12 rounded-full p-[2.5px]"
+                          style={{
+                            background: isViewed
+                              ? 'hsl(var(--muted))'
+                              : segmentCount > 1
+                                ? `conic-gradient(${Array.from({ length: segmentCount }, (_, i) => {
+                                    const start = (i / segmentCount) * 100;
+                                    const end = ((i + 1) / segmentCount) * 100 - 2;
+                                    return `hsl(var(--primary)) ${start}%, hsl(var(--primary)) ${end}%, transparent ${end}%, transparent ${((i + 1) / segmentCount) * 100}%`;
+                                  }).join(', ')})`
+                                : 'hsl(var(--primary))',
+                          }}
+                        >
+                          <Avatar className="h-full w-full border-2 border-background">
+                            <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
+                            <AvatarFallback className="text-xs">{u.username?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-semibold text-sm truncate">{u.username || 'Anonymous'}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {u.postCount} confession{u.postCount > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -301,7 +330,7 @@ export default function RoomPage() {
         </div>
       </BottomSlideModal>
 
-      {/* Immersive viewer for user circle tap */}
+      {/* Immersive viewer for user tap */}
       {immersiveUser && userPosts.length > 0 && (
         <ImmersivePostViewer
           confessions={userPosts}
