@@ -90,6 +90,12 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth global transitions */
+  button, a, input, textarea, select {
+    transition: all 0.15s ease;
   }
 
   body {
