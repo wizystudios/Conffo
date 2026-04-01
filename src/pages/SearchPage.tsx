@@ -221,7 +221,7 @@ export default function SearchPage() {
                     >
                       {post.media_url ? (
                         post.media_type === 'video' ? (
-                          <video src={post.media_url} className="w-full h-full object-cover" muted />
+                          <video src={post.media_url} className="w-full h-full object-cover" muted autoPlay loop playsInline />
                         ) : (
                           <img src={post.media_url} alt="" className="w-full h-full object-cover" />
                         )
