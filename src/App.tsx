@@ -82,6 +82,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ScrollToTop />
         <ThemeProvider>
           <TooltipProvider>
             <Toaster />
