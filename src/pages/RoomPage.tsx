@@ -53,7 +53,7 @@ export default function RoomPage() {
   const [immersiveUser, setImmersiveUser] = useState<RoomUser | null>(null);
   const [showAllImmersive, setShowAllImmersive] = useState(false);
   const [immersiveStartIndex, setImmersiveStartIndex] = useState(0);
-  const [viewedUserIds, setViewedUserIds] = useState<Set<string>>(new Set());
+  const [viewedConfessionIds, setViewedConfessionIds] = useState<Set<string>>(new Set());
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
