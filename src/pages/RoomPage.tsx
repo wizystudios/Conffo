@@ -284,18 +284,7 @@ export default function RoomPage() {
                     </button>
                   );
                 })}
-      </div>
-
-      {/* Floating Action Button */}
-      {isAuthenticated && activeView === 'confessions' && (
-        <button
-          onClick={() => navigate('/create-post')}
-          className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform duration-150"
-          aria-label="New confession"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      )}
+              </div>
             )}
 
             {isLoading ? (
@@ -310,6 +299,17 @@ export default function RoomPage() {
           </>
         )}
       </div>
+
+      {/* Floating Action Button */}
+      {isAuthenticated && activeView === 'confessions' && (
+        <button
+          onClick={() => navigate('/create-post')}
+          className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform duration-150"
+          aria-label="New confession"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
       
       <CreateCommunityModal isOpen={showCreateCommunity} onClose={() => setShowCreateCommunity(false)} roomId={roomId || ''} onCreated={handleCommunityCreated} />
       <CommunityOnboardingTour isOpen={showOnboardingTour} onClose={() => setShowOnboardingTour(false)} communityName={roomInfo?.name || 'Community'} />
