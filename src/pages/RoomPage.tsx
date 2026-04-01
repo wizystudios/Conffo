@@ -235,30 +235,38 @@ export default function RoomPage() {
                 </button>
 
                 {enrichedUsers.map((u) => {
-                  const isViewed = viewedUserIds.has(u.id);
-                  // Calculate segments for multi-post ring (like WhatsApp)
-                  const segmentCount = Math.min(u.postCount, 8);
+                  const userConfessions = sortedConfessions.filter(c => c.userId === u.id);
+                  const segmentCount = Math.min(userConfessions.length, 8);
+                  const viewedCount = userConfessions.filter(c => viewedConfessionIds.has(c.id)).length;
+                  const allViewed = viewedCount === userConfessions.length;
+                  
+                  // Build per-segment conic gradient (green=unseen, grey=viewed)
+                  const buildSegmentedRing = () => {
+                    if (segmentCount <= 1) {
+                      return allViewed ? 'hsl(var(--muted))' : 'hsl(var(--primary))';
+                    }
+                    const segments: string[] = [];
+                    for (let i = 0; i < segmentCount; i++) {
+                      const isSegViewed = i < viewedCount;
+                      const color = isSegViewed ? 'hsl(var(--muted-foreground) / 0.3)' : 'hsl(var(--primary))';
+                      const start = (i / segmentCount) * 360;
+                      const end = ((i + 1) / segmentCount) * 360 - 4;
+                      const gapEnd = ((i + 1) / segmentCount) * 360;
+                      segments.push(`${color} ${start}deg, ${color} ${end}deg, transparent ${end}deg, transparent ${gapEnd}deg`);
+                    }
+                    return `conic-gradient(${segments.join(', ')})`;
+                  };
                   
                   return (
                     <button
                       key={u.id}
                       onClick={() => handleUserTap(u)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 active:bg-muted/40 transition-all duration-150"
                     >
                       <div className="relative shrink-0">
                         <div
-                          className="h-12 w-12 rounded-full p-[2.5px]"
-                          style={{
-                            background: isViewed
-                              ? 'hsl(var(--muted))'
-                              : segmentCount > 1
-                                ? `conic-gradient(${Array.from({ length: segmentCount }, (_, i) => {
-                                    const start = (i / segmentCount) * 100;
-                                    const end = ((i + 1) / segmentCount) * 100 - 2;
-                                    return `hsl(var(--primary)) ${start}%, hsl(var(--primary)) ${end}%, transparent ${end}%, transparent ${((i + 1) / segmentCount) * 100}%`;
-                                  }).join(', ')})`
-                                : 'hsl(var(--primary))',
-                          }}
+                          className="h-12 w-12 rounded-full p-[2.5px] transition-all duration-300"
+                          style={{ background: buildSegmentedRing() }}
                         >
                           <Avatar className="h-full w-full border-2 border-background">
                             <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
@@ -270,6 +278,7 @@ export default function RoomPage() {
                         <p className="font-semibold text-sm truncate">{u.username || 'Anonymous'}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {u.postCount} confession{u.postCount > 1 ? 's' : ''}
+                          {viewedCount > 0 && viewedCount < u.postCount && ` · ${u.postCount - viewedCount} new`}
                         </p>
                       </div>
                     </button>
