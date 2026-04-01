@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { BottomSlideModal } from '@/components/BottomSlideModal';
@@ -53,7 +53,7 @@ export default function RoomPage() {
   const [immersiveUser, setImmersiveUser] = useState<RoomUser | null>(null);
   const [showAllImmersive, setShowAllImmersive] = useState(false);
   const [immersiveStartIndex, setImmersiveStartIndex] = useState(0);
-  const [viewedUserIds, setViewedUserIds] = useState<Set<string>>(new Set());
+  const [viewedConfessionIds, setViewedConfessionIds] = useState<Set<string>>(new Set());
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['rooms'],
@@ -140,7 +140,10 @@ export default function RoomPage() {
     const posts = sortedConfessions.filter(c => c.userId === u.id);
     if (posts.length > 0) {
       setImmersiveUser(u);
-      setViewedUserIds(prev => new Set([...prev, u.id]));
+      // Mark all this user's confessions as viewed
+      const newViewed = new Set(viewedConfessionIds);
+      posts.forEach(p => newViewed.add(p.id));
+      setViewedConfessionIds(newViewed);
     }
   };
 
@@ -232,30 +235,38 @@ export default function RoomPage() {
                 </button>
 
                 {enrichedUsers.map((u) => {
-                  const isViewed = viewedUserIds.has(u.id);
-                  // Calculate segments for multi-post ring (like WhatsApp)
-                  const segmentCount = Math.min(u.postCount, 8);
+                  const userConfessions = sortedConfessions.filter(c => c.userId === u.id);
+                  const segmentCount = Math.min(userConfessions.length, 8);
+                  const viewedCount = userConfessions.filter(c => viewedConfessionIds.has(c.id)).length;
+                  const allViewed = viewedCount === userConfessions.length;
+                  
+                  // Build per-segment conic gradient (green=unseen, grey=viewed)
+                  const buildSegmentedRing = () => {
+                    if (segmentCount <= 1) {
+                      return allViewed ? 'hsl(var(--muted))' : 'hsl(var(--primary))';
+                    }
+                    const segments: string[] = [];
+                    for (let i = 0; i < segmentCount; i++) {
+                      const isSegViewed = i < viewedCount;
+                      const color = isSegViewed ? 'hsl(var(--muted-foreground) / 0.3)' : 'hsl(var(--primary))';
+                      const start = (i / segmentCount) * 360;
+                      const end = ((i + 1) / segmentCount) * 360 - 4;
+                      const gapEnd = ((i + 1) / segmentCount) * 360;
+                      segments.push(`${color} ${start}deg, ${color} ${end}deg, transparent ${end}deg, transparent ${gapEnd}deg`);
+                    }
+                    return `conic-gradient(${segments.join(', ')})`;
+                  };
                   
                   return (
                     <button
                       key={u.id}
                       onClick={() => handleUserTap(u)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 active:bg-muted/40 transition-all duration-150"
                     >
                       <div className="relative shrink-0">
                         <div
-                          className="h-12 w-12 rounded-full p-[2.5px]"
-                          style={{
-                            background: isViewed
-                              ? 'hsl(var(--muted))'
-                              : segmentCount > 1
-                                ? `conic-gradient(${Array.from({ length: segmentCount }, (_, i) => {
-                                    const start = (i / segmentCount) * 100;
-                                    const end = ((i + 1) / segmentCount) * 100 - 2;
-                                    return `hsl(var(--primary)) ${start}%, hsl(var(--primary)) ${end}%, transparent ${end}%, transparent ${((i + 1) / segmentCount) * 100}%`;
-                                  }).join(', ')})`
-                                : 'hsl(var(--primary))',
-                          }}
+                          className="h-12 w-12 rounded-full p-[2.5px] transition-all duration-300"
+                          style={{ background: buildSegmentedRing() }}
                         >
                           <Avatar className="h-full w-full border-2 border-background">
                             <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
@@ -267,6 +278,7 @@ export default function RoomPage() {
                         <p className="font-semibold text-sm truncate">{u.username || 'Anonymous'}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {u.postCount} confession{u.postCount > 1 ? 's' : ''}
+                          {viewedCount > 0 && viewedCount < u.postCount && ` · ${u.postCount - viewedCount} new`}
                         </p>
                       </div>
                     </button>
@@ -287,6 +299,17 @@ export default function RoomPage() {
           </>
         )}
       </div>
+
+      {/* Floating Action Button */}
+      {isAuthenticated && activeView === 'confessions' && (
+        <button
+          onClick={() => navigate('/create-post')}
+          className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform duration-150"
+          aria-label="New confession"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
       
       <CreateCommunityModal isOpen={showCreateCommunity} onClose={() => setShowCreateCommunity(false)} roomId={roomId || ''} onCreated={handleCommunityCreated} />
       <CommunityOnboardingTour isOpen={showOnboardingTour} onClose={() => setShowOnboardingTour(false)} communityName={roomInfo?.name || 'Community'} />
