@@ -140,7 +140,10 @@ export default function RoomPage() {
     const posts = sortedConfessions.filter(c => c.userId === u.id);
     if (posts.length > 0) {
       setImmersiveUser(u);
-      setViewedUserIds(prev => new Set([...prev, u.id]));
+      // Mark all this user's confessions as viewed
+      const newViewed = new Set(viewedConfessionIds);
+      posts.forEach(p => newViewed.add(p.id));
+      setViewedConfessionIds(newViewed);
     }
   };
 
