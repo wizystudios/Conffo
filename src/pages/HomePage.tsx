@@ -18,7 +18,18 @@ export default function HomePage() {
   return (
     <Layout showNavBar={true}>
       <div className="max-w-lg mx-auto pb-20">
-        {/* User Circles - at top */}
+        {/* Search Bar - at top, always visible */}
+        <div className="sticky top-0 z-10 bg-background px-4 pt-3 pb-2">
+          <button
+            onClick={() => setShowCommunitySearch(true)}
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm"
+          >
+            <Search className="h-4 w-4" />
+            <span>Search rooms...</span>
+          </button>
+        </div>
+
+        {/* User Circles */}
         <HomeUserCircles />
 
         {/* Rooms List */}
@@ -40,17 +51,6 @@ export default function HomePage() {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Search Bar - before bottom nav */}
-        <div className="px-4 pt-3 pb-2">
-          <button
-            onClick={() => setShowCommunitySearch(true)}
-            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-muted/50 text-muted-foreground text-sm"
-          >
-            <Search className="h-4 w-4" />
-            <span>Search rooms...</span>
-          </button>
         </div>
 
         <CommunitySearchModal

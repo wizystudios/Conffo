@@ -37,6 +37,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
 import { OnboardingGate } from "./components/OnboardingGate";
+import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => {
   const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
@@ -81,6 +82,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ScrollToTop />
         <ThemeProvider>
           <TooltipProvider>
             <Toaster />

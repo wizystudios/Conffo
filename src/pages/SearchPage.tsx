@@ -148,8 +148,8 @@ export default function SearchPage() {
                   {searchResults.posts.map((post: any, idx: number) => (
                     <button key={post.id} onClick={() => openImmersive(searchResults.posts, idx)} className="relative aspect-square rounded-sm overflow-hidden bg-muted/50 text-left">
                       {post.media_url ? (
-                        post.media_type === 'video' ? (
-                          <video src={post.media_url} className="w-full h-full object-cover" />
+                         post.media_type === 'video' ? (
+                          <video src={post.media_url} className="w-full h-full object-cover" muted autoPlay loop playsInline />
                         ) : (
                           <img src={post.media_url} alt="" className="w-full h-full object-cover" />
                         )
@@ -221,7 +221,7 @@ export default function SearchPage() {
                     >
                       {post.media_url ? (
                         post.media_type === 'video' ? (
-                          <video src={post.media_url} className="w-full h-full object-cover" muted />
+                          <video src={post.media_url} className="w-full h-full object-cover" muted autoPlay loop playsInline />
                         ) : (
                           <img src={post.media_url} alt="" className="w-full h-full object-cover" />
                         )
