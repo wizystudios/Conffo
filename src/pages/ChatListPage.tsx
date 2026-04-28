@@ -1,28 +1,28 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, MessageCircle, ArrowLeft, Users, Plus, ChevronRight, UserPlus, Crown } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, Crown, MessageSquarePlus, CheckCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { formatDistanceToNow } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { getBlockedUsers } from '@/services/blockService';
 import { getUserCommunities, Community } from '@/services/communityService';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { JoinRequestsModal } from '@/components/JoinRequestsModal';
+import { CreateCommunityModal } from '@/components/CreateCommunityModal';
+import { ConnectionsPickerModal } from '@/components/ConnectionsPickerModal';
+import { Layout } from '@/components/Layout';
+import { WAPageHeader, WAFab } from '@/components/WAPageHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CreateCommunityModal } from '@/components/CreateCommunityModal';
-import { ConnectionsPickerModal } from '@/components/ConnectionsPickerModal';
-import { Layout } from '@/components/Layout';
 
 interface ChatUser {
   id: string;
