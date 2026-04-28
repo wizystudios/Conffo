@@ -1,43 +1,44 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
 import { CommunitySearchModal } from '@/components/CommunitySearchModal';
 import { HomeUserCircles } from '@/components/HomeUserCircles';
+import { WAPageHeader } from '@/components/WAPageHeader';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
 
 export default function HomePage() {
   const [showCommunitySearch, setShowCommunitySearch] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'favorites'>('all');
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms'],
-    queryFn: getRooms
+    queryFn: getRooms,
   });
 
   return (
-    <Layout showNavBar={true}>
+    <Layout showNavBar={false}>
       <div className="max-w-lg mx-auto pb-20">
-        {/* Search Bar - at top, always visible */}
-        <div className="sticky top-0 z-10 bg-background px-4 pt-3 pb-2">
-          <button
-            onClick={() => setShowCommunitySearch(true)}
-            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full bg-muted/50 text-muted-foreground text-sm"
-          >
-            <Search className="h-4 w-4" />
-            <span>Search rooms...</span>
-          </button>
-        </div>
+        <WAPageHeader
+          title="Rooms"
+          searchPlaceholder="Search rooms..."
+          onSearchClick={() => setShowCommunitySearch(true)}
+          tabs={[
+            { id: 'all', label: 'All' },
+            { id: 'unread', label: 'Unread' },
+            { id: 'favorites', label: 'Favorites' },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as any)}
+        />
 
-        {/* User Circles */}
         <HomeUserCircles />
 
-        {/* Rooms List */}
-        <div className="px-4">
+        <div className="px-0">
           {isLoading ? (
-            <div className="space-y-3 py-4">
+            <div className="space-y-3 py-4 px-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-14 rounded-lg bg-muted/30 animate-pulse" style={{ animationDelay: `${i * 50}ms` }} />
+                <div key={i} className="h-14 rounded-lg bg-muted/30 animate-pulse" />
               ))}
             </div>
           ) : rooms.length === 0 ? (
@@ -45,7 +46,7 @@ export default function HomePage() {
               <p className="text-muted-foreground">No rooms available yet.</p>
             </div>
           ) : (
-            <div className="divide-y divide-border/30">
+            <div className="divide-y divide-border/40">
               {rooms.map((room, index) => (
                 <ConffoRoomCard key={room.id} room={room} index={index} />
               ))}
