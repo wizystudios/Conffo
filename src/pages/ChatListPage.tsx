@@ -49,6 +49,7 @@ export default function ChatListPage() {
   const [showRequests, setShowRequests] = useState(false);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chats' | 'communities' | 'status'>('chats');
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ['blocked-users', user?.id],
@@ -198,8 +199,6 @@ export default function ChatListPage() {
     if (isYesterday(d)) return 'Yesterday';
     return format(d, 'M/d/yy');
   };
-
-  const [activeTab, setActiveTab] = useState<'chats' | 'communities' | 'status'>('chats');
 
   const visibleChats = filteredChats.filter((c) => {
     if (activeTab === 'chats') return c.type === 'user';
