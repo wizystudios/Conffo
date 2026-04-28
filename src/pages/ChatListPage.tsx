@@ -1,28 +1,28 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, MessageCircle, ArrowLeft, Users, Plus, ChevronRight, UserPlus, Crown } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, Crown, MessageSquarePlus, CheckCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
-import { formatDistanceToNow } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { getBlockedUsers } from '@/services/blockService';
 import { getUserCommunities, Community } from '@/services/communityService';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { JoinRequestsModal } from '@/components/JoinRequestsModal';
+import { CreateCommunityModal } from '@/components/CreateCommunityModal';
+import { ConnectionsPickerModal } from '@/components/ConnectionsPickerModal';
+import { Layout } from '@/components/Layout';
+import { WAPageHeader, WAFab } from '@/components/WAPageHeader';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CreateCommunityModal } from '@/components/CreateCommunityModal';
-import { ConnectionsPickerModal } from '@/components/ConnectionsPickerModal';
-import { Layout } from '@/components/Layout';
 
 interface ChatUser {
   id: string;
@@ -49,6 +49,7 @@ export default function ChatListPage() {
   const [showRequests, setShowRequests] = useState(false);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chats' | 'communities' | 'status'>('chats');
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ['blocked-users', user?.id],
@@ -193,57 +194,62 @@ export default function ChatListPage() {
     );
   }
 
+  const formatChatTime = (d: Date) => {
+    if (isToday(d)) return format(d, 'h:mm a').toLowerCase();
+    if (isYesterday(d)) return 'Yesterday';
+    return format(d, 'M/d/yy');
+  };
+
+  const visibleChats = filteredChats.filter((c) => {
+    if (activeTab === 'chats') return c.type === 'user';
+    if (activeTab === 'communities') return c.type === 'community';
+    return true;
+  });
+
+  const totalUnread = filteredChats.reduce((s, c) => s + (c.unreadCount || 0), 0);
+
   return (
     <Layout>
     <div className="min-h-screen bg-background pb-20 lg:pb-6">
-      <div className="sticky top-0 z-10 bg-background">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">Messages</h1>
-          </div>
-        </div>
-
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-0 h-9 text-sm"
-            />
-          </div>
-        </div>
-      </div>
+      <WAPageHeader
+        title="Chats"
+        searchPlaceholder="Search"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        tabs={[
+          { id: 'chats', label: 'Chats', badge: totalUnread > 0 },
+          { id: 'communities', label: 'Communities' },
+          { id: 'status', label: 'Status' },
+        ]}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as any)}
+      />
 
       <div>
         {isLoading ? (
           <div className="flex justify-center py-8">
             <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : filteredChats.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="text-4xl mb-4">💬</div>
-            <h3 className="font-semibold text-base mb-2">No conversations yet</h3>
-            <p className="text-muted-foreground text-center text-[11px] mb-4">
-              Follow people or join communities to start chatting
+        ) : visibleChats.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <MessageCircle className="h-10 w-10 text-muted-foreground/40 mb-3" />
+            <h3 className="font-semibold text-base mb-1">No conversations yet</h3>
+            <p className="text-muted-foreground text-center text-[12px]">
+              Tap the green button to start a chat
             </p>
           </div>
         ) : (
-          filteredChats.map((chat) => (
+          visibleChats.map((chat) => (
             chat.type === 'community' ? (
-              <button 
+              <button
                 key={`community-${chat.id}`}
                 onClick={() => setSelectedCommunity(chat.community!)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left border-b border-border/30"
+                className="w-full flex items-center gap-3 px-4 py-3 active:bg-muted/40 transition-colors text-left"
               >
-                <div className="relative">
-                  <Avatar className="h-12 w-12">
+                <div className="relative shrink-0">
+                  <Avatar className="h-[52px] w-[52px]">
                     <AvatarImage src={chat.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-base">
                       {chat.username.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -251,68 +257,61 @@ export default function ChatListPage() {
                     <Users className="h-2.5 w-2.5 text-primary-foreground" />
                   </div>
                 </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-semibold text-[13px]">{chat.username}</span>
-                    {chat.isCreator && (
-                      <Crown className="h-3 w-3 text-yellow-500" />
+                <div className="flex-1 min-w-0 border-b border-border/40 pb-3 -mb-3">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-semibold text-[15px] truncate">{chat.username}</span>
+                      {chat.isCreator && <Crown className="h-3 w-3 text-yellow-500 shrink-0" />}
+                    </div>
+                    {chat.lastMessageTime && (
+                      <span className="text-[12px] text-muted-foreground shrink-0">
+                        {formatChatTime(chat.lastMessageTime)}
+                      </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground truncate">
+                  <p className="text-[13px] text-muted-foreground truncate">
                     {chat.lastMessage || 'Start a conversation'}
                   </p>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {chat.lastMessageTime && (
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(chat.lastMessageTime, { addSuffix: false })}
-                    </span>
-                  )}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </button>
             ) : (
-              <Link 
-                key={chat.id} 
+              <Link
+                key={chat.id}
                 to={`/chat/${chat.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border/30"
+                className="flex items-center gap-3 px-4 py-3 active:bg-muted/40 transition-colors"
               >
-                <div className="relative">
-                  {/* Green ring if user has recent confessions, otherwise normal */}
-                  <div className={`rounded-full p-[2px] ${chat.hasUnseenConfessions ? 'bg-gradient-to-tr from-primary to-primary/50' : ''}`}>
-                    <Avatar className={`h-12 w-12 ${chat.hasUnseenConfessions ? 'border-2 border-background' : ''}`}>
+                <div className="relative shrink-0">
+                  <div className={`rounded-full ${chat.hasUnseenConfessions ? 'p-[2px] bg-primary' : ''}`}>
+                    <Avatar className={`h-[52px] w-[52px] ${chat.hasUnseenConfessions ? 'border-2 border-background' : ''}`}>
                       <AvatarImage src={chat.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${chat.id}`} />
-                      <AvatarFallback>{chat.username.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="text-base">{chat.username.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </div>
                 </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-semibold text-[13px]">{chat.username}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground truncate">
-                    {chat.lastMessage || 'Start a conversation'}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {chat.lastMessageTime && (
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(chat.lastMessageTime, { addSuffix: false })}
-                    </span>
-                  )}
-                  {chat.unreadCount && chat.unreadCount > 0 ? (
-                    <div className="h-5 min-w-5 px-1.5 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-primary-foreground">
-                        {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                <div className="flex-1 min-w-0 border-b border-border/40 pb-3 -mb-3">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className="font-semibold text-[15px] truncate">{chat.username}</span>
+                    {chat.lastMessageTime && (
+                      <span className={`text-[12px] shrink-0 ${chat.unreadCount && chat.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                        {formatChatTime(chat.lastMessageTime)}
                       </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                      <CheckCheck className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+                      <p className="text-[13px] text-muted-foreground truncate">
+                        {chat.lastMessage || 'Start a conversation'}
+                      </p>
                     </div>
-                  ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  )}
+                    {chat.unreadCount && chat.unreadCount > 0 ? (
+                      <div className="h-5 min-w-5 px-1.5 bg-primary rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-[11px] font-bold text-primary-foreground">
+                          {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </Link>
             )
@@ -320,29 +319,27 @@ export default function ChatListPage() {
         )}
       </div>
 
-      {/* Floating Plus Button */}
-      <div className="fixed bottom-20 right-4 z-40">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              size="icon" 
-              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => setShowNewMessage(true)} className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              New Message
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowCreateCommunity(true)} className="gap-2">
-              <Users className="h-4 w-4" />
-              Create Community
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* Floating green message FAB */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="New chat"
+          >
+            <MessageSquarePlus className="h-6 w-6" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => setShowNewMessage(true)} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            New Message
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowCreateCommunity(true)} className="gap-2">
+            <Users className="h-4 w-4" />
+            Create Community
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <CreateCommunityModal
         isOpen={showCreateCommunity}

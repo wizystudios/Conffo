@@ -29,36 +29,10 @@ export function ThemeProvider({
   );
 
   useEffect(() => {
+    // WhatsApp-style: force light theme everywhere
     const root = window.document.documentElement;
-    
-    // Remove previous class with transition
-    root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
-    root.classList.remove("light", "dark");
-
-    const applyTheme = () => {
-      if (theme === "system") {
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-          .matches
-          ? "dark"
-          : "light";
-        root.classList.add(systemTheme);
-      } else if (theme === "adaptive") {
-        // Adaptive mode: warm at night, bright during day
-        const hour = new Date().getHours();
-        const isNight = hour >= 18 || hour < 6;
-        root.classList.add(isNight ? "dark" : "light");
-      } else {
-        root.classList.add(theme);
-      }
-    };
-
-    applyTheme();
-
-    // For adaptive mode, check every hour
-    if (theme === "adaptive") {
-      const interval = setInterval(applyTheme, 60000); // Check every minute
-      return () => clearInterval(interval);
-    }
+    root.classList.remove("dark");
+    root.classList.add("light");
   }, [theme]);
 
   const value = {

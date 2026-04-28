@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
-import { Search, X, Users, Hash } from 'lucide-react';
+import { Search, Hash } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/Layout';
+import { WAPageHeader } from '@/components/WAPageHeader';
 import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
 import { Confession } from '@/types';
 
@@ -75,23 +75,12 @@ export default function SearchPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto pb-20">
-        {/* Search Bar */}
-        <div className="sticky top-0 z-10 bg-background px-4 pt-4 pb-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search"
-              className="pl-9 pr-9 h-10 rounded-full bg-muted/50 border-0 text-sm"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        </div>
+        <WAPageHeader
+          title="Explore"
+          searchPlaceholder="Search people, rooms, confessions"
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
 
         {/* Search Results */}
         {searchQuery && searchResults ? (
