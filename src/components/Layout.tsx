@@ -96,7 +96,7 @@ function LayoutContent({ children, hideBottomNav, showNavBar = false }: LayoutPr
       {/* Desktop Layout - 3-column design, sidebars always visible */}
       <div className="hidden lg:flex">
         <DesktopSidebar />
-        <main className="flex-1 min-h-screen py-6 ml-72 xl:mr-80">
+        <main className="flex-1 min-h-screen py-6 ml-[68px] xl:mr-80">
           <div className="w-full max-w-xl mx-auto px-4">
             {children}
           </div>
