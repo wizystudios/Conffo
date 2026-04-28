@@ -193,7 +193,6 @@ export default function ChatListPage() {
     );
   }
 
-  return (
   const formatChatTime = (d: Date) => {
     if (isToday(d)) return format(d, 'h:mm a').toLowerCase();
     if (isYesterday(d)) return 'Yesterday';
