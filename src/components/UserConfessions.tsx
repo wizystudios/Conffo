@@ -10,6 +10,8 @@ import { ConfessionEditDialog } from './ConfessionEditDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { UserLikedPosts as UserLikedPostsSimple } from './UserLikedPosts';
+import { ImmersivePostViewer } from './ImmersivePostViewer';
+import { markUserConfessionsViewed } from '@/utils/viewedConfessions';
 
 interface UserConfessionsProps {
   userId?: string;
@@ -26,6 +28,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
   const [selectedConfession, setSelectedConfession] = useState<Confession | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
+  const [immersive, setImmersive] = useState<{ list: Confession[]; index: number } | null>(null);
 
   const viewingUserId = userId || user?.id;
   const isOwnProfile = userId ? userId === user?.id : true;
