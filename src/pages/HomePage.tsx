@@ -1,15 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
-import { CommunitySearchModal } from '@/components/CommunitySearchModal';
-import { HomeUserCircles } from '@/components/HomeUserCircles';
 import { WAPageHeader } from '@/components/WAPageHeader';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
 
 export default function HomePage() {
-  const [showCommunitySearch, setShowCommunitySearch] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'favorites'>('all');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'all' | 'chats' | 'confessions'>('all');
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms'],
@@ -21,18 +20,16 @@ export default function HomePage() {
       <div className="max-w-lg mx-auto pb-20">
         <WAPageHeader
           title="Rooms"
-          searchPlaceholder="Search rooms..."
-          onSearchClick={() => setShowCommunitySearch(true)}
+          searchPlaceholder="Search rooms, people, confessions"
+          onSearchClick={() => navigate('/search')}
           tabs={[
             { id: 'all', label: 'All' },
-            { id: 'unread', label: 'Unread' },
-            { id: 'favorites', label: 'Favorites' },
+            { id: 'chats', label: 'Chats' },
+            { id: 'confessions', label: 'Confessions' },
           ]}
           activeTab={activeTab}
           onTabChange={(id) => setActiveTab(id as any)}
         />
-
-        <HomeUserCircles />
 
         <div className="px-0">
           {isLoading ? (
@@ -53,11 +50,6 @@ export default function HomePage() {
             </div>
           )}
         </div>
-
-        <CommunitySearchModal
-          isOpen={showCommunitySearch}
-          onClose={() => setShowCommunitySearch(false)}
-        />
       </div>
     </Layout>
   );
