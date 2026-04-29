@@ -49,7 +49,7 @@ export default function ChatListPage() {
   const [showRequests, setShowRequests] = useState(false);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'chats' | 'communities' | 'status'>('chats');
+  const [activeTab, setActiveTab] = useState<'all' | 'communities'>('all');
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ['blocked-users', user?.id],
@@ -66,17 +66,22 @@ export default function ChatListPage() {
     enabled: !!user?.id,
   });
 
-  // Check which users have recent confessions
-  const { data: usersWithConfessions = new Set<string>() } = useQuery({
+  // Check which users have recent confessions (and the latest timestamp per user)
+  const { data: usersWithConfessions = {} as Record<string, number> } = useQuery({
     queryKey: ['users-with-confessions'],
     queryFn: async () => {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
         .from('confessions')
-        .select('user_id')
+        .select('user_id, created_at')
         .not('user_id', 'is', null)
         .gte('created_at', oneDayAgo);
-      return new Set((data || []).map(c => c.user_id).filter(Boolean));
+      const map: Record<string, number> = {};
+      (data || []).forEach((c: any) => {
+        const ts = new Date(c.created_at).getTime();
+        if (!map[c.user_id] || ts > map[c.user_id]) map[c.user_id] = ts;
+      });
+      return map;
     },
     staleTime: 60000,
   });
