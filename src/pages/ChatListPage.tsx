@@ -207,9 +207,8 @@ export default function ChatListPage() {
   };
 
   const visibleChats = filteredChats.filter((c) => {
-    if (activeTab === 'chats') return c.type === 'user';
     if (activeTab === 'communities') return c.type === 'community';
-    return true;
+    return true; // 'all'
   });
 
   const totalUnread = filteredChats.reduce((s, c) => s + (c.unreadCount || 0), 0);
@@ -223,9 +222,8 @@ export default function ChatListPage() {
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         tabs={[
-          { id: 'chats', label: 'Chats', badge: totalUnread > 0 },
+          { id: 'all', label: 'All', badge: totalUnread > 0 },
           { id: 'communities', label: 'Communities' },
-          { id: 'status', label: 'Status' },
         ]}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as any)}
