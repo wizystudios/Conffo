@@ -14,8 +14,6 @@ import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { CommunityOnboardingTour } from '@/components/CommunityOnboardingTour';
 import { Community } from '@/services/communityService';
-import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
 
 const getRoomIcon = (name: string): string => {
