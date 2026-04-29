@@ -333,10 +333,29 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
             onUpdate={handleConfessionUpdated}
           />
         )}
+
+        {immersive && (
+          <ImmersivePostViewer
+            confessions={immersive.list}
+            startIndex={immersive.index}
+            onClose={() => setImmersive(null)}
+          />
+        )}
       </>
     );
   }
 
   // For other users' profiles, just show their posts grid
-  return renderGrid(confessions);
+  return (
+    <>
+      {renderGrid(confessions)}
+      {immersive && (
+        <ImmersivePostViewer
+          confessions={immersive.list}
+          startIndex={immersive.index}
+          onClose={() => setImmersive(null)}
+        />
+      )}
+    </>
+  );
 }
