@@ -10,6 +10,8 @@ import { ConfessionEditDialog } from './ConfessionEditDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { UserLikedPosts as UserLikedPostsSimple } from './UserLikedPosts';
+import { ImmersivePostViewer } from './ImmersivePostViewer';
+import { markUserConfessionsViewed } from '@/utils/viewedConfessions';
 
 interface UserConfessionsProps {
   userId?: string;
@@ -26,6 +28,7 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
   const [selectedConfession, setSelectedConfession] = useState<Confession | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
+  const [immersive, setImmersive] = useState<{ list: Confession[]; index: number } | null>(null);
 
   const viewingUserId = userId || user?.id;
   const isOwnProfile = userId ? userId === user?.id : true;
@@ -184,7 +187,10 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
             <div 
               key={confession.id} 
               className="relative aspect-square bg-muted cursor-pointer group overflow-hidden"
-              onClick={() => navigate(`/confession/${confession.id}`)}
+              onClick={() => {
+                setImmersive({ list: confessionsList, index: confessionsList.findIndex(c => c.id === confession.id) });
+                if (viewingUserId) markUserConfessionsViewed(viewingUserId);
+              }}
             >
               {hasMedia && thumbnailUrl ? (
                 <>
@@ -327,10 +333,29 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
             onUpdate={handleConfessionUpdated}
           />
         )}
+
+        {immersive && (
+          <ImmersivePostViewer
+            confessions={immersive.list}
+            startIndex={immersive.index}
+            onClose={() => setImmersive(null)}
+          />
+        )}
       </>
     );
   }
 
   // For other users' profiles, just show their posts grid
-  return renderGrid(confessions);
+  return (
+    <>
+      {renderGrid(confessions)}
+      {immersive && (
+        <ImmersivePostViewer
+          confessions={immersive.list}
+          startIndex={immersive.index}
+          onClose={() => setImmersive(null)}
+        />
+      )}
+    </>
+  );
 }

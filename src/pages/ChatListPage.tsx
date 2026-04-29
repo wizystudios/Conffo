@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { hasUserBeenViewed } from '@/utils/viewedConfessions';
 
 interface ChatUser {
   id: string;
@@ -49,7 +50,7 @@ export default function ChatListPage() {
   const [showRequests, setShowRequests] = useState(false);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [showNewMessage, setShowNewMessage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'chats' | 'communities' | 'status'>('chats');
+  const [activeTab, setActiveTab] = useState<'all' | 'communities'>('all');
 
   const { data: blockedUsers = [] } = useQuery({
     queryKey: ['blocked-users', user?.id],
@@ -66,17 +67,22 @@ export default function ChatListPage() {
     enabled: !!user?.id,
   });
 
-  // Check which users have recent confessions
-  const { data: usersWithConfessions = new Set<string>() } = useQuery({
+  // Check which users have recent confessions (and the latest timestamp per user)
+  const { data: usersWithConfessions = {} as Record<string, number> } = useQuery({
     queryKey: ['users-with-confessions'],
     queryFn: async () => {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
         .from('confessions')
-        .select('user_id')
+        .select('user_id, created_at')
         .not('user_id', 'is', null)
         .gte('created_at', oneDayAgo);
-      return new Set((data || []).map(c => c.user_id).filter(Boolean));
+      const map: Record<string, number> = {};
+      (data || []).forEach((c: any) => {
+        const ts = new Date(c.created_at).getTime();
+        if (!map[c.user_id] || ts > map[c.user_id]) map[c.user_id] = ts;
+      });
+      return map;
     },
     staleTime: 60000,
   });
@@ -131,7 +137,7 @@ export default function ChatListPage() {
             lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : undefined,
             unreadCount: unreadCounts[profile.id] || 0,
             type: 'user' as const,
-            hasUnseenConfessions: usersWithConfessions.has(profile.id),
+            hasUnseenConfessions: !!usersWithConfessions[profile.id] && !hasUserBeenViewed(profile.id, usersWithConfessions[profile.id]),
           };
         })
       );
@@ -201,9 +207,8 @@ export default function ChatListPage() {
   };
 
   const visibleChats = filteredChats.filter((c) => {
-    if (activeTab === 'chats') return c.type === 'user';
     if (activeTab === 'communities') return c.type === 'community';
-    return true;
+    return true; // 'all'
   });
 
   const totalUnread = filteredChats.reduce((s, c) => s + (c.unreadCount || 0), 0);
@@ -217,9 +222,8 @@ export default function ChatListPage() {
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         tabs={[
-          { id: 'chats', label: 'Chats', badge: totalUnread > 0 },
+          { id: 'all', label: 'All', badge: totalUnread > 0 },
           { id: 'communities', label: 'Communities' },
-          { id: 'status', label: 'Status' },
         ]}
         activeTab={activeTab}
         onTabChange={(id) => setActiveTab(id as any)}

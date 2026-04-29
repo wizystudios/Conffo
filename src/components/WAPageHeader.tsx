@@ -1,7 +1,6 @@
-import { ReactNode, useState } from 'react';
-import { Search, MoreVertical } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useNavigate } from 'react-router-dom';
+import { ReactNode } from 'react';
+import { Search } from 'lucide-react';
+import { MobileProfileDropdown } from '@/components/MobileProfileDropdown';
 import { useAuth } from '@/context/AuthContext';
 
 export interface WATab {
@@ -35,37 +34,16 @@ export function WAPageHeader({
   rightSlot,
   showAvatarChip = true,
 }: WAPageHeaderProps) {
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="sticky top-0 z-20 bg-background">
-      {/* Top row: avatar chip / title row */}
-      {showAvatarChip && isAuthenticated && user && (
-        <div className="flex justify-end items-center px-4 pt-3">
-          <button
-            onClick={() => navigate('/profile')}
-            className="flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-full bg-muted/60"
-          >
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={user.avatarUrl || ''} />
-              <AvatarFallback className="text-[10px]">
-                {user.username?.charAt(0)?.toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      )}
-
-      {/* Title row */}
-      <div className="flex items-center justify-between px-4 pt-2 pb-3">
+      {/* Title row — title + avatar chip on the SAME line */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <h1 className="text-[28px] font-bold leading-tight tracking-tight">{title}</h1>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {rightSlot}
-          <button className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/60">
-            <MoreVertical className="h-5 w-5" />
-          </button>
+          {showAvatarChip && isAuthenticated && <MobileProfileDropdown />}
         </div>
       </div>
 

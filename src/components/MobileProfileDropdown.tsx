@@ -57,14 +57,14 @@ export function MobileProfileDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="p-1 h-auto">
-          <Avatar className="h-6 w-6">
+        <button className="flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors p-0.5" aria-label="Open menu">
+          <Avatar className="h-9 w-9">
             <AvatarImage src={user.avatarUrl || ""} alt={user?.username || "User"} />
             <AvatarFallback className="text-xs">
               {user?.username?.charAt(0)?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
-        </Button>
+        </button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent align="end" side="top" className="w-48 mb-2">

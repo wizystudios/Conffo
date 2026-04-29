@@ -1,21 +1,19 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus, Play, Grid3X3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { BottomSlideModal } from '@/components/BottomSlideModal';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
-import { Room } from '@/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Room, Confession } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 import { CommunityList } from '@/components/CommunityList';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { CommunityMembersList } from '@/components/CommunityMembersList';
 import { CommunityOnboardingTour } from '@/components/CommunityOnboardingTour';
 import { Community } from '@/services/communityService';
-import { supabase } from '@/integrations/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
 
 const getRoomIcon = (name: string): string => {
@@ -28,19 +26,11 @@ const getRoomIcon = (name: string): string => {
   return '💬';
 };
 
-interface RoomUser {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
-  postCount: number;
-  latestPost?: string;
-}
-
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   const [activeView, setActiveView] = useState<'confessions' | 'communities'>('confessions');
   const [sortTab, setSortTab] = useState<'new' | 'supported' | 'discussed'>('new');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -50,16 +40,9 @@ export default function RoomPage() {
   const [communitiesKey, setCommunitiesKey] = useState(0);
   const [showOnboardingTour, setShowOnboardingTour] = useState(false);
   const [showNavSheet, setShowNavSheet] = useState(false);
-  const [immersiveUser, setImmersiveUser] = useState<RoomUser | null>(null);
-  const [showAllImmersive, setShowAllImmersive] = useState(false);
-  const [immersiveStartIndex, setImmersiveStartIndex] = useState(0);
-  const [viewedConfessionIds, setViewedConfessionIds] = useState<Set<string>>(new Set());
+  const [immersiveStartIndex, setImmersiveStartIndex] = useState<number | null>(null);
 
-  const { data: rooms = [] } = useQuery({
-    queryKey: ['rooms'],
-    queryFn: getRooms,
-  });
-  
+  const { data: rooms = [] } = useQuery({ queryKey: ['rooms'], queryFn: getRooms });
   const roomInfo = rooms.find(r => r.id === roomId);
 
   const { data: confessions = [], isLoading, refetch } = useQuery({
@@ -78,80 +61,12 @@ export default function RoomPage() {
     });
   }, [confessions, sortTab]);
 
-  // Build user list from confessions with post counts
-  const roomUsers = useMemo(() => {
-    const userMap = new Map<string, RoomUser>();
-    for (const c of sortedConfessions) {
-      if (!c.userId) continue;
-      const existing = userMap.get(c.userId);
-      if (existing) {
-        existing.postCount++;
-      } else {
-        userMap.set(c.userId, {
-          id: c.userId,
-          username: null,
-          avatar_url: null,
-          postCount: 1,
-          latestPost: c.content?.substring(0, 40),
-        });
-      }
-    }
-    return Array.from(userMap.values());
-  }, [sortedConfessions]);
-
-  // Fetch profiles for the user list
-  const { data: userProfiles = {} } = useQuery({
-    queryKey: ['room-user-profiles', roomId, roomUsers.map(u => u.id).join(',')],
-    queryFn: async () => {
-      const ids = roomUsers.map(u => u.id);
-      if (ids.length === 0) return {};
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, avatar_url, username')
-        .in('id', ids);
-      const map: Record<string, { username: string | null; avatar_url: string | null }> = {};
-      (data || []).forEach(p => { map[p.id] = { username: p.username, avatar_url: p.avatar_url }; });
-      return map;
-    },
-    enabled: roomUsers.length > 0,
-  });
-
-  const enrichedUsers = useMemo(() => {
-    return roomUsers.map(u => ({
-      ...u,
-      username: userProfiles[u.id]?.username || u.username,
-      avatar_url: userProfiles[u.id]?.avatar_url || u.avatar_url,
-    })).slice(0, 20);
-  }, [roomUsers, userProfiles]);
-
-  const userPosts = useMemo(() => {
-    if (!immersiveUser) return [];
-    return sortedConfessions.filter(c => c.userId === immersiveUser.id);
-  }, [immersiveUser, sortedConfessions]);
-  
   const handleConfessionSuccess = () => { refetch(); };
-
   const handleCommunityCreated = () => {
     setCommunitiesKey(prev => prev + 1);
     setShowOnboardingTour(true);
   };
 
-  const handleUserTap = (u: RoomUser) => {
-    const posts = sortedConfessions.filter(c => c.userId === u.id);
-    if (posts.length > 0) {
-      setImmersiveUser(u);
-      // Mark all this user's confessions as viewed
-      const newViewed = new Set(viewedConfessionIds);
-      posts.forEach(p => newViewed.add(p.id));
-      setViewedConfessionIds(newViewed);
-    }
-  };
-
-  const handleViewAll = () => {
-    setImmersiveStartIndex(0);
-    setShowAllImmersive(true);
-  };
-  
   if (!roomInfo) {
     return (
       <Layout>
@@ -181,7 +96,7 @@ export default function RoomPage() {
   }
 
   const roomIcon = getRoomIcon(roomInfo.name);
-  
+
   return (
     <Layout>
       <div className="max-w-lg mx-auto pb-24">
@@ -197,12 +112,12 @@ export default function RoomPage() {
                 <h1 className="font-bold">{roomInfo.name}</h1>
               </div>
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setShowNavSheet(true)}
               className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-muted/50"
             >
-              {activeView === 'confessions' 
+              {activeView === 'confessions'
                 ? (sortTab === 'new' ? 'New' : sortTab === 'supported' ? 'Top' : 'Discussed')
                 : 'Communities'}
               <ChevronDown className="h-3.5 w-3.5" />
@@ -215,88 +130,50 @@ export default function RoomPage() {
           <div className="p-4">
             <CommunityList key={communitiesKey} roomId={roomId || ''} onSelectCommunity={setSelectedCommunity} onCreateCommunity={() => setShowCreateCommunity(true)} />
           </div>
+        ) : isLoading ? (
+          <div className="grid grid-cols-3 gap-0.5 p-0.5">
+            {[1,2,3,4,5,6,7,8,9].map(i => (
+              <div key={i} className="aspect-square bg-muted/50 animate-pulse" />
+            ))}
+          </div>
+        ) : sortedConfessions.length === 0 ? (
+          <div className="text-center py-16 px-4">
+            <p className="text-muted-foreground">No confessions yet.</p>
+          </div>
         ) : (
-          <>
-            {/* WhatsApp-style status list */}
-            {enrichedUsers.length > 0 && (
-              <div className="border-b border-border/30">
-                {/* View All row */}
+          // Instagram-style 3-column grid
+          <div className="grid grid-cols-3 gap-0.5">
+            {sortedConfessions.map((c: Confession, idx) => {
+              const thumb = c.mediaUrls?.[0] || c.mediaUrl;
+              const isVideo = c.mediaType === 'video' || c.mediaTypes?.[0] === 'video';
+              const hasMulti = (c.mediaUrls?.length || 0) > 1;
+              return (
                 <button
-                  onClick={handleViewAll}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors"
+                  key={c.id}
+                  onClick={() => setImmersiveStartIndex(idx)}
+                  className="relative aspect-square bg-muted overflow-hidden active:opacity-80 transition-opacity"
                 >
-                  <div className="h-12 w-12 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center bg-primary/5 shrink-0">
-                    <span className="text-lg">👁</span>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-sm">View all</p>
-                    <p className="text-[11px] text-muted-foreground">{sortedConfessions.length} confessions</p>
-                  </div>
+                  {thumb ? (
+                    isVideo ? (
+                      <video src={thumb} className="w-full h-full object-cover" muted playsInline />
+                    ) : (
+                      <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    )
+                  ) : (
+                    <div className="w-full h-full p-2 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <p className="text-[11px] text-center line-clamp-5 text-foreground/80">{c.content}</p>
+                    </div>
+                  )}
+                  {isVideo && (
+                    <Play className="absolute top-1.5 right-1.5 h-3.5 w-3.5 text-white drop-shadow-lg" fill="white" />
+                  )}
+                  {hasMulti && (
+                    <Grid3X3 className="absolute top-1.5 right-1.5 h-3.5 w-3.5 text-white drop-shadow-lg" />
+                  )}
                 </button>
-
-                {enrichedUsers.map((u) => {
-                  const userConfessions = sortedConfessions.filter(c => c.userId === u.id);
-                  const segmentCount = Math.min(userConfessions.length, 8);
-                  const viewedCount = userConfessions.filter(c => viewedConfessionIds.has(c.id)).length;
-                  const allViewed = viewedCount === userConfessions.length;
-                  
-                  // Build per-segment conic gradient (green=unseen, grey=viewed)
-                  const buildSegmentedRing = () => {
-                    if (segmentCount <= 1) {
-                      return allViewed ? 'hsl(var(--muted))' : 'hsl(var(--primary))';
-                    }
-                    const segments: string[] = [];
-                    for (let i = 0; i < segmentCount; i++) {
-                      const isSegViewed = i < viewedCount;
-                      const color = isSegViewed ? 'hsl(var(--muted-foreground) / 0.3)' : 'hsl(var(--primary))';
-                      const start = (i / segmentCount) * 360;
-                      const end = ((i + 1) / segmentCount) * 360 - 4;
-                      const gapEnd = ((i + 1) / segmentCount) * 360;
-                      segments.push(`${color} ${start}deg, ${color} ${end}deg, transparent ${end}deg, transparent ${gapEnd}deg`);
-                    }
-                    return `conic-gradient(${segments.join(', ')})`;
-                  };
-                  
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => handleUserTap(u)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 active:bg-muted/40 transition-all duration-150"
-                    >
-                      <div className="relative shrink-0">
-                        <div
-                          className="h-12 w-12 rounded-full p-[2.5px] transition-all duration-300"
-                          style={{ background: buildSegmentedRing() }}
-                        >
-                          <Avatar className="h-full w-full border-2 border-background">
-                            <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
-                            <AvatarFallback className="text-xs">{u.username?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
-                          </Avatar>
-                        </div>
-                      </div>
-                      <div className="flex-1 text-left min-w-0">
-                        <p className="font-semibold text-sm truncate">{u.username || 'Anonymous'}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {u.postCount} confession{u.postCount > 1 ? 's' : ''}
-                          {viewedCount > 0 && viewedCount < u.postCount && ` · ${u.postCount - viewedCount} new`}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {isLoading ? (
-              <div className="p-4 space-y-3">
-                {[1, 2, 3].map((i) => (<div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />))}
-              </div>
-            ) : sortedConfessions.length === 0 ? (
-              <div className="text-center py-16 px-4">
-                <p className="text-muted-foreground">No confessions yet.</p>
-              </div>
-            ) : null}
-          </>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -310,10 +187,10 @@ export default function RoomPage() {
           <Plus className="h-6 w-6" />
         </button>
       )}
-      
+
       <CreateCommunityModal isOpen={showCreateCommunity} onClose={() => setShowCreateCommunity(false)} roomId={roomId || ''} onCreated={handleCommunityCreated} />
       <CommunityOnboardingTour isOpen={showOnboardingTour} onClose={() => setShowOnboardingTour(false)} communityName={roomInfo?.name || 'Community'} />
-      
+
       {/* Navigation Bottom Sheet */}
       <BottomSlideModal isOpen={showNavSheet} onClose={() => setShowNavSheet(false)} title="Navigate">
         <div className="px-4 pb-6 space-y-2">
@@ -336,15 +213,13 @@ export default function RoomPage() {
               <span className="font-medium text-sm">{item.label}</span>
             </button>
           ))}
-          
+
           <div className="h-px bg-border my-3" />
-          
+
           <button
             onClick={() => { setActiveView('communities'); setShowNavSheet(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              activeView === 'communities'
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
+              activeView === 'communities' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
             }`}
           >
             <Users className="h-4 w-4" />
@@ -353,23 +228,12 @@ export default function RoomPage() {
         </div>
       </BottomSlideModal>
 
-      {/* Immersive viewer for user tap */}
-      {immersiveUser && userPosts.length > 0 && (
-        <ImmersivePostViewer
-          confessions={userPosts}
-          onClose={() => setImmersiveUser(null)}
-          onUpdate={handleConfessionSuccess}
-          userName={immersiveUser.username || 'Anonymous'}
-          userAvatar={immersiveUser.avatar_url || ''}
-        />
-      )}
-
-      {/* Immersive viewer for all posts */}
-      {showAllImmersive && sortedConfessions.length > 0 && (
+      {/* Immersive viewer for tapped confession - shows ALL room confessions starting at index */}
+      {immersiveStartIndex !== null && sortedConfessions.length > 0 && (
         <ImmersivePostViewer
           confessions={sortedConfessions}
           startIndex={immersiveStartIndex}
-          onClose={() => setShowAllImmersive(false)}
+          onClose={() => setImmersiveStartIndex(null)}
           onUpdate={handleConfessionSuccess}
         />
       )}
