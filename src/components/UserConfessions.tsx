@@ -187,7 +187,10 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
             <div 
               key={confession.id} 
               className="relative aspect-square bg-muted cursor-pointer group overflow-hidden"
-              onClick={() => navigate(`/confession/${confession.id}`)}
+              onClick={() => {
+                setImmersive({ list: confessionsList, index: confessionsList.findIndex(c => c.id === confession.id) });
+                if (viewingUserId) markUserConfessionsViewed(viewingUserId);
+              }}
             >
               {hasMedia && thumbnailUrl ? (
                 <>
