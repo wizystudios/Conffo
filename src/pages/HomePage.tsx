@@ -1,14 +1,13 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
 import { WAPageHeader } from '@/components/WAPageHeader';
+import { HomeUserCircles } from '@/components/HomeUserCircles';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'all' | 'chats' | 'confessions'>('all');
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms'],
@@ -27,9 +26,15 @@ export default function HomePage() {
             { id: 'chats', label: 'Chats' },
             { id: 'confessions', label: 'Confessions' },
           ]}
-          activeTab={activeTab}
-          onTabChange={(id) => setActiveTab(id as any)}
+          activeTab="all"
+          onTabChange={(id) => {
+            if (id === 'chats') navigate('/chat');
+            else if (id === 'confessions') navigate('/search');
+          }}
         />
+
+        {/* People circles row */}
+        <HomeUserCircles onUserTap={(userId) => navigate(`/user/${userId}`)} />
 
         <div className="px-0">
           {isLoading ? (

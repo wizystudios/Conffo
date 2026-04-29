@@ -150,7 +150,7 @@ export default function RoomPage() {
               return (
                 <button
                   key={c.id}
-                  onClick={() => setImmersiveStartIndex(idx)}
+                  onClick={() => navigate(`/confession/${c.id}`)}
                   className="relative aspect-square bg-muted overflow-hidden active:opacity-80 transition-opacity"
                 >
                   {thumb ? (

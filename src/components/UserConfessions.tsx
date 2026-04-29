@@ -184,12 +184,12 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
           const thumbnailUrl = confession.mediaUrls?.[0] || confession.mediaUrl;
           
           return (
-            <div 
+          <div 
               key={confession.id} 
               className="relative aspect-square bg-muted cursor-pointer group overflow-hidden"
               onClick={() => {
-                setImmersive({ list: confessionsList, index: confessionsList.findIndex(c => c.id === confession.id) });
                 if (viewingUserId) markUserConfessionsViewed(viewingUserId);
+                navigate(`/confession/${confession.id}`);
               }}
             >
               {hasMedia && thumbnailUrl ? (
