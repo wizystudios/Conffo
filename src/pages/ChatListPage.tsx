@@ -137,7 +137,7 @@ export default function ChatListPage() {
             lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : undefined,
             unreadCount: unreadCounts[profile.id] || 0,
             type: 'user' as const,
-            hasUnseenConfessions: usersWithConfessions.has(profile.id),
+            hasUnseenConfessions: !!usersWithConfessions[profile.id] && !hasUserBeenViewed(profile.id, usersWithConfessions[profile.id]),
           };
         })
       );
