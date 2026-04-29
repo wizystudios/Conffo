@@ -23,6 +23,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { hasUserBeenViewed, getViewedMap } from '@/utils/viewedConfessions';
+import { useEffect, useState as useStateRefresh } from 'react';
 
 interface ChatUser {
   id: string;
