@@ -1,7 +1,9 @@
-import { ReactNode } from 'react';
-import { Search } from 'lucide-react';
-import { MobileProfileDropdown } from '@/components/MobileProfileDropdown';
+import { ReactNode, useState } from 'react';
+import { Search, ChevronDown } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
+import { FullPageMenu } from '@/components/FullPageMenu';
+import { haptic } from '@/utils/hapticFeedback';
 
 export interface WATab {
   id: string;
@@ -14,12 +16,37 @@ interface WAPageHeaderProps {
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (v: string) => void;
-  onSearchClick?: () => void; // if provided, search becomes a button
+  onSearchClick?: () => void;
   tabs?: WATab[];
   activeTab?: string;
   onTabChange?: (id: string) => void;
   rightSlot?: ReactNode;
   showAvatarChip?: boolean;
+}
+
+function ProfileMenuChip() {
+  const { user, isAuthenticated } = useAuth();
+  const [open, setOpen] = useState(false);
+  if (!isAuthenticated) return null;
+
+  return (
+    <>
+      <button
+        onClick={() => { haptic.light(); setOpen(true); }}
+        aria-label="Open menu"
+        className="flex items-center gap-1 rounded-full pl-0.5 pr-1.5 py-0.5 hover:bg-muted/60 transition-colors"
+      >
+        <Avatar className="h-9 w-9">
+          <AvatarImage src={user?.avatarUrl || ''} alt={user?.username || 'User'} />
+          <AvatarFallback className="text-xs">
+            {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+          </AvatarFallback>
+        </Avatar>
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <FullPageMenu isOpen={open} onClose={() => setOpen(false)} />
+    </>
+  );
 }
 
 export function WAPageHeader({
@@ -34,20 +61,16 @@ export function WAPageHeader({
   rightSlot,
   showAvatarChip = true,
 }: WAPageHeaderProps) {
-  const { isAuthenticated } = useAuth();
-
   return (
     <div className="sticky top-0 z-20 bg-background">
-      {/* Title row — title + avatar chip on the SAME line */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <h1 className="text-[28px] font-bold leading-tight tracking-tight">{title}</h1>
         <div className="flex items-center gap-2">
           {rightSlot}
-          {showAvatarChip && isAuthenticated && <MobileProfileDropdown />}
+          {showAvatarChip && <ProfileMenuChip />}
         </div>
       </div>
 
-      {/* Search pill */}
       <div className="px-4 pb-3">
         {onSearchClick ? (
           <button
@@ -70,7 +93,6 @@ export function WAPageHeader({
         )}
       </div>
 
-      {/* Tab strip with green underline */}
       {tabs && tabs.length > 0 && (
         <div className="flex items-center gap-7 px-5 border-b border-border/40">
           {tabs.map((t) => {
