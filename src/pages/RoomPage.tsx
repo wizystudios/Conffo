@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus, Play, Grid3X3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { BottomSlideModal } from '@/components/BottomSlideModal';
 import { useAuth } from '@/context/AuthContext';
 import { getConfessions, getRooms } from '@/services/supabaseDataService';
 import { Room } from '@/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { CommunityList } from '@/components/CommunityList';
 import { UnifiedChatInterface } from '@/components/UnifiedChatInterface';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
