@@ -57,14 +57,19 @@ export default function ConfessionFeedPage() {
     },
   });
 
-  // Scroll to the tapped confession once
+  // Scroll to the tapped confession once content is laid out
   useEffect(() => {
     if (scrolled || isLoading || !startId || confessions.length === 0) return;
-    const el = document.getElementById(`feed-item-${startId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'start' });
-      setScrolled(true);
-    }
+    // Wait two frames so cards mount and lay out first
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`feed-item-${startId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'auto', block: 'start' });
+          setScrolled(true);
+        }
+      });
+    });
   }, [confessions, isLoading, startId, scrolled]);
 
   return (
