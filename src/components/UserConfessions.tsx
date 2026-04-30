@@ -189,7 +189,8 @@ export function UserConfessions({ userId, onUpdate }: UserConfessionsProps) {
               className="relative aspect-square bg-muted cursor-pointer group overflow-hidden"
               onClick={() => {
                 if (viewingUserId) markUserConfessionsViewed(viewingUserId);
-                navigate(`/confession/${confession.id}`);
+                // Open Instagram-style vertical feed scoped to this user, starting at tapped post
+                navigate(`/feed/user/${viewingUserId}?start=${confession.id}`);
               }}
             >
               {hasMedia && thumbnailUrl ? (
