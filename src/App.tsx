@@ -17,6 +17,7 @@ const RoomsPage = lazy(() => import("./pages/RoomsPage"));
 const RoomPage = lazy(() => import("./pages/RoomPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ConfessionPage = lazy(() => import("./pages/ConfessionPage"));
+const ConfessionFeedPage = lazy(() => import("./pages/ConfessionFeedPage"));
 const TrendingPage = lazy(() => import("./pages/TrendingPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const MultiStepAuthPage = lazy(() => import("./pages/MultiStepAuthPage"));
