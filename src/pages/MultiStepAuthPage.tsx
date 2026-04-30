@@ -416,25 +416,26 @@ export default function MultiStepAuthPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-8">
       <div className="w-full max-w-sm space-y-10">
-        {/* Back button - only show when navigable */}
-        {((authMode === 'signin' && signinStep === 'password') || (authMode === 'signup' && signupStepIndex > 0)) && (
-          <button
-            onClick={() => {
-              if (authMode === 'signin' && signinStep === 'password') {
-                setSigninStep('identifier');
-                setAuthError(null);
-                return;
-              }
-              if (authMode === 'signup' && signupStepIndex > 0) {
-                handleSignupBack();
-                return;
-              }
-            }}
-            className="p-2 -ml-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-        )}
+        {/* Always-present back button */}
+        <button
+          onClick={() => {
+            if (authMode === 'signin' && signinStep === 'password') {
+              setSigninStep('identifier');
+              setAuthError(null);
+              return;
+            }
+            if (authMode === 'signup' && signupStepIndex > 0) {
+              handleSignupBack();
+              return;
+            }
+            // First step: go back to home
+            navigate('/');
+          }}
+          aria-label="Back"
+          className="p-2 -ml-2 rounded-full hover:bg-muted/50 active:scale-95 transition-transform"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
 
         {authError && (
           <p className="text-sm text-destructive text-center">{authError}</p>
