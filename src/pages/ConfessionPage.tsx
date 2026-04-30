@@ -100,11 +100,13 @@ export default function ConfessionPage() {
     <Layout>
       <div className="space-y-0">
         <div className="flex items-center justify-between py-2 px-4 bg-background sticky top-0 z-10 border-b border-border">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted/50 active:scale-95 transition-transform"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
           
           <h1 className="font-semibold">Confession</h1>
           
