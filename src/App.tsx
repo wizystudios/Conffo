@@ -17,6 +17,7 @@ const RoomsPage = lazy(() => import("./pages/RoomsPage"));
 const RoomPage = lazy(() => import("./pages/RoomPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ConfessionPage = lazy(() => import("./pages/ConfessionPage"));
+const ConfessionFeedPage = lazy(() => import("./pages/ConfessionFeedPage"));
 const TrendingPage = lazy(() => import("./pages/TrendingPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const MultiStepAuthPage = lazy(() => import("./pages/MultiStepAuthPage"));
@@ -106,6 +107,7 @@ const App = () => {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/user/:userId" element={<ProfilePage />} />
                   <Route path="/confession/:confessionId" element={<ConfessionPage />} />
+                  <Route path="/feed/:source/:sourceId?" element={<ConfessionFeedPage />} />
                   <Route path="/stories" element={<StoriesPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/search" element={<SearchPage />} />

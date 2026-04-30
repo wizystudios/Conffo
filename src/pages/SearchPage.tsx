@@ -69,7 +69,9 @@ export default function SearchPage() {
   };
 
   const openImmersive = (posts: any[], index: number) => {
-    setImmersiveData({ confessions: mapToConfessions(posts), startIndex: index });
+    const post = posts[index];
+    if (!post) return;
+    navigate(`/feed/discover?start=${post.id}`);
   };
 
   return (
