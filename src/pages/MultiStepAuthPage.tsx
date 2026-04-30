@@ -130,7 +130,8 @@ export default function MultiStepAuthPage() {
         });
         const { error } = await supabase.auth.signInWithPassword({ email: userWithEmail.contact_email, password });
         if (error) throw error;
-        setTimeout(() => { window.location.href = '/'; }, 500);
+        window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Welcome back' } }));
+        setTimeout(() => { window.location.href = '/'; }, 1500);
       } catch (error: any) {
         setAuthError(error?.message || 'Failed to sign in');
       } finally {
@@ -148,7 +149,8 @@ export default function MultiStepAuthPage() {
       });
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      setTimeout(() => { window.location.href = '/'; }, 500);
+      window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Welcome back' } }));
+      setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (error: any) {
       setAuthError(error?.message || 'Failed to sign in');
     } finally {
@@ -182,7 +184,8 @@ export default function MultiStepAuthPage() {
           location: country,
           updated_at: new Date().toISOString()
         });
-        setTimeout(() => { window.location.href = '/'; }, 1000);
+        window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Account created' } }));
+        setTimeout(() => { window.location.href = '/'; }, 1500);
       }
     } catch (error: any) {
       setAuthError(error?.message || 'Failed to create account');
