@@ -100,7 +100,9 @@
 
   body {
     @apply bg-background text-foreground p-0 m-0;
-    font-family: 'Glacial Indifference', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-size: 13px; /* Optimized base font size for mobile */
   }
   
