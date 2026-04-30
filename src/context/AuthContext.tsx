@@ -212,7 +212,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       await supabase.auth.signOut({ scope: 'global' });
-      window.location.href = '/auth';
+      try {
+        window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Logged out' } }));
+      } catch {}
+      setTimeout(() => { window.location.href = '/auth'; }, 700);
     } catch (error) {
       console.error('Error signing out:', error);
       window.location.href = '/auth';
