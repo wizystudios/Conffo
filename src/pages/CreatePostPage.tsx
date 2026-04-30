@@ -144,7 +144,7 @@ export default function CreatePostPage() {
       distributeConfessionMentions({ confessionId: confession.id, content: finalContent, senderId: user.id }).catch(() => {});
       setUploadProgress(100);
 
-      toast({ title: "Confession shared!", description: "Your confession has been shared." });
+      window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Shared!' } }));
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Error submitting confession:', error);
