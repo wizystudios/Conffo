@@ -453,7 +453,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
       {/* Caption ABOVE media */}
       {confession.content && (
         <div className="px-4" style={{ marginBottom: 0, paddingBottom: 0 }}>
-          <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "'Glacial Indifference', sans-serif", marginBottom: 0 }}>
+          <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Roboto, sans-serif", marginBottom: 0 }}>
             <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
             {(() => {
               const parts = displayContent.split(/(@\w+)/g);
@@ -470,7 +470,7 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             <button 
               onClick={() => setShowFullContent(!showFullContent)}
               className="text-muted-foreground text-[10px] hover:text-foreground"
-              style={{ fontFamily: "'Glacial Indifference', sans-serif" }}
+              style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Roboto, sans-serif" }}
             >
               {showFullContent ? 'see less' : 'see more'}
             </button>

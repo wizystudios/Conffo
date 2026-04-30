@@ -164,18 +164,31 @@ export function FullScreenFollowersModal({ isOpen, onClose, userId, initialTab =
     return (
       <div className="space-y-1">
         {users.map((userData) => (
-          <div key={userData.id} className="flex items-center justify-between p-3 hover:bg-muted/20 transition-colors rounded-lg">
-            <UsernameDisplay 
+          <div
+            key={userData.id}
+            className="flex items-center justify-between p-3 hover:bg-muted/20 active:bg-muted/30 transition-colors rounded-lg cursor-pointer"
+            onClick={() => {
+              if (!isAuthenticated) return;
+              onClose();
+              // Defer navigation so the dialog closes cleanly first
+              setTimeout(() => {
+                window.location.assign(`/user/${userData.id}`);
+              }, 50);
+            }}
+          >
+            <UsernameDisplay
               userId={userData.id}
               showAvatar={true}
               size="sm"
-              linkToProfile={isAuthenticated}
+              linkToProfile={false}
             />
             {isAuthenticated && userData.id !== user?.id && (
-              <FollowButton 
-                userId={userData.id} 
-                onFollowChange={() => fetchFollowData()}
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <FollowButton
+                  userId={userData.id}
+                  onFollowChange={() => fetchFollowData()}
+                />
+              </div>
             )}
           </div>
         ))}

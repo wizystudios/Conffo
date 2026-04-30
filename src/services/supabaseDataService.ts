@@ -834,14 +834,15 @@ export const getUserConfessions = async (userId: string): Promise<Confession[]> 
     const { data, error } = await supabase
       .from('confessions')
       .select(`
-        id, 
-        content, 
-        room_id, 
-        user_id, 
+        id,
+        content,
+        room_id,
+        user_id,
         created_at,
         media_url,
         media_type,
-        tags
+        tags,
+        confession_media ( media_url, media_type, order_index )
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -891,9 +892,25 @@ export const getUserConfessions = async (userId: string): Promise<Confession[]> 
               (typeof reactionData === 'object' && 'heart' in reactionData ? Number(reactionData.heart) || 0 : 0) : 0
       };
       
-      // Fix: Cast media_type to the correct union type
-      const mediaType = row.media_type as 'image' | 'video' | 'audio' | undefined;
-      
+      // Build media arrays from confession_media (multi) with fallback to media_url
+      let mediaUrls: string[] = [];
+      let mediaTypes: ('image' | 'video' | 'audio')[] = [];
+      const mediaRows = (row as any).confession_media as
+        | Array<{ media_url: string; media_type: string; order_index: number }>
+        | undefined;
+      if (mediaRows && mediaRows.length > 0) {
+        const sorted = [...mediaRows].sort(
+          (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+        );
+        mediaUrls = sorted.map((m) => m.media_url);
+        mediaTypes = sorted.map((m) => (m.media_type as any) || 'image');
+      } else if (row.media_url) {
+        mediaUrls = [row.media_url];
+        mediaTypes = [(row.media_type as any) || 'image'];
+      }
+      const singleMediaUrl = mediaUrls[0] || row.media_url || null;
+      const singleMediaType = (mediaTypes[0] || row.media_type) as 'image' | 'video' | 'audio' | undefined;
+
       return {
         id: row.id,
         content: row.content,
@@ -903,8 +920,10 @@ export const getUserConfessions = async (userId: string): Promise<Confession[]> 
         reactions,
         commentCount: typeof commentCount === 'number' ? commentCount : 0,
         userReactions,
-        mediaUrl: row.media_url || null,
-        mediaType,
+        mediaUrl: singleMediaUrl,
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        mediaType: singleMediaType,
+        mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
         tags: row.tags || []
       };
     }));

@@ -105,7 +105,7 @@ export default function RoomPage() {
         <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-lg border-b border-border/30">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <button onClick={() => navigate('/')}>
+              <button onClick={() => navigate(-1)} aria-label="Back">
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-2">
