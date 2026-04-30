@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus, Play, Grid3X3 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, MessageSquare, Users, TrendingUp, MessageCircle, Plus } from 'lucide-react';
+import { InstagramConfessionCard } from '@/components/InstagramConfessionCard';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/Layout';
 import { BottomSlideModal } from '@/components/BottomSlideModal';
@@ -131,9 +132,9 @@ export default function RoomPage() {
             <CommunityList key={communitiesKey} roomId={roomId || ''} onSelectCommunity={setSelectedCommunity} onCreateCommunity={() => setShowCreateCommunity(true)} />
           </div>
         ) : isLoading ? (
-          <div className="grid grid-cols-3 gap-0.5 p-0.5">
-            {[1,2,3,4,5,6,7,8,9].map(i => (
-              <div key={i} className="aspect-square bg-muted/50 animate-pulse" />
+          <div className="space-y-4 p-4">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-72 rounded-xl bg-muted/40 animate-pulse" />
             ))}
           </div>
         ) : sortedConfessions.length === 0 ? (
@@ -141,38 +142,15 @@ export default function RoomPage() {
             <p className="text-muted-foreground">No confessions yet.</p>
           </div>
         ) : (
-          // Instagram-style 3-column grid
-          <div className="grid grid-cols-3 gap-0.5">
-            {sortedConfessions.map((c: Confession, idx) => {
-              const thumb = c.mediaUrls?.[0] || c.mediaUrl;
-              const isVideo = c.mediaType === 'video' || c.mediaTypes?.[0] === 'video';
-              const hasMulti = (c.mediaUrls?.length || 0) > 1;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => navigate(`/confession/${c.id}`)}
-                  className="relative aspect-square bg-muted overflow-hidden active:opacity-80 transition-opacity"
-                >
-                  {thumb ? (
-                    isVideo ? (
-                      <video src={thumb} className="w-full h-full object-cover" muted playsInline />
-                    ) : (
-                      <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
-                    )
-                  ) : (
-                    <div className="w-full h-full p-2 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-                      <p className="text-[11px] text-center line-clamp-5 text-foreground/80">{c.content}</p>
-                    </div>
-                  )}
-                  {isVideo && (
-                    <Play className="absolute top-1.5 right-1.5 h-3.5 w-3.5 text-white drop-shadow-lg" fill="white" />
-                  )}
-                  {hasMulti && (
-                    <Grid3X3 className="absolute top-1.5 right-1.5 h-3.5 w-3.5 text-white drop-shadow-lg" />
-                  )}
-                </button>
-              );
-            })}
+          // Instagram-style vertical feed
+          <div className="divide-y divide-border/40">
+            {sortedConfessions.map((c: Confession) => (
+              <InstagramConfessionCard
+                key={c.id}
+                confession={c}
+                onUpdate={handleConfessionSuccess}
+              />
+            ))}
           </div>
         )}
       </div>
