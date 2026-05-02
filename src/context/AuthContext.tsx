@@ -215,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Logged out' } }));
       } catch {}
-      setTimeout(() => { window.location.href = '/auth'; }, 700);
+      setTimeout(() => { window.location.href = '/auth'; }, 1700);
     } catch (error) {
       console.error('Error signing out:', error);
       window.location.href = '/auth';
