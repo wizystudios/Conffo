@@ -217,6 +217,31 @@ export function UnifiedChatInterface({
     }
   }, [isCommunityChat, targetUserId, user?.id]);
 
+  useEffect(() => {
+    if (isCommunityChat || !targetUserId || !user?.id) return;
+
+    const loadRequest = async () => {
+      try {
+        setMessageRequest(await getMessageRequestBetweenUsers(targetUserId));
+      } catch (error) {
+        console.error('Error loading message request:', error);
+      }
+    };
+
+    loadRequest();
+    const channel = supabase
+      .channel(`message-request-${user.id}-${targetUserId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_requests' }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if ((row?.sender_id === user.id && row?.receiver_id === targetUserId) || (row?.sender_id === targetUserId && row?.receiver_id === user.id)) {
+          loadRequest();
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isCommunityChat, targetUserId, user?.id]);
+
   // Auto-mark community messages as read when scrolling
   useEffect(() => {
     if (!isCommunityChat || !community || !user?.id) return;
@@ -306,6 +331,8 @@ export function UnifiedChatInterface({
         await sendCommunityMessage(community.id, content, type, mediaUrl, mediaDuration, replyId);
       } else if (targetUserId) {
         const newMsg = await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration, replyToMessage?.id);
+        window.dispatchEvent(new CustomEvent('conffo-chat-updated'));
+        getMessageRequestBetweenUsers(targetUserId).then(setMessageRequest).catch(console.error);
         if (replyToMessage) {
           newMsg.reply_to_message = replyToMessage;
         }
@@ -321,7 +348,7 @@ export function UnifiedChatInterface({
     } catch (error) {
       toast({
         title: "Failed to send",
-        description: "Message could not be delivered",
+        description: error instanceof Error ? error.message : "Message could not be delivered",
         variant: "destructive"
       });
     } finally {
