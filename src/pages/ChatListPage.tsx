@@ -324,7 +324,7 @@ export default function ChatListPage() {
                 </div>
                 <div className="flex-1 min-w-0 border-b border-border/40 pb-3 -mb-3">
                   <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className="font-semibold text-[15px] truncate">{chat.username}</span>
+                    <span className={`text-[15px] truncate ${chat.unreadCount && chat.unreadCount > 0 ? 'font-bold text-primary' : 'font-semibold'}`}>{chat.username}</span>
                     {chat.lastMessageTime && (
                       <span className={`text-[12px] shrink-0 ${chat.unreadCount && chat.unreadCount > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
                         {formatChatTime(chat.lastMessageTime)}
@@ -334,8 +334,8 @@ export default function ChatListPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <CheckCheck className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
-                      <p className="text-[13px] text-muted-foreground truncate">
-                        {chat.lastMessage || 'Start a conversation'}
+                      <p className={`text-[13px] truncate ${chat.unreadCount && chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                        {chat.request?.status === 'pending' && chat.request.receiver_id === user?.id ? 'Message request' : chat.lastMessage || 'Start a conversation'}
                       </p>
                     </div>
                     {chat.unreadCount && chat.unreadCount > 0 ? (
