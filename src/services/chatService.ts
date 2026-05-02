@@ -185,6 +185,14 @@ export const getConversations = async (): Promise<Conversation[]> => {
   const participantIds = conversations.map(conv => 
     conv.participant_1_id === user.user.id ? conv.participant_2_id : conv.participant_1_id
   );
+  const messageIds = conversations.map(conv => conv.last_message_id).filter(Boolean);
+
+  const { data: lastMessages } = messageIds.length > 0
+    ? await supabase
+        .from('messages')
+        .select('*')
+        .in('id', messageIds)
+    : { data: [] };
 
   if (participantIds.length > 0) {
     const { data: profiles } = await supabase
@@ -194,13 +202,17 @@ export const getConversations = async (): Promise<Conversation[]> => {
 
     return conversations.map(conv => ({
       ...conv,
+      last_message: (lastMessages || []).find(message => message.id === conv.last_message_id),
       other_participant: profiles?.find(profile => 
         profile.id === (conv.participant_1_id === user.user.id ? conv.participant_2_id : conv.participant_1_id)
       )
     }));
   }
 
-  return conversations;
+  return conversations.map(conv => ({
+    ...conv,
+    last_message: (lastMessages || []).find(message => message.id === conv.last_message_id),
+  }));
 };
 
 export const markMessageAsRead = async (messageId: string): Promise<void> => {
