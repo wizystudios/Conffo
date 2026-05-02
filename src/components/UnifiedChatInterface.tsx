@@ -647,6 +647,24 @@ export function UnifiedChatInterface({
           </div>
         ) : (
           <div className="space-y-1">
+            {!isCommunityChat && messageRequest?.status === 'pending' && (
+              <div className="mx-auto my-3 max-w-[320px] rounded-2xl border border-primary/20 bg-primary/5 p-3 text-center">
+                <ShieldAlert className="mx-auto mb-2 h-5 w-5 text-primary" />
+                <p className="text-xs font-semibold text-foreground">
+                  {incomingRequest ? `${displayName} sent you a message request` : 'Message request sent'}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {incomingRequest ? 'Accept to start chatting, ignore to hide it, or report if it feels unsafe.' : 'They can accept before this becomes a normal chat.'}
+                </p>
+                {incomingRequest && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <Button size="sm" className="h-8 text-xs" disabled={requestBusy} onClick={() => handleRequestAction('accepted')}>Reply</Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" disabled={requestBusy} onClick={() => handleRequestAction('ignored')}>Ignore</Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive" disabled={requestBusy} onClick={() => handleRequestAction('reported')}>Report</Button>
+                  </div>
+                )}
+              </div>
+            )}
             {messages.map((message: any, index: number) => {
               const msgSenderId = message.senderId || message.sender_id;
               const isOwn = msgSenderId === user?.id;
@@ -739,6 +757,11 @@ export function UnifiedChatInterface({
 
       {/* Input */}
       <div className="p-3 bg-background/80 backdrop-blur-md border-t border-border">
+        {!isCommunityChat && requestLocked && (
+          <div className="mb-2 rounded-xl bg-muted/70 px-3 py-2 text-center text-[11px] text-muted-foreground">
+            {incomingRequest ? 'Accept this request to reply.' : outgoingRequest ? 'Waiting for them to accept your request.' : 'This chat is hidden until you connect.'}
+          </div>
+        )}
         {showVoiceRecorder ? (
           <VoiceRecorder
             onRecordingComplete={handleVoiceComplete}
@@ -793,6 +816,7 @@ export function UnifiedChatInterface({
                     if (!isCommunityChat) sendTypingEvent();
                   }}
                   placeholder="Message..."
+                  disabled={requestLocked}
                   className="flex-1 border-0 bg-transparent h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0 px-0 shadow-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -819,7 +843,7 @@ export function UnifiedChatInterface({
                   </Button>
                   <Button 
                     onClick={() => handleSendMessage(newMessage)} 
-                    disabled={isSending}
+                    disabled={isSending || requestLocked}
                     size="icon"
                     className="h-10 w-10 rounded-full"
                   >
