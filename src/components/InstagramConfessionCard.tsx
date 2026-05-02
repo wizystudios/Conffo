@@ -36,6 +36,7 @@ import { MediaCarouselDisplay } from '@/components/MediaCarouselDisplay';
 import { LikesList } from '@/components/LikesList';
 import { DoubleTapHeart } from '@/components/DoubleTapHeart';
 import { VideoOverlayControls } from '@/components/VideoOverlayControls';
+import { MentionText } from '@/components/MentionText';
 
 interface InstagramConfessionCardProps {
   confession: Confession;
@@ -369,16 +370,15 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
   // Check if post has video content
   const hasVideoContent = mediaArray.some(m => m.type === 'video');
   
-  // Caption: show first line only, then "see more"
-  const getFirstLine = (text: string) => {
-    const firstLine = text.split('\n')[0];
-    return firstLine.length > 80 ? firstLine.substring(0, 80) + '...' : firstLine;
-  };
-  
-  const shouldTruncate = confession.content.length > 80 || confession.content.includes('\n');
+  // Only collapse truly long writing; keep mentions/hashtags visible and clickable.
+  const paragraphs = confession.content.split(/\n\s*\n/).filter(Boolean);
+  const shouldTruncate = paragraphs.length > 5;
   const displayContent = shouldTruncate && !showFullContent 
-    ? getFirstLine(confession.content)
+    ? paragraphs.slice(0, 5).join('\n\n')
     : confession.content;
+  const hiddenTokens = shouldTruncate && !showFullContent
+    ? Array.from(new Set((confession.content.match(/[@#]\w+/g) || []).filter(token => !displayContent.includes(token))))
+    : [];
 
   const handleVideoTap = () => {
     if (videoRef.current) {
@@ -404,9 +404,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
             linkToProfile={true}
             showStoryIndicator={true}
           />
-          <div className="inline-block bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium rounded-full">
+          <Link to={`/room/${confession.room}`} className="inline-block bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium rounded-full">
             #{confession.room}
-          </div>
+          </Link>
           <span className="text-muted-foreground text-xs">{formatTimeShort(new Date(confession.timestamp))}</span>
           {isAuthenticated && confession.userId !== user?.id && !isFollowing && (
             <>
@@ -455,16 +455,8 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
         <div className="px-4" style={{ marginBottom: 0, paddingBottom: 0 }}>
           <p className="text-[11px] leading-snug break-words overflow-hidden" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Roboto, sans-serif", marginBottom: 0 }}>
             <span className="font-semibold mr-1">{confessionAuthor?.username || 'Anonymous'}</span>
-            {(() => {
-              const parts = displayContent.split(/(@\w+)/g);
-              return parts.map((part, i) => 
-                part.startsWith('@') ? (
-                  <span key={i} className="text-primary font-bold">{part}</span>
-                ) : (
-                  <span key={i}>{part}</span>
-                )
-              );
-            })()}
+            <MentionText content={displayContent} />
+            {hiddenTokens.length > 0 && <MentionText content={` ${hiddenTokens.join(' ')}`} />}
           </p>
           {shouldTruncate && (
             <button 
