@@ -14,12 +14,31 @@ type HomeTab = 'all' | 'chats' | 'confessions';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<HomeTab>('all');
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms'],
     queryFn: getRooms,
   });
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['home-conversations'],
+    queryFn: getConversations,
+    enabled: isAuthenticated,
+  });
+
+  // When user taps Chats/Confessions and they HAVE content, jump straight there.
+  useEffect(() => {
+    if (activeTab === 'chats' && conversations.length > 0) {
+      navigate('/chat');
+      setActiveTab('all');
+    } else if (activeTab === 'confessions') {
+      // Always open the Instagram-style discover feed if there's anything to show
+      navigate('/feed/discover');
+      setActiveTab('all');
+    }
+  }, [activeTab, conversations.length, navigate]);
 
   return (
     <Layout showNavBar={false}>
