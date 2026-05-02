@@ -24,6 +24,7 @@ interface FullPageMenuProps {
 
 export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
   const { user } = useAuth();
+  const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -41,10 +42,8 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
   const handleLogout = async () => {
     haptic.medium();
     try {
-      await supabase.auth.signOut();
-      toast({ title: "Logged out successfully" });
-      navigate('/auth');
       onClose();
+      await signOut();
     } catch (error) {
       toast({ title: "Error", description: "Failed to log out", variant: "destructive" });
     }
