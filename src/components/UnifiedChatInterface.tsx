@@ -459,6 +459,9 @@ export function UnifiedChatInterface({
 
   const isLoading = isCommunityChat ? isCommunityLoading : dmLoading;
   const messages = (isCommunityChat ? communityMessages : dmMessages) as any[];
+  const incomingRequest = !isCommunityChat && messageRequest?.status === 'pending' && messageRequest.receiver_id === user?.id;
+  const outgoingRequest = !isCommunityChat && messageRequest?.status === 'pending' && messageRequest.sender_id === user?.id;
+  const requestLocked = !!incomingRequest || !!outgoingRequest || messageRequest?.status === 'ignored' || messageRequest?.status === 'reported';
   
   // Display info
   const displayName = isCommunityChat 
@@ -467,6 +470,24 @@ export function UnifiedChatInterface({
   const displayAvatar = isCommunityChat 
     ? community?.imageUrl 
     : (targetProfile?.avatar_url || targetAvatarUrl);
+
+  const handleRequestAction = async (status: 'accepted' | 'ignored' | 'reported') => {
+    if (!messageRequest || requestBusy) return;
+    setRequestBusy(true);
+    try {
+      if (status === 'reported') {
+        await reportMessageRequest(messageRequest, `Reported from chat with ${displayName || targetUserId}`);
+      } else {
+        await updateMessageRequestStatus(messageRequest.id, status);
+      }
+      setMessageRequest({ ...messageRequest, status });
+      window.dispatchEvent(new CustomEvent('conffo-chat-updated'));
+    } catch (error) {
+      toast({ title: 'Request action failed', variant: 'destructive' });
+    } finally {
+      setRequestBusy(false);
+    }
+  };
 
   return (
     <div 
