@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MessageCircle, Users, UserPlus, Crown, MessageSquarePlus, CheckCheck } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { hasUserBeenViewed } from '@/utils/viewedConfessions';
+import { getConversations, MessageRequest } from '@/services/chatService';
 
 interface ChatUser {
   id: string;
@@ -37,6 +38,7 @@ interface ChatUser {
   community?: Community;
   isCreator?: boolean;
   hasUnseenConfessions?: boolean;
+  request?: MessageRequest | null;
 }
 
 export default function ChatListPage() {
@@ -44,6 +46,7 @@ export default function ChatListPage() {
   const { user, isAuthenticated } = useAuth();
   const { unreadCounts } = useUnreadMessages();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [showMembers, setShowMembers] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -87,41 +90,35 @@ export default function ChatListPage() {
     staleTime: 60000,
   });
 
-  const { data: followedUsers = [], isLoading } = useQuery({
-    queryKey: ['followed-users', user?.id, blockedUserIds.length],
+  const { data: directChats = [], isLoading } = useQuery({
+    queryKey: ['chat-conversations', user?.id, blockedUserIds.length, usersWithConfessions],
     queryFn: async () => {
       if (!user) return [];
-      
-      const { data: follows } = await supabase
-        .from('user_follows')
-        .select('following_id')
-        .eq('follower_id', user.id);
-
-      if (!follows || follows.length === 0) return [];
-      
-      const followingIds = follows
-        .map(f => f.following_id)
+      const conversations = await getConversations();
+      const participantIds = conversations
+        .map(conv => conv.participant_1_id === user.id ? conv.participant_2_id : conv.participant_1_id)
         .filter(id => !blockedUserIds.includes(id));
-      
-      if (followingIds.length === 0) return [];
-      
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .in('id', followingIds);
 
-      const usersWithMessages = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          const { data: messages } = await supabase
-            .from('messages')
-            .select('content, message_type, created_at')
-            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${profile.id}),and(sender_id.eq.${profile.id},receiver_id.eq.${user.id})`)
-            .order('created_at', { ascending: false })
-            .limit(1);
+      const { data: requests } = participantIds.length > 0
+        ? await (supabase as any)
+            .from('message_requests')
+            .select('*')
+            .or(participantIds.map(id => `and(sender_id.eq.${id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${id})`).join(','))
+        : { data: [] };
 
-          const lastMsg = messages?.[0];
+      return conversations
+        .map((conv): ChatUser | null => {
+          const otherId = conv.participant_1_id === user.id ? conv.participant_2_id : conv.participant_1_id;
+          if (blockedUserIds.includes(otherId)) return null;
+
+          const request = ((requests || []) as MessageRequest[]).find(r =>
+            (r.sender_id === otherId && r.receiver_id === user.id) ||
+            (r.sender_id === user.id && r.receiver_id === otherId)
+          ) || null;
+          if (request?.status === 'ignored' || request?.status === 'reported') return null;
+
+          const lastMsg = conv.last_message;
           let lastMessage = '';
-          
           if (lastMsg) {
             if (lastMsg.message_type === 'text') lastMessage = lastMsg.content;
             else if (lastMsg.message_type === 'image') lastMessage = '📷 Photo';
@@ -130,22 +127,55 @@ export default function ChatListPage() {
           }
 
           return {
-            id: profile.id,
-            username: profile.username || 'User',
-            avatar_url: profile.avatar_url,
+            id: otherId,
+            username: conv.other_participant?.username || 'User',
+            avatar_url: conv.other_participant?.avatar_url || null,
             lastMessage,
-            lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : undefined,
-            unreadCount: unreadCounts[profile.id] || 0,
+            lastMessageTime: lastMsg ? new Date(lastMsg.created_at) : new Date(conv.last_activity),
+            unreadCount: unreadCounts[otherId] || 0,
             type: 'user' as const,
-            hasUnseenConfessions: !!usersWithConfessions[profile.id] && !hasUserBeenViewed(profile.id, usersWithConfessions[profile.id]),
+            request,
+            hasUnseenConfessions: !!usersWithConfessions[otherId] && !hasUserBeenViewed(otherId, usersWithConfessions[otherId]),
           };
         })
-      );
-
-      return usersWithMessages;
+        .filter(Boolean) as ChatUser[];
     },
     enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refreshChats = () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-conversations', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['home-conversations'] });
+    };
+
+    window.addEventListener('conffo-chat-updated', refreshChats);
+
+    const channel = supabase
+      .channel(`chat-list-live-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if (row?.sender_id === user.id || row?.receiver_id === user.id) refreshChats();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if (row?.participant_1_id === user.id || row?.participant_2_id === user.id) refreshChats();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_requests' }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if (row?.sender_id === user.id || row?.receiver_id === user.id) refreshChats();
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('conffo-chat-updated', refreshChats);
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, user?.id]);
 
   // Combine users and communities
   const allChats: ChatUser[] = [
@@ -159,7 +189,7 @@ export default function ChatListPage() {
       community: c,
       isCreator: c.creatorId === user?.id
     })),
-    ...followedUsers
+    ...directChats
   ].sort((a, b) => {
     if (!a.lastMessageTime && !b.lastMessageTime) return 0;
     if (!a.lastMessageTime) return 1;
