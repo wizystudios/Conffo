@@ -414,28 +414,28 @@ export default function MultiStepAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-8">
+    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-8 relative">
+      {/* Always-present back button - fixed top-left for visibility */}
+      <button
+        onClick={() => {
+          if (authMode === 'signin' && signinStep === 'password') {
+            setSigninStep('identifier');
+            setAuthError(null);
+            return;
+          }
+          if (authMode === 'signup' && signupStepIndex > 0) {
+            handleSignupBack();
+            return;
+          }
+          navigate('/');
+        }}
+        aria-label="Back"
+        className="fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-full bg-background/90 backdrop-blur border border-border/40 hover:bg-muted/50 active:scale-95 transition-transform shadow-sm"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
+
       <div className="w-full max-w-sm space-y-10">
-        {/* Always-present back button */}
-        <button
-          onClick={() => {
-            if (authMode === 'signin' && signinStep === 'password') {
-              setSigninStep('identifier');
-              setAuthError(null);
-              return;
-            }
-            if (authMode === 'signup' && signupStepIndex > 0) {
-              handleSignupBack();
-              return;
-            }
-            // First step: go back to home
-            navigate('/');
-          }}
-          aria-label="Back"
-          className="p-2 -ml-2 rounded-full hover:bg-muted/50 active:scale-95 transition-transform"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
 
         {authError && (
           <p className="text-sm text-destructive text-center">{authError}</p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Compass, Sparkles } from 'lucide-react';
 import { Layout } from '@/components/Layout';
@@ -7,17 +7,38 @@ import { WAPageHeader } from '@/components/WAPageHeader';
 import { HomeUserCircles } from '@/components/HomeUserCircles';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
+import { getConversations } from '@/services/chatService';
+import { useAuth } from '@/context/AuthContext';
 
 type HomeTab = 'all' | 'chats' | 'confessions';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<HomeTab>('all');
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms'],
     queryFn: getRooms,
   });
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['home-conversations'],
+    queryFn: getConversations,
+    enabled: isAuthenticated,
+  });
+
+  // When user taps Chats/Confessions and they HAVE content, jump straight there.
+  useEffect(() => {
+    if (activeTab === 'chats' && conversations.length > 0) {
+      navigate('/chat');
+      setActiveTab('all');
+    } else if (activeTab === 'confessions') {
+      // Always open the Instagram-style discover feed if there's anything to show
+      navigate('/feed/discover');
+      setActiveTab('all');
+    }
+  }, [activeTab, conversations.length, navigate]);
 
   return (
     <Layout showNavBar={false}>
@@ -41,20 +62,12 @@ export default function HomePage() {
         )}
 
         <div className="px-0">
-          {activeTab === 'chats' ? (
+          {activeTab === 'chats' && conversations.length === 0 ? (
             <EmptyHint
               icon={<MessageCircle className="h-12 w-12" />}
-              title="Open your conversations"
-              hint="Tap below to view all your DMs and communities."
-              ctaLabel="Go to Chats"
-              onCta={() => navigate('/chat')}
-            />
-          ) : activeTab === 'confessions' ? (
-            <EmptyHint
-              icon={<Compass className="h-12 w-12" />}
-              title="Discover confessions"
-              hint="Browse a vertical Instagram-style feed."
-              ctaLabel="Open Explore"
+              title="Start your first chat"
+              hint="Tap below to start vibe with others in DMs and communities."
+              ctaLabel="Find people"
               onCta={() => navigate('/search')}
             />
           ) : isLoading ? (

@@ -58,20 +58,55 @@ export default function ConfessionFeedPage() {
     const to = from + PAGE_SIZE - 1;
     const { data } = await supabase
       .from('confessions')
-      .select('id, content, room_id, created_at, user_id, media_url, media_type')
+      .select('id, content, room_id, created_at, user_id, media_url, media_type, confession_media ( media_url, media_type, order_index )')
       .order('created_at', { ascending: false })
       .range(from, to);
-    const mapped: Confession[] = (data || []).map((p: any) => ({
-      id: p.id,
-      content: p.content,
-      room: p.room_id as Room,
-      userId: p.user_id || '',
-      timestamp: new Date(p.created_at).getTime(),
-      reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
-      commentCount: 0,
-      mediaUrl: p.media_url,
-      mediaType: p.media_type,
-    }));
+    const mapped: Confession[] = (data || []).map((p: any) => {
+      let mediaUrls: string[] = [];
+      let mediaTypes: ('image' | 'video' | 'audio')[] = [];
+      let singleMediaUrl: string | null = null;
+      let singleMediaType: 'image' | 'video' | 'audio' | null = null;
+
+      const rows = p.confession_media as Array<{ media_url: string; media_type: string; order_index: number }> | null;
+      if (rows && rows.length > 0) {
+        const sorted = [...rows].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+        mediaUrls = sorted.map(m => m.media_url);
+        mediaTypes = sorted.map(m => (m.media_type as any) || 'image');
+        singleMediaUrl = mediaUrls[0];
+        singleMediaType = mediaTypes[0];
+      } else if (p.media_url) {
+        try {
+          if (typeof p.media_url === 'string' && p.media_url.startsWith('[')) {
+            mediaUrls = JSON.parse(p.media_url);
+            mediaTypes = mediaUrls.map(u => /\.(mp4|webm|mov)$/i.test(u) ? 'video' : 'image');
+            singleMediaUrl = mediaUrls[0];
+            singleMediaType = mediaTypes[0];
+          } else {
+            singleMediaUrl = p.media_url;
+            singleMediaType = (p.media_type as any) || 'image';
+            mediaUrls = [p.media_url];
+            mediaTypes = [singleMediaType!];
+          }
+        } catch {
+          singleMediaUrl = p.media_url;
+          singleMediaType = (p.media_type as any) || 'image';
+        }
+      }
+
+      return {
+        id: p.id,
+        content: p.content,
+        room: p.room_id as Room,
+        userId: p.user_id || '',
+        timestamp: new Date(p.created_at).getTime(),
+        reactions: { like: 0, laugh: 0, shock: 0, heart: 0 },
+        commentCount: 0,
+        mediaUrl: singleMediaUrl,
+        mediaType: singleMediaType,
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
+      } as Confession;
+    });
     setDiscoverPosts(prev => (page === 0 ? mapped : [...prev, ...mapped]));
     setDiscoverHasMore(mapped.length === PAGE_SIZE);
     setDiscoverLoadingMore(false);
