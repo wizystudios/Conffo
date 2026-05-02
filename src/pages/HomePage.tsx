@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Compass, Sparkles } from 'lucide-react';
 import { Layout } from '@/components/Layout';
@@ -7,6 +7,8 @@ import { WAPageHeader } from '@/components/WAPageHeader';
 import { HomeUserCircles } from '@/components/HomeUserCircles';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
+import { getConversations } from '@/services/chatService';
+import { useAuth } from '@/context/AuthContext';
 
 type HomeTab = 'all' | 'chats' | 'confessions';
 
