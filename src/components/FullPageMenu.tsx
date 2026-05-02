@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { haptic } from "@/utils/hapticFeedback";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -23,7 +22,7 @@ interface FullPageMenuProps {
 }
 
 export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -41,10 +40,8 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
   const handleLogout = async () => {
     haptic.medium();
     try {
-      await supabase.auth.signOut();
-      toast({ title: "Logged out successfully" });
-      navigate('/auth');
       onClose();
+      await signOut();
     } catch (error) {
       toast({ title: "Error", description: "Failed to log out", variant: "destructive" });
     }

@@ -104,7 +104,7 @@ export interface Comment {
 
 export interface Report {
   id: string;
-  type: 'confession' | 'comment';
+  type: 'confession' | 'comment' | 'message';
   itemId: string;
   reason: ReportReason;
   details?: string;

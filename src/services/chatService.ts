@@ -31,6 +31,44 @@ export interface Conversation {
   };
 }
 
+export interface MessageRequest {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: 'pending' | 'accepted' | 'ignored' | 'reported';
+  first_message_id?: string | null;
+  report_details?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getMessageRequestBetweenUsers = async (otherUserId: string): Promise<MessageRequest | null> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return null;
+
+  const { data, error } = await (supabase as any)
+    .from('message_requests')
+    .select('*')
+    .or(`and(sender_id.eq.${user.user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.user.id})`)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as MessageRequest | null;
+};
+
+export const areUsersConnectedForChat = async (otherUserId: string): Promise<boolean> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return false;
+  const { data, error } = await (supabase as any).rpc('are_users_connected', {
+    user1_uuid: user.user.id,
+    user2_uuid: otherUserId,
+  });
+  if (error) throw error;
+  return !!data;
+};
+
 export const sendMessage = async (
   receiverId: string,
   content: string,
@@ -41,6 +79,19 @@ export const sendMessage = async (
 ): Promise<Message> => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('User not authenticated');
+
+  const [isConnected, existingRequest] = await Promise.all([
+    areUsersConnectedForChat(receiverId),
+    getMessageRequestBetweenUsers(receiverId),
+  ]);
+
+  if (!isConnected && existingRequest?.status === 'pending') {
+    throw new Error(existingRequest.sender_id === user.user.id ? 'Your message request is still pending.' : 'Accept this message request before replying.');
+  }
+
+  if (!isConnected && (existingRequest?.status === 'ignored' || existingRequest?.status === 'reported')) {
+    throw new Error('You are not connected with this user. Add them to your Fans or Crew first.');
+  }
 
   const { data, error } = await supabase
     .from('messages')
@@ -57,7 +108,49 @@ export const sendMessage = async (
     .single();
 
   if (error) throw error;
+
+  if (!isConnected && !existingRequest) {
+    await (supabase as any)
+      .from('message_requests')
+      .insert({
+        sender_id: user.user.id,
+        receiver_id: receiverId,
+        first_message_id: data.id,
+        status: 'pending',
+      });
+  }
+
   return data as Message;
+};
+
+export const updateMessageRequestStatus = async (
+  requestId: string,
+  status: 'accepted' | 'ignored' | 'reported',
+  reportDetails?: string
+): Promise<void> => {
+  const payload: Record<string, unknown> = { status };
+  if (reportDetails) payload.report_details = reportDetails;
+
+  const { error } = await (supabase as any)
+    .from('message_requests')
+    .update(payload)
+    .eq('id', requestId);
+
+  if (error) throw error;
+};
+
+export const reportMessageRequest = async (request: MessageRequest, details: string): Promise<void> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) throw new Error('User not authenticated');
+
+  await updateMessageRequestStatus(request.id, 'reported', details);
+  await supabase.from('reports').insert({
+    item_type: 'message',
+    item_id: request.first_message_id || request.id,
+    reason: 'spam',
+    details: details || 'Unwanted message request',
+    user_id: user.user.id,
+  });
 };
 
 export const getMessages = async (userId: string, limit = 50): Promise<Message[]> => {
@@ -92,6 +185,14 @@ export const getConversations = async (): Promise<Conversation[]> => {
   const participantIds = conversations.map(conv => 
     conv.participant_1_id === user.user.id ? conv.participant_2_id : conv.participant_1_id
   );
+  const messageIds = conversations.map(conv => conv.last_message_id).filter(Boolean);
+
+  const { data: lastMessages } = messageIds.length > 0
+    ? await supabase
+        .from('messages')
+        .select('*')
+        .in('id', messageIds)
+    : { data: [] };
 
   if (participantIds.length > 0) {
     const { data: profiles } = await supabase
@@ -101,13 +202,17 @@ export const getConversations = async (): Promise<Conversation[]> => {
 
     return conversations.map(conv => ({
       ...conv,
+      last_message: (lastMessages || []).find(message => message.id === conv.last_message_id),
       other_participant: profiles?.find(profile => 
         profile.id === (conv.participant_1_id === user.user.id ? conv.participant_2_id : conv.participant_1_id)
       )
     }));
   }
 
-  return conversations;
+  return conversations.map(conv => ({
+    ...conv,
+    last_message: (lastMessages || []).find(message => message.id === conv.last_message_id),
+  }));
 };
 
 export const markMessageAsRead = async (messageId: string): Promise<void> => {

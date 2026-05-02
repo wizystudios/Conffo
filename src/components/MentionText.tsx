@@ -17,7 +17,7 @@ export function MentionText({ content, className = '' }: MentionTextProps) {
   const { data: mentionData } = useQuery({
     queryKey: ['mention-lookup', content],
     queryFn: async () => {
-      const mentionRegex = /@([\w\s]+?)(?=\s|$|@)/g;
+      const mentionRegex = /@(\w+)/g;
       const matches = [...content.matchAll(mentionRegex)];
       if (matches.length === 0) return {};
       
@@ -60,25 +60,37 @@ export function MentionText({ content, className = '' }: MentionTextProps) {
     }
   };
 
+  const handleRoomTap = (roomId: string) => {
+    navigate(`/room/${roomId.toLowerCase()}`);
+  };
+
   const renderContent = () => {
-    if (!mentionData || Object.keys(mentionData).length === 0) {
-      return <span>{content}</span>;
-    }
 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
-    const mentionRegex = /@([\w\s]+?)(?=\s|$|@)/g;
+    const mentionRegex = /(@\w+|#\w+)/g;
     let match;
 
     while ((match = mentionRegex.exec(content)) !== null) {
-      const name = match[1].trim();
-      const mentionInfo = mentionData[name.toLowerCase()];
+      const token = match[0];
+      const name = token.slice(1).trim();
+      const mentionInfo = token.startsWith('@') ? mentionData?.[name.toLowerCase()] : undefined;
       
       if (match.index > lastIndex) {
         parts.push(<span key={`text-${lastIndex}`}>{content.slice(lastIndex, match.index)}</span>);
       }
       
-      if (mentionInfo) {
+      if (token.startsWith('#')) {
+        parts.push(
+          <button
+            key={`room-${match.index}`}
+            onClick={(e) => { e.stopPropagation(); handleRoomTap(name); }}
+            className="inline-flex font-bold text-primary hover:underline"
+          >
+            #{name}
+          </button>
+        );
+      } else if (mentionInfo) {
         parts.push(
           <button
             key={`mention-${match.index}`}

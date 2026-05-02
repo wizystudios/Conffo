@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Message } from '@/services/chatService';
-import { FileText, Copy, Forward, Trash2, Reply, SmilePlus, Eye } from 'lucide-react';
+import { FileText, Copy, Forward, Trash2, Reply, SmilePlus, Eye, Download, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { haptic } from '@/utils/hapticFeedback';
 import { MessageReadReceipt } from '@/components/MessageReadReceipt';
 import { InlineReplyQuote } from '@/components/ReplyPreview';
@@ -57,6 +58,7 @@ export function ModernMessageBubble({
   const [showContext, setShowContext] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [reactionRefreshKey, setReactionRefreshKey] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
   
   // Swipe to reply state
   const [swipeX, setSwipeX] = useState(0);
@@ -222,19 +224,17 @@ export function ModernMessageBubble({
                 isOwn ? 'bg-primary' : 'bg-muted'
               }`}
             >
-              <a 
-                href={message.media_url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                download
-                className="block"
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="block w-full text-left"
               >
                 <img
                   src={message.media_url}
                   alt="Shared"
                   className="w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
                 />
-              </a>
+              </button>
               {/* Caption below image - like WhatsApp */}
               {message.content && message.content !== message.media_url && !message.content.match(/^(image|video|Voice message)/i) && (
                 <p className={`px-3 py-2 text-xs leading-relaxed break-words ${
@@ -248,13 +248,14 @@ export function ModernMessageBubble({
                 isOwn ? 'bg-primary' : 'bg-muted'
               }`}
             >
-              <video
-                src={message.media_url}
-                controls
-                playsInline
-                controlsList="download"
-                className="w-full max-h-[300px] object-contain"
-              />
+              <button type="button" onClick={() => setPreviewOpen(true)} className="block w-full">
+                <video
+                  src={message.media_url}
+                  playsInline
+                  muted
+                  className="w-full max-h-[300px] object-contain"
+                />
+              </button>
               {/* Caption below video - like WhatsApp */}
               {message.content && message.content !== message.media_url && !message.content.match(/^(image|video|Voice message)/i) && (
                 <p className={`px-3 py-2 text-xs leading-relaxed break-words ${
@@ -309,6 +310,35 @@ export function ModernMessageBubble({
           />
         </div>
       </div>
+
+      {(message.message_type === 'image' || message.message_type === 'video') && (
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-none w-screen h-screen p-0 border-0 bg-background/95 rounded-none">
+            <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-3 bg-background/80 backdrop-blur-md">
+              <Button variant="ghost" size="icon" onClick={() => setPreviewOpen(false)} className="rounded-full">
+                <X className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" asChild className="rounded-full">
+                  <a href={message.media_url} download aria-label="Download media">
+                    <Download className="h-5 w-5" />
+                  </a>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => { setPreviewOpen(false); onForward?.(); }} className="rounded-full">
+                  <Forward className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex h-full w-full items-center justify-center p-0 pt-14">
+              {message.message_type === 'image' ? (
+                <img src={message.media_url} alt="Shared" className="max-h-full max-w-full object-contain" />
+              ) : (
+                <video src={message.media_url} controls playsInline controlsList="download" className="max-h-full max-w-full object-contain" />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Long-press context menu */}
       <Sheet open={showContext} onOpenChange={setShowContext}>

@@ -577,6 +577,39 @@ export type Database = {
           },
         ]
       }
+      message_requests: {
+        Row: {
+          created_at: string
+          first_message_id: string | null
+          id: string
+          receiver_id: string
+          report_details: string | null
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_message_id?: string | null
+          id?: string
+          receiver_id: string
+          report_details?: string | null
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_message_id?: string | null
+          id?: string
+          receiver_id?: string
+          report_details?: string | null
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -678,6 +711,8 @@ export type Database = {
           is_verified: boolean | null
           location: string | null
           onboarding_completed: boolean | null
+          password_policy_updated_at: string | null
+          password_policy_version: number
           privacy_settings: Json | null
           updated_at: string
           username: string | null
@@ -702,6 +737,8 @@ export type Database = {
           is_verified?: boolean | null
           location?: string | null
           onboarding_completed?: boolean | null
+          password_policy_updated_at?: string | null
+          password_policy_version?: number
           privacy_settings?: Json | null
           updated_at?: string
           username?: string | null
@@ -726,6 +763,8 @@ export type Database = {
           is_verified?: boolean | null
           location?: string | null
           onboarding_completed?: boolean | null
+          password_policy_updated_at?: string | null
+          password_policy_version?: number
           privacy_settings?: Json | null
           updated_at?: string
           username?: string | null
@@ -1041,8 +1080,16 @@ export type Database = {
         Args: { user1_uuid: string; user2_uuid: string }
         Returns: boolean
       }
+      are_users_connected: {
+        Args: { user1_uuid: string; user2_uuid: string }
+        Returns: boolean
+      }
       can_access_profile: {
         Args: { profile_user_id: string }
+        Returns: boolean
+      }
+      can_send_direct_message: {
+        Args: { receiver_uuid: string; sender_uuid: string }
         Returns: boolean
       }
       can_view_user_info: {

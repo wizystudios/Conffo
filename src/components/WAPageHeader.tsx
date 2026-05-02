@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import { FullPageMenu } from '@/components/FullPageMenu';
@@ -34,7 +34,7 @@ function ProfileMenuChip() {
       <button
         onClick={() => { haptic.light(); setOpen(true); }}
         aria-label="Open menu"
-        className="rounded-full hover:opacity-90 transition-opacity active:scale-95"
+        className="flex items-center gap-1 rounded-full hover:opacity-90 transition-opacity active:scale-95"
       >
         <Avatar className="h-9 w-9">
           <AvatarImage src={user?.avatarUrl || ''} alt={user?.username || 'User'} />
@@ -42,6 +42,7 @@ function ProfileMenuChip() {
             {user?.username?.charAt(0)?.toUpperCase() || 'U'}
           </AvatarFallback>
         </Avatar>
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />
       </button>
       <FullPageMenu isOpen={open} onClose={() => setOpen(false)} />
     </>

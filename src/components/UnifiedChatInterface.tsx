@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw, Clock, X, Reply, Users, Crown, Edit, MessageSquare, Palette } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Mic, Image as ImageIcon, Smile, MoreVertical, Search, RefreshCw, Clock, X, Reply, Users, Crown, Edit, MessageSquare, Palette, ShieldAlert } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { sendMessage, uploadChatMedia, deleteMessage, editMessage, markConversationAsRead, Message } from '@/services/chatService';
+import { sendMessage, uploadChatMedia, deleteMessage, editMessage, markConversationAsRead, Message, getMessageRequestBetweenUsers, updateMessageRequestStatus, reportMessageRequest, MessageRequest } from '@/services/chatService';
 import { sendCommunityMessage, getCommunityMessages, getCommunityMembers, CommunityMessage, Community } from '@/services/communityService';
 import { useRealTimeChat } from '@/hooks/useRealTimeChat';
 import { useQuery } from '@tanstack/react-query';
@@ -113,6 +113,8 @@ export function UnifiedChatInterface({
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showWallpaperSettings, setShowWallpaperSettings] = useState(false);
   const [wallpaperPref, setWallpaperPref] = useState(getChatWallpaperPreference());
+  const [messageRequest, setMessageRequest] = useState<MessageRequest | null>(null);
+  const [requestBusy, setRequestBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -215,6 +217,31 @@ export function UnifiedChatInterface({
     }
   }, [isCommunityChat, targetUserId, user?.id]);
 
+  useEffect(() => {
+    if (isCommunityChat || !targetUserId || !user?.id) return;
+
+    const loadRequest = async () => {
+      try {
+        setMessageRequest(await getMessageRequestBetweenUsers(targetUserId));
+      } catch (error) {
+        console.error('Error loading message request:', error);
+      }
+    };
+
+    loadRequest();
+    const channel = supabase
+      .channel(`message-request-${user.id}-${targetUserId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_requests' }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if ((row?.sender_id === user.id && row?.receiver_id === targetUserId) || (row?.sender_id === targetUserId && row?.receiver_id === user.id)) {
+          loadRequest();
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isCommunityChat, targetUserId, user?.id]);
+
   // Auto-mark community messages as read when scrolling
   useEffect(() => {
     if (!isCommunityChat || !community || !user?.id) return;
@@ -304,6 +331,8 @@ export function UnifiedChatInterface({
         await sendCommunityMessage(community.id, content, type, mediaUrl, mediaDuration, replyId);
       } else if (targetUserId) {
         const newMsg = await sendMessage(targetUserId, content, type, mediaUrl, mediaDuration, replyToMessage?.id);
+        window.dispatchEvent(new CustomEvent('conffo-chat-updated'));
+        getMessageRequestBetweenUsers(targetUserId).then(setMessageRequest).catch(console.error);
         if (replyToMessage) {
           newMsg.reply_to_message = replyToMessage;
         }
@@ -319,7 +348,7 @@ export function UnifiedChatInterface({
     } catch (error) {
       toast({
         title: "Failed to send",
-        description: "Message could not be delivered",
+        description: error instanceof Error ? error.message : "Message could not be delivered",
         variant: "destructive"
       });
     } finally {
@@ -430,6 +459,9 @@ export function UnifiedChatInterface({
 
   const isLoading = isCommunityChat ? isCommunityLoading : dmLoading;
   const messages = (isCommunityChat ? communityMessages : dmMessages) as any[];
+  const incomingRequest = !isCommunityChat && messageRequest?.status === 'pending' && messageRequest.receiver_id === user?.id;
+  const outgoingRequest = !isCommunityChat && messageRequest?.status === 'pending' && messageRequest.sender_id === user?.id;
+  const requestLocked = !!incomingRequest || !!outgoingRequest || messageRequest?.status === 'ignored' || messageRequest?.status === 'reported';
   
   // Display info
   const displayName = isCommunityChat 
@@ -438,6 +470,24 @@ export function UnifiedChatInterface({
   const displayAvatar = isCommunityChat 
     ? community?.imageUrl 
     : (targetProfile?.avatar_url || targetAvatarUrl);
+
+  const handleRequestAction = async (status: 'accepted' | 'ignored' | 'reported') => {
+    if (!messageRequest || requestBusy) return;
+    setRequestBusy(true);
+    try {
+      if (status === 'reported') {
+        await reportMessageRequest(messageRequest, `Reported from chat with ${displayName || targetUserId}`);
+      } else {
+        await updateMessageRequestStatus(messageRequest.id, status);
+      }
+      setMessageRequest({ ...messageRequest, status });
+      window.dispatchEvent(new CustomEvent('conffo-chat-updated'));
+    } catch (error) {
+      toast({ title: 'Request action failed', variant: 'destructive' });
+    } finally {
+      setRequestBusy(false);
+    }
+  };
 
   return (
     <div 
@@ -597,6 +647,24 @@ export function UnifiedChatInterface({
           </div>
         ) : (
           <div className="space-y-1">
+            {!isCommunityChat && messageRequest?.status === 'pending' && (
+              <div className="mx-auto my-3 max-w-[320px] rounded-2xl border border-primary/20 bg-primary/5 p-3 text-center">
+                <ShieldAlert className="mx-auto mb-2 h-5 w-5 text-primary" />
+                <p className="text-xs font-semibold text-foreground">
+                  {incomingRequest ? `${displayName} sent you a message request` : 'Message request sent'}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {incomingRequest ? 'Accept to start chatting, ignore to hide it, or report if it feels unsafe.' : 'They can accept before this becomes a normal chat.'}
+                </p>
+                {incomingRequest && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <Button size="sm" className="h-8 text-xs" disabled={requestBusy} onClick={() => handleRequestAction('accepted')}>Reply</Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" disabled={requestBusy} onClick={() => handleRequestAction('ignored')}>Ignore</Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive" disabled={requestBusy} onClick={() => handleRequestAction('reported')}>Report</Button>
+                  </div>
+                )}
+              </div>
+            )}
             {messages.map((message: any, index: number) => {
               const msgSenderId = message.senderId || message.sender_id;
               const isOwn = msgSenderId === user?.id;
@@ -689,6 +757,11 @@ export function UnifiedChatInterface({
 
       {/* Input */}
       <div className="p-3 bg-background/80 backdrop-blur-md border-t border-border">
+        {!isCommunityChat && requestLocked && (
+          <div className="mb-2 rounded-xl bg-muted/70 px-3 py-2 text-center text-[11px] text-muted-foreground">
+            {incomingRequest ? 'Accept this request to reply.' : outgoingRequest ? 'Waiting for them to accept your request.' : 'This chat is hidden until you connect.'}
+          </div>
+        )}
         {showVoiceRecorder ? (
           <VoiceRecorder
             onRecordingComplete={handleVoiceComplete}
@@ -743,6 +816,7 @@ export function UnifiedChatInterface({
                     if (!isCommunityChat) sendTypingEvent();
                   }}
                   placeholder="Message..."
+                  disabled={requestLocked}
                   className="flex-1 border-0 bg-transparent h-7 text-xs focus-visible:ring-0 focus-visible:ring-offset-0 px-0 shadow-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -769,7 +843,7 @@ export function UnifiedChatInterface({
                   </Button>
                   <Button 
                     onClick={() => handleSendMessage(newMessage)} 
-                    disabled={isSending}
+                    disabled={isSending || requestLocked}
                     size="icon"
                     className="h-10 w-10 rounded-full"
                   >
@@ -824,7 +898,7 @@ export function UnifiedChatInterface({
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
         itemId={reportMessageId || ''}
-        type="confession"
+        type="message"
       />
 
       <MediaPreviewModal
