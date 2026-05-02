@@ -703,7 +703,7 @@ export const deleteComment = async (
 
 // Add missing addReport function
 export const addReport = async (
-  type: 'confession' | 'comment',
+  type: 'confession' | 'comment' | 'message',
   itemId: string,
   reason: ReportReason,
   details: string,
