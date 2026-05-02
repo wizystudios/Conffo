@@ -898,7 +898,7 @@ export function UnifiedChatInterface({
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
         itemId={reportMessageId || ''}
-        type="confession"
+        type="message"
       />
 
       <MediaPreviewModal
