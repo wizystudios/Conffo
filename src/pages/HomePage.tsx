@@ -62,20 +62,12 @@ export default function HomePage() {
         )}
 
         <div className="px-0">
-          {activeTab === 'chats' ? (
+          {activeTab === 'chats' && conversations.length === 0 ? (
             <EmptyHint
               icon={<MessageCircle className="h-12 w-12" />}
-              title="Open your conversations"
-              hint="Tap below to view all your DMs and communities."
-              ctaLabel="Go to Chats"
-              onCta={() => navigate('/chat')}
-            />
-          ) : activeTab === 'confessions' ? (
-            <EmptyHint
-              icon={<Compass className="h-12 w-12" />}
-              title="Discover confessions"
-              hint="Browse a vertical Instagram-style feed."
-              ctaLabel="Open Explore"
+              title="Start your first chat"
+              hint="Tap below to start vibe with others in DMs and communities."
+              ctaLabel="Find people"
               onCta={() => navigate('/search')}
             />
           ) : isLoading ? (
