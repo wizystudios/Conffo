@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: 'confession' | 'comment';
+  type: 'confession' | 'comment' | 'message';
   itemId: string;
 }
 
@@ -69,7 +69,7 @@ export function ReportDialog({ open, onOpenChange, type, itemId }: ReportDialogP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report {type === 'confession' ? 'Confession' : 'Comment'}</DialogTitle>
+          <DialogTitle>Report {type === 'confession' ? 'Confession' : type === 'comment' ? 'Comment' : 'Message'}</DialogTitle>
           <DialogDescription>
             Let us know why this content is inappropriate or violates our community guidelines.
           </DialogDescription>
