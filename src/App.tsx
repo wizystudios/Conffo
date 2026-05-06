@@ -38,6 +38,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
 import { OnboardingGate } from "./components/OnboardingGate";
+import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
 import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => {
@@ -124,6 +125,7 @@ const App = () => {
                 </Routes>
               </Suspense>
               <OnboardingGate />
+              <PasswordPolicyGate />
               <FishSuccessAnimation 
                 show={showAnimation} 
                 message={message}
