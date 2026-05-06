@@ -54,6 +54,48 @@ export default function SearchPage() {
     staleTime: 60000,
   });
 
+  // People you may know - by shared interests / location
+  const { data: suggestedPeople = [] } = useQuery({
+    queryKey: ['discover-suggested-people'],
+    queryFn: async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return [];
+      const { data: me } = await supabase
+        .from('profiles')
+        .select('interests, location')
+        .eq('id', authUser.id)
+        .maybeSingle();
+      const myInterests: string[] = (me?.interests as any) || [];
+      const myLocation: string | null = (me?.location as any) || null;
+
+      const { data: following } = await supabase
+        .from('user_follows')
+        .select('following_id')
+        .eq('follower_id', authUser.id);
+      const skip = new Set<string>([authUser.id, ...(following?.map(f => f.following_id) || [])]);
+
+      let query = supabase
+        .from('profiles')
+        .select('id, username, avatar_url, interests, location')
+        .neq('id', authUser.id)
+        .not('avatar_url', 'is', null)
+        .limit(40);
+      const { data: pool = [] } = await query;
+      const scored = (pool || [])
+        .filter(p => !skip.has(p.id))
+        .map((p: any) => {
+          const overlap = (p.interests || []).filter((i: string) => myInterests.includes(i)).length;
+          const sameLoc = myLocation && p.location && p.location === myLocation ? 1 : 0;
+          return { ...p, score: overlap * 2 + sameLoc, overlap, sameLoc };
+        })
+        .filter(p => p.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 12);
+      return scored;
+    },
+    staleTime: 120000,
+  });
+
   const mapToConfessions = (posts: any[]): Confession[] => {
     return posts.map((p: any) => ({
       id: p.id,
