@@ -57,7 +57,7 @@ export default function HomePage() {
         />
 
         {/* People circles row - always visible on All */}
-        {activeTab === 'all' && (
+        {activeTab === 'all' && isAuthenticated && (
           <HomeUserCircles onUserTap={(userId) => navigate(`/user/${userId}`)} />
         )}
 
