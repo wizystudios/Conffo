@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft, Loader2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
-import { CountrySelector } from '@/components/CountrySelector';
+import { CountrySelector, PhoneInput, getCountryDial } from '@/components/CountrySelector';
 
 type AuthMode = 'signin' | 'signup';
 type SigninMethod = 'email' | 'phone';
@@ -27,6 +27,7 @@ export default function MultiStepAuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState('US');
   const [username, setUsername] = useState('');
   const [birthdate, setBirthdate] = useState('');
   const [gender, setGender] = useState('');
@@ -35,14 +36,17 @@ export default function MultiStepAuthPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  const fullPhone = (): string => {
+    const dial = getCountryDial(phoneCountry) || '';
+    return `${dial}${phoneNumber.replace(/[^\d]/g, '')}`;
+  };
   const normalizePhone = (phone: string): string => {
     const digits = phone.replace(/[^\d+]/g, '');
     return digits.startsWith('+') ? digits : `+${digits}`;
   };
 
-  const isPhone = (value: string) => /^\+?[\d\s-]{10,}$/.test(value.replace(/\s/g, ''));
   const emailValid = email && /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
-  const phoneValid = isPhone(phoneNumber);
+  const phoneValid = !!phoneCountry && phoneNumber.replace(/\D/g, '').length >= 6;
   const passwordValid = password.length >= 6;
   const usernameValid = username.length >= 3 && username.length <= 30;
   const countryValid = !!country;
@@ -112,7 +116,7 @@ export default function MultiStepAuthPage() {
       setAuthError(null);
       try {
         setLoading(true);
-        const normalized = normalizePhone(phoneNumber);
+        const normalized = normalizePhone(fullPhone());
         const { data: profile } = await supabase
           .from('profiles')
           .select('id')
@@ -237,12 +241,11 @@ export default function MultiStepAuthPage() {
               autoFocus
             />
           ) : (
-            <input
-              type="tel"
-              placeholder="Phone number"
+            <PhoneInput
+              countryCode={phoneCountry}
+              onCountryChange={setPhoneCountry}
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full h-12 bg-transparent border-0 border-b border-border/40 outline-none focus:border-primary text-base transition-colors placeholder:text-muted-foreground/60"
+              onChange={setPhoneNumber}
               autoFocus
             />
           )}
