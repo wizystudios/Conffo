@@ -56,8 +56,13 @@ export default function SearchPage() {
     staleTime: 60000,
   });
 
-  // People you may know - by shared interests / location
-  const { data: suggestedPeople = [] } = useQuery({
+  // People you may know - by shared interests / location, with backend wiring + refresh
+  const {
+    data: suggestedPeople = [],
+    isLoading: suggestedLoading,
+    isFetching: suggestedFetching,
+    refetch: refetchSuggested,
+  } = useQuery({
     queryKey: ['discover-suggested-people'],
     queryFn: async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -76,13 +81,12 @@ export default function SearchPage() {
         .eq('follower_id', authUser.id);
       const skip = new Set<string>([authUser.id, ...(following?.map(f => f.following_id) || [])]);
 
-      let query = supabase
+      const { data: pool = [] } = await supabase
         .from('profiles')
         .select('id, username, avatar_url, interests, location')
         .neq('id', authUser.id)
         .not('avatar_url', 'is', null)
-        .limit(40);
-      const { data: pool = [] } = await query;
+        .limit(60);
       const scored = (pool || [])
         .filter(p => !skip.has(p.id))
         .map((p: any) => {
@@ -90,9 +94,8 @@ export default function SearchPage() {
           const sameLoc = myLocation && p.location && p.location === myLocation ? 1 : 0;
           return { ...p, score: overlap * 2 + sameLoc, overlap, sameLoc };
         })
-        .filter(p => p.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 12);
+        .slice(0, 15);
       return scored;
     },
     staleTime: 120000,
