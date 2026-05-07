@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Hash } from 'lucide-react';
+import { Search, Hash, RefreshCw, UserPlus2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { Layout } from '@/components/Layout';
 import { WAPageHeader } from '@/components/WAPageHeader';
 import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
 import { Confession } from '@/types';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
