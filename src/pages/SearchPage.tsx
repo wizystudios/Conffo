@@ -220,6 +220,32 @@ export default function SearchPage() {
               ))}
             </div>
 
+            {/* People you may know - smart suggestions */}
+            {suggestedPeople && suggestedPeople.length > 0 && (
+              <div className="mb-4">
+                <div className="px-4 mb-2 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">People you may know</p>
+                  <span className="text-[10px] text-muted-foreground">based on interests & location</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto px-4 scrollbar-hide pb-2">
+                  {suggestedPeople.map((u: any) => (
+                    <button key={u.id} onClick={() => navigate(`/user/${u.id}`)} className="flex flex-col items-center gap-1 shrink-0 w-20">
+                      <div className="p-[2px] rounded-full bg-gradient-primary">
+                        <Avatar className="h-16 w-16 border-2 border-background">
+                          <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
+                          <AvatarFallback>{u.username?.charAt(0)?.toUpperCase() || 'A'}</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <span className="text-[11px] font-medium truncate w-full text-center">{u.username || 'User'}</span>
+                      {u.overlap > 0 && (
+                        <span className="text-[9px] text-primary">{u.overlap} shared</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* People circles */}
             {discoverData?.users && discoverData.users.length > 0 && (
               <div className="mb-4">
@@ -227,7 +253,7 @@ export default function SearchPage() {
                 <div className="flex gap-3 overflow-x-auto px-4 scrollbar-hide pb-2">
                   {discoverData.users.map((u: any) => (
                     <button key={u.id} onClick={() => navigate(`/user/${u.id}`)} className="flex flex-col items-center gap-1 shrink-0 w-16">
-                      <div className="p-[2px] rounded-full bg-gradient-to-br from-primary to-primary/60">
+                      <div className="p-[2px] rounded-full bg-gradient-primary">
                         <Avatar className="h-14 w-14 border-2 border-background">
                           <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
                           <AvatarFallback>{u.username?.charAt(0)?.toUpperCase() || 'A'}</AvatarFallback>

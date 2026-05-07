@@ -132,7 +132,7 @@ export function WAFab({ onClick, icon, label = 'Action' }: WAFabProps) {
     <button
       onClick={onClick}
       aria-label={label}
-      className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+      className="fab-primary fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full flex items-center justify-center active:scale-95 transition-transform"
     >
       {icon}
     </button>
