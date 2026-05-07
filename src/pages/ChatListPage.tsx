@@ -269,7 +269,7 @@ export default function ChatListPage() {
             <MessageCircle className="h-10 w-10 text-muted-foreground/40 mb-3" />
             <h3 className="font-semibold text-base mb-1">No conversations yet</h3>
             <p className="text-muted-foreground text-center text-[12px]">
-              Tap the green button to start a chat
+              Tap the button below to start a chat
             </p>
           </div>
         ) : (
