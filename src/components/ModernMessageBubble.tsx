@@ -208,10 +208,10 @@ export function ModernMessageBubble({
               
               return (
                 <div
-                  className={`px-3 py-2 ${
+                  className={`px-3.5 py-2 ${
                     isOwn
-                      ? 'bg-primary text-primary-foreground rounded-[20px] rounded-br-[4px]'
-                      : 'bg-muted text-foreground rounded-[20px] rounded-bl-[4px]'
+                      ? 'bubble-sent'
+                      : 'bubble-received'
                   }`}
                 >
                   <p className="text-xs leading-relaxed break-words">{message.content}</p>
