@@ -39,7 +39,7 @@ export default function ChatPage() {
 
   return (
     <Layout hideBottomNav>
-      <div className="h-[calc(100vh-60px)] lg:h-screen flex flex-col">
+      <div className="fixed inset-0 z-40 flex flex-col bg-background">
         <UnifiedChatInterface 
           targetUserId={userId} 
           onBack={handleBack} 
