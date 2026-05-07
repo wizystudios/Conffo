@@ -14,6 +14,7 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [immersiveData, setImmersiveData] = useState<{ confessions: Confession[]; startIndex: number } | null>(null);
+  const { isUserOnline } = useOnlinePresence();
 
   // Search results
   const { data: searchResults, isLoading } = useQuery({
