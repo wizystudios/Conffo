@@ -491,20 +491,20 @@ export function UnifiedChatInterface({
 
   return (
     <div 
-      className="flex flex-col h-screen relative"
+      className="flex flex-col h-full min-h-0 flex-1 relative"
       style={{
         ...((wallpaperPref.type === 'custom' || wallpaperPref.type === 'gallery') ? {
           backgroundImage: `url(${wallpaperPref.value})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
         } : {
           backgroundColor: 'hsl(var(--background))',
         }),
       }}
     >
       {/* Header - redesigned with accent line */}
-      <div className="bg-background/80 backdrop-blur-md border-b border-border/30">
+      <div className="bg-background/70 backdrop-blur-xl border-b border-border/30 supports-[backdrop-filter]:bg-background/60">
         {/* Accent line at top */}
         <div className="h-[2px] bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
         
@@ -756,7 +756,7 @@ export function UnifiedChatInterface({
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-background/80 backdrop-blur-md border-t border-border">
+      <div className="p-3 bg-background/70 backdrop-blur-xl border-t border-border/30 supports-[backdrop-filter]:bg-background/60">
         {!isCommunityChat && requestLocked && (
           <div className="mb-2 rounded-xl bg-muted/70 px-3 py-2 text-center text-[11px] text-muted-foreground">
             {incomingRequest ? 'Accept this request to reply.' : outgoingRequest ? 'Waiting for them to accept your request.' : 'This chat is hidden until you connect.'}

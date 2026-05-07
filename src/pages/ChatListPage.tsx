@@ -269,7 +269,7 @@ export default function ChatListPage() {
             <MessageCircle className="h-10 w-10 text-muted-foreground/40 mb-3" />
             <h3 className="font-semibold text-base mb-1">No conversations yet</h3>
             <p className="text-muted-foreground text-center text-[12px]">
-              Tap the green button to start a chat
+              Tap the button below to start a chat
             </p>
           </div>
         ) : (
@@ -357,7 +357,7 @@ export default function ChatListPage() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+            className="fab-primary fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full flex items-center justify-center active:scale-95 transition-transform"
             aria-label="New chat"
           >
             <MessageSquarePlus className="h-6 w-6" />

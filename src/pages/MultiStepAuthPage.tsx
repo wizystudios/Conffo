@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -417,8 +417,8 @@ export default function MultiStepAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-8 relative">
-      {/* Always-present back button - fixed top-left for visibility */}
+    <div className="min-h-screen bg-background flex flex-col items-center px-6 pt-6 pb-10 relative">
+      {/* Always-present back button */}
       <button
         onClick={() => {
           if (authMode === 'signin' && signinStep === 'password') {
@@ -438,13 +438,37 @@ export default function MultiStepAuthPage() {
         <ArrowLeft className="h-5 w-5" />
       </button>
 
-      <div className="w-full max-w-sm space-y-10">
+      {/* Hero card — blue→purple gradient with messenger emblem (matches screenshot) */}
+      <div className="w-full max-w-sm">
+        <div className="relative overflow-hidden rounded-[28px] bg-gradient-primary text-primary-foreground p-8 pb-12 shadow-primary">
+          <h1 className="text-2xl font-bold tracking-tight text-center">
+            {authMode === 'signup' ? 'Create account' : 'Welcome back'}
+          </h1>
+          <div className="mt-6 flex items-center justify-center">
+            <div className="h-16 w-16 rounded-2xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="h-8 w-8" fill="currentColor">
+                <path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm3 6h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z"/>
+              </svg>
+            </div>
+          </div>
+          {/* decorative wave */}
+          <svg viewBox="0 0 400 80" className="absolute -bottom-1 left-0 right-0 w-full" preserveAspectRatio="none" aria-hidden>
+            <path d="M0 40 C100 80 300 0 400 40 L400 80 L0 80 Z" fill="hsl(var(--background))" />
+          </svg>
+        </div>
 
-        {authError && (
-          <p className="text-sm text-destructive text-center">{authError}</p>
-        )}
+        <div className="pt-8 space-y-6">
+          {authError && (
+            <p className="text-sm text-destructive text-center">{authError}</p>
+          )}
+          {authMode === 'signin' ? renderSigninStep() : renderSignupStep()}
+        </div>
 
-        {authMode === 'signin' ? renderSigninStep() : renderSignupStep()}
+        {/* License agreement link as in the screenshot */}
+        <p className="mt-8 text-center text-[11px] text-muted-foreground">
+          By continuing you agree to our{' '}
+          <Link to="/terms" className="text-primary underline-offset-2 hover:underline">User License Agreement</Link>
+        </p>
       </div>
 
       <ForgotPasswordModal isOpen={showForgotPassword} onClose={() => setShowForgotPassword(false)} />

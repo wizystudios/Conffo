@@ -18,7 +18,7 @@ export function OnlineIndicator({ isOnline, size = 'sm', className }: OnlineIndi
   return (
     <span
       className={cn(
-        'rounded-full bg-green-500 border-2 border-background absolute',
+        'rounded-full bg-gradient-primary border-2 border-background absolute shadow-primary',
         sizeClasses[size],
         className
       )}

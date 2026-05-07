@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Hash } from 'lucide-react';
+import { Search, Hash, RefreshCw, UserPlus2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,11 +8,13 @@ import { Layout } from '@/components/Layout';
 import { WAPageHeader } from '@/components/WAPageHeader';
 import { ImmersivePostViewer } from '@/components/ImmersivePostViewer';
 import { Confession } from '@/types';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [immersiveData, setImmersiveData] = useState<{ confessions: Confession[]; startIndex: number } | null>(null);
+  const { isUserOnline } = useOnlinePresence();
 
   // Search results
   const { data: searchResults, isLoading } = useQuery({
@@ -54,8 +56,13 @@ export default function SearchPage() {
     staleTime: 60000,
   });
 
-  // People you may know - by shared interests / location
-  const { data: suggestedPeople = [] } = useQuery({
+  // People you may know - by shared interests / location, with backend wiring + refresh
+  const {
+    data: suggestedPeople = [],
+    isLoading: suggestedLoading,
+    isFetching: suggestedFetching,
+    refetch: refetchSuggested,
+  } = useQuery({
     queryKey: ['discover-suggested-people'],
     queryFn: async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -74,13 +81,12 @@ export default function SearchPage() {
         .eq('follower_id', authUser.id);
       const skip = new Set<string>([authUser.id, ...(following?.map(f => f.following_id) || [])]);
 
-      let query = supabase
+      const { data: pool = [] } = await supabase
         .from('profiles')
         .select('id, username, avatar_url, interests, location')
         .neq('id', authUser.id)
         .not('avatar_url', 'is', null)
-        .limit(40);
-      const { data: pool = [] } = await query;
+        .limit(60);
       const scored = (pool || [])
         .filter(p => !skip.has(p.id))
         .map((p: any) => {
@@ -88,9 +94,8 @@ export default function SearchPage() {
           const sameLoc = myLocation && p.location && p.location === myLocation ? 1 : 0;
           return { ...p, score: overlap * 2 + sameLoc, overlap, sameLoc };
         })
-        .filter(p => p.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 12);
+        .slice(0, 15);
       return scored;
     },
     staleTime: 120000,
@@ -220,31 +225,66 @@ export default function SearchPage() {
               ))}
             </div>
 
-            {/* People you may know - smart suggestions */}
-            {suggestedPeople && suggestedPeople.length > 0 && (
-              <div className="mb-4">
-                <div className="px-4 mb-2 flex items-center justify-between">
+            {/* People you may know - smart suggestions with online presence */}
+            <div className="mb-4">
+              <div className="px-4 mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserPlus2 className="h-3.5 w-3.5 text-primary" />
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">People you may know</p>
-                  <span className="text-[10px] text-muted-foreground">based on interests & location</span>
                 </div>
-                <div className="flex gap-3 overflow-x-auto px-4 scrollbar-hide pb-2">
-                  {suggestedPeople.map((u: any) => (
-                    <button key={u.id} onClick={() => navigate(`/user/${u.id}`)} className="flex flex-col items-center gap-1 shrink-0 w-20">
-                      <div className="p-[2px] rounded-full bg-gradient-primary">
-                        <Avatar className="h-16 w-16 border-2 border-background">
-                          <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
-                          <AvatarFallback>{u.username?.charAt(0)?.toUpperCase() || 'A'}</AvatarFallback>
-                        </Avatar>
-                      </div>
-                      <span className="text-[11px] font-medium truncate w-full text-center">{u.username || 'User'}</span>
-                      {u.overlap > 0 && (
-                        <span className="text-[9px] text-primary">{u.overlap} shared</span>
-                      )}
-                    </button>
+                <button
+                  onClick={() => refetchSuggested()}
+                  className="flex items-center gap-1 text-[10px] text-primary"
+                  aria-label="Refresh suggestions"
+                >
+                  <RefreshCw className={`h-3 w-3 ${suggestedFetching ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+              {suggestedLoading ? (
+                <div className="flex gap-3 overflow-x-auto px-4 pb-2">
+                  {[0,1,2,3,4].map(i => (
+                    <div key={i} className="shrink-0 w-20 flex flex-col items-center gap-1">
+                      <div className="h-16 w-16 rounded-full bg-muted animate-pulse" />
+                      <div className="h-2 w-12 rounded bg-muted animate-pulse" />
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : suggestedPeople.length === 0 ? (
+                <div className="mx-4 rounded-2xl border border-dashed border-border/60 p-4 text-center">
+                  <p className="text-xs text-muted-foreground">No suggestions yet — add interests in your profile to find people like you.</p>
+                </div>
+              ) : (
+                <div className="flex gap-3 overflow-x-auto px-4 scrollbar-hide pb-2">
+                  {suggestedPeople.map((u: any) => {
+                    const online = isUserOnline(u.id);
+                    return (
+                      <button key={u.id} onClick={() => navigate(`/user/${u.id}`)} className="flex flex-col items-center gap-1 shrink-0 w-20">
+                        <div className="relative">
+                          <div className="p-[2px] rounded-full bg-gradient-primary">
+                            <Avatar className="h-16 w-16 border-2 border-background">
+                              <AvatarImage src={u.avatar_url || `https://api.dicebear.com/7.x/micah/svg?seed=${u.id}`} />
+                              <AvatarFallback>{u.username?.charAt(0)?.toUpperCase() || 'A'}</AvatarFallback>
+                            </Avatar>
+                          </div>
+                          {online && (
+                            <span className="absolute bottom-0.5 right-0.5 h-3 w-3 rounded-full bg-gradient-primary border-2 border-background shadow-primary" aria-label="Online" />
+                          )}
+                        </div>
+                        <span className="text-[11px] font-medium truncate w-full text-center">{u.username || 'User'}</span>
+                        {online ? (
+                          <span className="text-[9px] text-primary font-medium">Active now</span>
+                        ) : u.overlap > 0 ? (
+                          <span className="text-[9px] text-muted-foreground">{u.overlap} shared</span>
+                        ) : u.sameLoc ? (
+                          <span className="text-[9px] text-muted-foreground">Nearby</span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* People circles */}
             {discoverData?.users && discoverData.users.length > 0 && (
