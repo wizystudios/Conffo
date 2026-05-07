@@ -491,13 +491,13 @@ export function UnifiedChatInterface({
 
   return (
     <div 
-      className="flex flex-col h-screen relative"
+      className="flex flex-col h-full min-h-0 flex-1 relative"
       style={{
         ...((wallpaperPref.type === 'custom' || wallpaperPref.type === 'gallery') ? {
           backgroundImage: `url(${wallpaperPref.value})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
         } : {
           backgroundColor: 'hsl(var(--background))',
         }),
