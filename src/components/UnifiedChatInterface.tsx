@@ -504,7 +504,7 @@ export function UnifiedChatInterface({
       }}
     >
       {/* Header - redesigned with accent line */}
-      <div className="bg-background/80 backdrop-blur-md border-b border-border/30">
+      <div className="bg-background/70 backdrop-blur-xl border-b border-border/30 supports-[backdrop-filter]:bg-background/60">
         {/* Accent line at top */}
         <div className="h-[2px] bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
         
