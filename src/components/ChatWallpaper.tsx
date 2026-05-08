@@ -14,8 +14,8 @@ const PATTERN_CLASSES: Record<string, string> = {
   cosmic: 'chat-wallpaper-cosmic',
   aurora: 'chat-wallpaper-aurora',
   sunset: 'chat-wallpaper-sunset',
-  ocean: 'bg-gradient-to-br from-blue-900/10 via-teal-900/5 to-blue-900/10',
-  forest: 'bg-gradient-to-br from-green-900/10 via-emerald-900/5 to-green-900/10',
+  ocean: 'bg-gradient-to-br from-primary/10 via-primary-glow/5 to-primary/10',
+  forest: 'bg-gradient-to-br from-primary/10 via-primary/5 to-primary-glow/10',
   midnight: 'bg-gradient-to-br from-slate-900/15 via-gray-900/10 to-slate-900/15',
 };
 

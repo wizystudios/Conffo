@@ -47,12 +47,9 @@ export function FishSuccessAnimation({
       aria-live="polite"
     >
       <div className="flex flex-col items-center gap-3 animate-in zoom-in-50 fade-in duration-300">
-        <div
-          className="h-20 w-20 rounded-full flex items-center justify-center shadow-lg"
-          style={{ backgroundColor: 'hsl(152, 69%, 40%)' }}
-        >
+        <div className="h-20 w-20 rounded-full flex items-center justify-center shadow-primary bg-gradient-primary">
           <Check
-            className="h-11 w-11 text-white"
+            className="h-11 w-11 text-primary-foreground"
             strokeWidth={3.5}
           />
         </div>
