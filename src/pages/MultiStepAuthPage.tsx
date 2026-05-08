@@ -374,6 +374,8 @@ export default function MultiStepAuthPage() {
       }
     };
 
+    const isFinalStep = signupStepIndex === SIGNUP_STEPS.length - 1;
+
     return (
       <div className="space-y-6" onKeyDown={handleKeyDown}>
         {/* Progress dots */}
@@ -389,6 +391,23 @@ export default function MultiStepAuthPage() {
         </div>
 
         {renderField()}
+
+        {isFinalStep && (
+          <label className="flex items-start gap-3 text-sm text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]"
+            />
+            <span>
+              I have read and agree to the{' '}
+              <Link to="/terms" className="text-primary underline-offset-2 hover:underline">User License Agreement</Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="text-primary underline-offset-2 hover:underline">Privacy Policy</Link>.
+            </span>
+          </label>
+        )}
 
         <Button
           onClick={handleSignupNext}
