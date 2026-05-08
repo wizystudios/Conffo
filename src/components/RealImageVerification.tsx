@@ -245,7 +245,7 @@ export function RealImageVerification() {
   const getStepIcon = (step: VerificationStep) => {
     switch (step.status) {
       case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-primary" />;
       case 'failed':
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'in_progress':

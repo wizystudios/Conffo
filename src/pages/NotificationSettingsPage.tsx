@@ -198,8 +198,8 @@ export default function NotificationSettingsPage() {
           {/* Comments */}
           <div className="flex items-center justify-between p-4 rounded-xl border border-border">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <MessageCircle className="h-5 w-5 text-green-500" />
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <Label htmlFor="comments" className="font-medium">Comments</Label>

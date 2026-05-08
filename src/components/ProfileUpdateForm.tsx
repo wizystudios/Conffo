@@ -231,7 +231,7 @@ export function ProfileUpdateForm() {
               <h3 className="text-sm font-medium flex items-center gap-2">
                 {isProfilePublic ? (
                   <>
-                    <Eye className="h-4 w-4 text-green-500" />
+                    <Eye className="h-4 w-4 text-primary" />
                     Public Profile
                   </>
                 ) : (

@@ -146,7 +146,7 @@ export function CallInterface({
                 <Button
                   onClick={startCall}
                   size="lg"
-                  className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600"
+                  className="rounded-full h-14 w-14 bg-gradient-primary hover:opacity-90"
                 >
                   {callType === 'video' ? <Video className="h-6 w-6" /> : <Phone className="h-6 w-6" />}
                 </Button>

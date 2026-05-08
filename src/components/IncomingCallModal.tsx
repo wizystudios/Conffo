@@ -96,7 +96,7 @@ export function IncomingCallModal({ callSignal, onAccept, onDecline }: IncomingC
               onClick={handleAccept}
               size="lg"
               disabled={isAnswering}
-              className="rounded-full h-16 w-16 bg-green-500 hover:bg-green-600"
+              className="rounded-full h-16 w-16 bg-gradient-primary hover:opacity-90"
             >
               {isAnswering ? (
                 <span className="animate-spin">⏳</span>

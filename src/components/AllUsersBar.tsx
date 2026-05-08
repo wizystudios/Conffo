@@ -183,7 +183,7 @@ export function AllUsersBar() {
                 <Link to={`/user/${userData.id}`}>
                   <Avatar className={`h-12 w-12 transition-all ${
                     userData.isFollowing 
-                      ? 'ring-2 ring-green-500/30' 
+                      ? 'ring-2 ring-primary/30' 
                       : 'ring-1 ring-muted/30 hover:ring-primary/40'
                   }`}>
                     <AvatarImage 
@@ -211,8 +211,8 @@ export function AllUsersBar() {
               
               {/* Connected indicator - Conffo unique checkmark badge */}
               {userData.isFollowing && (
-                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Check className="h-2.5 w-2.5 text-green-600" />
+                <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Check className="h-2.5 w-2.5 text-primary" />
                 </div>
               )}
             </div>

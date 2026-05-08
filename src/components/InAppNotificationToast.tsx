@@ -122,7 +122,7 @@ export function InAppNotificationToast() {
       case 'new_comment':
         return <MessageCircle className="h-4 w-4 text-blue-500" />;
       case 'follow':
-        return <UserPlus className="h-4 w-4 text-green-500" />;
+        return <UserPlus className="h-4 w-4 text-primary" />;
       default:
         return <Bell className="h-4 w-4 text-primary" />;
     }

@@ -36,7 +36,7 @@ export function ModernChatList({ users }: ModernChatListProps) {
                 </AvatarFallback>
               </Avatar>
               {user.isOnline && (
-                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border border-background" />
+                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-gradient-primary rounded-full border border-background" />
               )}
             </div>
             

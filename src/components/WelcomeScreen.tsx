@@ -1,109 +1,81 @@
-
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Heart, MessageCircle, Users, Sparkles } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
-interface WelcomeScreenProps {
-  onComplete: () => void;
-}
-
-export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-
-  const steps = [
-    {
-      title: "Welcome to ConfessZone",
-      description: "Share your thoughts anonymously with the world",
-      icon: Heart,
-      color: "text-pink-500"
-    },
-    {
-      title: "Connect & Discover", 
-      description: "Follow users and discover amazing content",
-      icon: Users,
-      color: "text-blue-500"
-    },
-    {
-      title: "Express Yourself",
-      description: "Comment, react, and engage with the community",
-      icon: MessageCircle,
-      color: "text-green-500"
-    }
-  ];
-
-  const currentStepData = steps[currentStep];
-  const Icon = currentStepData.icon;
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      onComplete();
-    }
-  };
-
-  const handleSkip = () => {
-    onComplete();
-  };
+/**
+ * Conffo welcome / landing screen.
+ * Mirrors the messenger landing card from the design reference:
+ * blue→purple gradient hero with chat emblem, decorative wave,
+ * social-account row, primary CTA, and license link.
+ *
+ * Shown to every unauthenticated visitor as the first and only entry point.
+ */
+export function WelcomeScreen() {
+  const navigate = useNavigate();
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-purple-600 via-blue-600 to-teal-600 flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center space-y-8 animate-fade-in">
-        {/* Icon Animation */}
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full bg-white/20 animate-pulse"></div>
-          <div className="relative bg-white rounded-full p-8 mx-auto w-24 h-24 flex items-center justify-center animate-scale-in">
-            <Icon className={`h-12 w-12 ${currentStepData.color}`} />
+    <div className="min-h-screen bg-background flex flex-col items-center justify-between px-6 pt-6 pb-10">
+      {/* Hero card */}
+      <div className="w-full max-w-sm">
+        <div className="relative overflow-hidden rounded-[28px] bg-gradient-primary text-primary-foreground p-10 pb-20 shadow-primary">
+          <h1 className="text-3xl font-bold tracking-tight text-center">Conffo</h1>
+
+          <div className="mt-10 flex items-center justify-center">
+            <div className="h-20 w-20 rounded-2xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center">
+              <MessageSquare className="h-10 w-10" strokeWidth={2.2} />
+            </div>
           </div>
-          <div className="absolute -top-2 -right-2">
-            <Sparkles className="h-6 w-6 text-yellow-300 animate-pulse" />
-          </div>
-        </div>
 
-        {/* Content */}
-        <div className="space-y-4 text-white">
-          <h1 className="text-3xl font-bold animate-fade-in">
-            {currentStepData.title}
-          </h1>
-          <p className="text-lg opacity-90 animate-fade-in">
-            {currentStepData.description}
-          </p>
-        </div>
-
-        {/* Progress Dots */}
-        <div className="flex justify-center space-x-2">
-          {steps.map((_, index) => (
-            <div
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentStep 
-                  ? 'bg-white scale-125' 
-                  : index < currentStep 
-                    ? 'bg-white/80' 
-                    : 'bg-white/40'
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Buttons */}
-        <div className="flex justify-between items-center pt-4">
-          <Button
-            variant="ghost"
-            onClick={handleSkip}
-            className="text-white/80 hover:text-white hover:bg-white/10"
+          {/* decorative wave */}
+          <svg
+            viewBox="0 0 400 80"
+            className="absolute -bottom-1 left-0 right-0 w-full"
+            preserveAspectRatio="none"
+            aria-hidden
           >
-            Skip
-          </Button>
-          
-          <Button
-            onClick={handleNext}
-            className="bg-white text-purple-600 hover:bg-white/90 font-semibold px-6"
-          >
-            {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+            <path d="M0 40 C100 80 300 0 400 40 L400 80 L0 80 Z" fill="hsl(var(--background))" />
+          </svg>
         </div>
+      </div>
+
+      {/* Social row + CTAs */}
+      <div className="w-full max-w-sm flex flex-col items-center gap-6 pb-4">
+        <p className="text-xs text-muted-foreground">Sign up with social account</p>
+
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            aria-label="Continue with Google"
+            disabled
+            className="h-10 w-10 rounded-full bg-gradient-to-tr from-[hsl(14_90%_60%)] to-[hsl(45_95%_60%)] shadow-sm opacity-90"
+          />
+          <button
+            type="button"
+            aria-label="Continue with Facebook"
+            disabled
+            className="h-10 w-10 rounded-full bg-gradient-to-tr from-[hsl(220_85%_55%)] to-[hsl(234_89%_64%)] shadow-sm opacity-90"
+          />
+          <button
+            type="button"
+            aria-label="Continue with Apple"
+            disabled
+            className="h-10 w-10 rounded-full bg-gradient-to-tr from-[hsl(0_0%_15%)] to-[hsl(0_0%_35%)] shadow-sm opacity-90"
+          />
+        </div>
+
+        <Button
+          onClick={() => navigate('/auth')}
+          className="w-full h-12 text-base font-semibold"
+        >
+          Sign up
+        </Button>
+
+        <button
+          onClick={() => navigate('/terms')}
+          className="text-[12px] text-primary hover:underline underline-offset-2"
+        >
+          Read User License Agreement
+        </button>
       </div>
     </div>
   );

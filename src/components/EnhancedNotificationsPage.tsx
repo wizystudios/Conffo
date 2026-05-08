@@ -70,7 +70,7 @@ const NotificationItem = ({ notification, onNavigateToChat, onMarkAsRead }: Noti
   const getIconBgColor = () => {
     if (notification.type === 'message') return 'bg-blue-500';
     if (notification.type === 'new_reaction' || notification.type === 'like') return 'bg-red-500';
-    if (notification.type === 'follow') return 'bg-green-500';
+    if (notification.type === 'follow') return 'bg-gradient-primary';
     if (notification.type === 'new_comment') return 'bg-purple-500';
     if (notification.type === 'mention') return 'bg-orange-500';
     return 'bg-primary';

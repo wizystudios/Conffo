@@ -99,7 +99,7 @@ function StatusIcon({ status }: { status: UploadStatus['status'] }) {
     case 'db_inserting':
       return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
     case 'complete':
-      return <Check className="h-4 w-4 text-green-500" />;
+      return <Check className="h-4 w-4 text-primary" />;
     case 'error':
       return <X className="h-4 w-4 text-destructive" />;
     default:
