@@ -31,10 +31,10 @@ const colorThemes = [
     icon: '😂'
   },
   {
-    bg: 'from-emerald-100 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/20',
-    border: 'border-emerald-200 dark:border-emerald-800/50',
-    accent: 'bg-emerald-500',
-    text: 'text-emerald-700 dark:text-emerald-300',
+    bg: 'from-primary/10 to-primary-glow/5 dark:from-primary/20 dark:to-primary-glow/10',
+    border: 'border-primary/20 dark:border-primary/30',
+    accent: 'bg-gradient-primary',
+    text: 'text-primary',
     icon: '💬'
   },
   {

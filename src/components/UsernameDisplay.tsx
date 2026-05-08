@@ -201,7 +201,7 @@ export function UsernameDisplay({
             </Badge>
           )}
           {hasInteracted && !isFan && !isCrew && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] gap-0.5 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] gap-0.5 bg-primary/10 text-primary border-primary/20">
               <MessageCircle className="h-2.5 w-2.5" />
               <span>Active</span>
             </Badge>

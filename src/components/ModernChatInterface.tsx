@@ -352,7 +352,7 @@ export function ModernChatInterface({
             <OnlineIndicator isOnline={isTargetOnline} size="sm" className="bottom-0 right-0" />
           </div>
           <h3 className="font-semibold text-xs">{displayName}</h3>
-          {isTargetOnline && <span className="text-[10px] text-green-500">Active now</span>}
+          {isTargetOnline && <span className="text-[10px] text-primary">Active now</span>}
         </button>
         
         {/* Action icons below profile - no border/line, no call buttons */}

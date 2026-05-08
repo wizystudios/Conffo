@@ -225,7 +225,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                     className="pl-10"
                   />
                   {confirmPassword && newPassword === confirmPassword && (
-                    <Check className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                    <Check className="absolute right-3 top-3 h-4 w-4 text-primary" />
                   )}
                 </div>
               </div>
@@ -242,8 +242,8 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
           
           {step === 'success' && (
             <div className="text-center py-4">
-              <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
-                <Check className="h-6 w-6 text-green-500" />
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <Check className="h-6 w-6 text-primary" />
               </div>
               <p className="text-muted-foreground mb-4">
                 Check your email for a password reset link.
