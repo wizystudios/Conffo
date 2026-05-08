@@ -32,6 +32,7 @@ export default function MultiStepAuthPage() {
   const [birthdate, setBirthdate] = useState('');
   const [gender, setGender] = useState('');
   const [country, setCountry] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export default function MultiStepAuthPage() {
       case 'username': return usernameValid;
       case 'country': return countryValid;
       case 'birthdate': return !!birthdateValid;
-      case 'gender': return genderValid;
+      case 'gender': return genderValid && acceptedTerms;
       default: return false;
     }
   };
@@ -163,7 +164,7 @@ export default function MultiStepAuthPage() {
   };
 
   const handleSignUp = async () => {
-    if (!emailValid || !passwordValid || !usernameValid || !birthdateValid || !genderValid) return;
+    if (!emailValid || !passwordValid || !usernameValid || !birthdateValid || !genderValid || !acceptedTerms) return;
     setAuthError(null);
     try {
       setLoading(true);
