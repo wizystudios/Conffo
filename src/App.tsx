@@ -39,6 +39,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 import { LoadingFallback } from "./components/LoadingFallback";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
+import { AuthGate } from "./components/AuthGate";
 import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => {
@@ -92,6 +93,7 @@ const App = () => {
             <AuthProvider>
               {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
               <Suspense fallback={null}>
+                <AuthGate>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/chat" element={<ChatListPage />} />
@@ -123,6 +125,7 @@ const App = () => {
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </AuthGate>
               </Suspense>
               <OnboardingGate />
               <PasswordPolicyGate />
