@@ -14,7 +14,7 @@ export function WelcomeScreen() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Full-bleed hero with curved bottom */}
-      <div className="relative w-full bg-gradient-primary text-primary-foreground pt-16 pb-24 px-6 shadow-primary">
+      <div className="relative w-full bg-gradient-primary text-primary-foreground pt-16 pb-24 px-6">
         <h1 className="text-4xl font-bold tracking-tight text-center">Conffo</h1>
 
         <div className="mt-12 flex items-center justify-center">
