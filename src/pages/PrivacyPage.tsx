@@ -14,7 +14,8 @@ export default function PrivacyPage() {
           Back
         </Button>
 
-        <h1 className="text-2xl font-bold mb-6">Privacy Policy</h1>
+        <h1 className="text-2xl font-bold mb-2">Privacy Policy</h1>
+        <p className="text-xs text-muted-foreground mb-6">Last updated: May 2026 · GDPR compliant</p>
         
         <div className="space-y-6 text-sm leading-relaxed">
           <section>
@@ -81,9 +82,46 @@ export default function PrivacyPage() {
           </section>
           
           <section>
-            <h2 className="text-lg font-semibold mb-3">8. Contact Us</h2>
+            <h2 className="text-lg font-semibold mb-3">8. Your Rights Under GDPR</h2>
+            <p className="text-muted-foreground mb-2">
+              If you are in the European Economic Area, you have the following rights:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+              <li>Right of access — request a copy of your personal data</li>
+              <li>Right to rectification — correct inaccurate data</li>
+              <li>Right to erasure ("right to be forgotten")</li>
+              <li>Right to restrict or object to processing</li>
+              <li>Right to data portability</li>
+              <li>Right to withdraw consent at any time</li>
+              <li>Right to lodge a complaint with a supervisory authority</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-3">9. Legal Basis for Processing</h2>
             <p className="text-muted-foreground">
-              If you have any questions about this privacy policy, please contact us through the app.
+              We process your personal data on the basis of consent, contractual necessity, legal obligation, and our legitimate interests in operating and securing the service.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-3">10. International Transfers</h2>
+            <p className="text-muted-foreground">
+              Your data may be processed outside your country of residence. We use Standard Contractual Clauses and other safeguards to protect international transfers.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-3">11. Children's Privacy</h2>
+            <p className="text-muted-foreground">
+              Conffo is not intended for children under 13. We do not knowingly collect data from children under 13.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-3">12. Contact &amp; Data Protection Officer</h2>
+            <p className="text-muted-foreground">
+              For privacy questions or to exercise your rights, contact us at <span className="text-primary">privacy@conffo.app</span>.
             </p>
           </section>
         </div>
