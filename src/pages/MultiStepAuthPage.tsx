@@ -11,15 +11,17 @@ import { CountrySelector, PhoneInput, getCountryDial } from '@/components/Countr
 type AuthMode = 'signin' | 'signup';
 type SigninMethod = 'email' | 'phone';
 type SigninStep = 'identifier' | 'password';
-type SignupStep = 'email' | 'password' | 'username' | 'country' | 'birthdate' | 'gender';
+type SignupMethod = 'email' | 'phone';
+type SignupStep = 'identifier' | 'password' | 'username' | 'country' | 'birthdate' | 'gender';
 
-const SIGNUP_STEPS: SignupStep[] = ['email', 'password', 'username', 'country', 'birthdate', 'gender'];
+const SIGNUP_STEPS: SignupStep[] = ['identifier', 'password', 'username', 'country', 'birthdate', 'gender'];
 
 export default function MultiStepAuthPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [signinMethod, setSigninMethod] = useState<SigninMethod>('email');
+  const [signupMethod, setSignupMethod] = useState<SignupMethod>('email');
   const [signinStep, setSigninStep] = useState<SigninStep>('identifier');
   const [signupStepIndex, setSignupStepIndex] = useState(0);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -75,7 +77,7 @@ export default function MultiStepAuthPage() {
 
   const canProceedSignup = (): boolean => {
     switch (currentSignupStep) {
-      case 'email': return !!emailValid;
+      case 'identifier': return signupMethod === 'email' ? !!emailValid : phoneValid;
       case 'password': return passwordValid;
       case 'username': return usernameValid;
       case 'country': return countryValid;
@@ -164,21 +166,33 @@ export default function MultiStepAuthPage() {
   };
 
   const handleSignUp = async () => {
-    if (!emailValid || !passwordValid || !usernameValid || !birthdateValid || !genderValid || !acceptedTerms) return;
+    const idValid = signupMethod === 'email' ? !!emailValid : phoneValid;
+    if (!idValid || !passwordValid || !usernameValid || !birthdateValid || !genderValid || !acceptedTerms) {
+      if (!acceptedTerms) setAuthError('You must accept the User License Agreement and Privacy Policy.');
+      return;
+    }
     setAuthError(null);
     try {
       setLoading(true);
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) localStorage.removeItem(key);
       });
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: { username, birthdate, gender }
-        }
-      });
+
+      const profileMeta = { username, birthdate, gender };
+      const normalizedPhone = signupMethod === 'phone' ? normalizePhone(fullPhone()) : null;
+
+      const { data, error } = signupMethod === 'email'
+        ? await supabase.auth.signUp({
+            email,
+            password,
+            options: { emailRedirectTo: `${window.location.origin}/`, data: profileMeta },
+          })
+        : await supabase.auth.signUp({
+            phone: normalizedPhone!,
+            password,
+            options: { data: profileMeta },
+          });
+
       if (error) throw error;
       if (data?.user) {
         await supabase.from('profiles').upsert({
@@ -187,6 +201,8 @@ export default function MultiStepAuthPage() {
           date_of_birth: birthdate,
           gender,
           location: country,
+          contact_email: signupMethod === 'email' ? email : null,
+          contact_phone: signupMethod === 'phone' ? normalizedPhone : null,
           updated_at: new Date().toISOString()
         });
         window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Account created' } }));
@@ -311,16 +327,35 @@ export default function MultiStepAuthPage() {
   const renderSignupStep = () => {
     const renderField = () => {
       switch (currentSignupStep) {
-        case 'email':
+        case 'identifier':
           return (
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-12 bg-transparent border-0 border-b border-border/40 outline-none focus:border-primary text-base transition-colors placeholder:text-muted-foreground/60"
-              autoFocus
-            />
+            <div className="space-y-4">
+              {signupMethod === 'email' ? (
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-12 bg-transparent border-0 border-b border-border/40 outline-none focus:border-primary text-base transition-colors placeholder:text-muted-foreground/60"
+                  autoFocus
+                />
+              ) : (
+                <PhoneInput
+                  countryCode={phoneCountry}
+                  onCountryChange={setPhoneCountry}
+                  value={phoneNumber}
+                  onChange={setPhoneNumber}
+                  autoFocus
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setSignupMethod(signupMethod === 'email' ? 'phone' : 'email')}
+                className="text-sm text-primary"
+              >
+                {signupMethod === 'email' ? 'Use phone number instead' : 'Use email instead'}
+              </button>
+            </div>
           );
         case 'password':
           return (
