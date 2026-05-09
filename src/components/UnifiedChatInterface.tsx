@@ -491,16 +491,15 @@ export function UnifiedChatInterface({
 
   return (
     <div 
-      className="flex flex-col h-full min-h-0 flex-1 relative"
+      className="flex flex-col h-full min-h-0 flex-1 relative bg-background"
       style={{
         ...((wallpaperPref.type === 'custom' || wallpaperPref.type === 'gallery') ? {
           backgroundImage: `url(${wallpaperPref.value})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-        } : {
-          backgroundColor: 'hsl(var(--background))',
-        }),
+          backgroundAttachment: 'fixed',
+        } : {}),
       }}
     >
       {/* Header - redesigned with accent line */}

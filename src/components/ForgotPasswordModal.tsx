@@ -34,8 +34,13 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     setIsLoading(true);
     try {
       if (identifierType === 'email') {
+        // Always send reset link to the production Conffo URL — never localhost.
+        const PRODUCTION_URL = 'https://conffo.lovable.app';
+        const origin = window.location.hostname.includes('localhost')
+          ? PRODUCTION_URL
+          : window.location.origin;
         const { error } = await supabase.auth.resetPasswordForEmail(identifier, {
-          redirectTo: `${window.location.origin}/auth?type=recovery`,
+          redirectTo: `${origin}/auth?type=recovery`,
         });
         if (error) throw error;
         toast({ description: 'Password reset link sent. Check your inbox.' });
