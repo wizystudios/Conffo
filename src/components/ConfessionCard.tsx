@@ -47,7 +47,16 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [showLikesList, setShowLikesList] = useState(false);
   const [commentCount, setCommentCount] = useState(confession.commentCount);
+  const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Caption clamp: collapse beyond ~3 short paragraphs / ~280 chars when not detailed.
+  const rawContent = confession.content || '';
+  const paragraphs = rawContent.split(/\n+/);
+  const isLong = !detailed && (rawContent.length > 280 || paragraphs.length > 3);
+  const collapsedContent = isLong && !expanded
+    ? paragraphs.slice(0, 3).join('\n').slice(0, 280).trimEnd()
+    : rawContent;
   
   // Check if this confession is saved by the current user
   useEffect(() => {
@@ -154,32 +163,80 @@ export function ConfessionCard({ confession, detailed = false, onUpdate }: Confe
             </span>
           </div>
           
-          <div className={`${detailed ? 'text-lg' : ''} mt-2 mb-3`}>
-            {confession.content}
+          <div className={`${detailed ? 'text-lg' : ''} mt-2 mb-3 whitespace-pre-wrap break-words`}>
+            {collapsedContent}
+            {isLong && !expanded && (
+              <>
+                {'… '}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+                  className="text-primary text-sm font-medium hover:underline underline-offset-2"
+                >
+                  more
+                </button>
+              </>
+            )}
+            {isLong && expanded && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+                  className="text-primary text-sm font-medium hover:underline underline-offset-2"
+                >
+                  less
+                </button>
+              </>
+            )}
           </div>
-          
-          {/* Multiple media carousel or single media */}
-          {confession.mediaUrls && confession.mediaUrls.length > 1 ? (
-            <MediaCarousel 
+
+          {/* Media: >2 items render as a swipeable peek-row with reduced size;
+              1-2 items use the standard carousel/single layout. All tiles are rounded-2xl. */}
+          {confession.mediaUrls && confession.mediaUrls.length > 2 ? (
+            <div className="-mx-2 mb-3">
+              <div className="flex gap-2 overflow-x-auto px-2 snap-x snap-mandatory scrollbar-none">
+                {confession.mediaUrls.map((url, index) => {
+                  const type = confession.mediaTypes?.[index] || 'image';
+                  return (
+                    <button
+                      key={`${url}-${index}`}
+                      type="button"
+                      onClick={() => setShowCommentModal(true)}
+                      className="relative shrink-0 w-[72%] aspect-square rounded-2xl overflow-hidden bg-muted snap-start active:scale-[0.99] transition-transform"
+                      aria-label={`Open media ${index + 1} of ${confession.mediaUrls!.length}`}
+                    >
+                      {type === 'image' ? (
+                        <img src={url} alt={`media ${index + 1}`} loading="lazy" className="w-full h-full object-cover" />
+                      ) : (
+                        <video src={url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : confession.mediaUrls && confession.mediaUrls.length > 1 ? (
+            <MediaCarousel
               media={confession.mediaUrls.map((url, index) => ({
                 url,
                 type: confession.mediaTypes?.[index] || 'image'
               }))}
-              className="mb-3"
+              className="mb-3 rounded-2xl overflow-hidden"
             />
           ) : confession.mediaUrl && (
-            <div className="rounded-md overflow-hidden mb-3 border aspect-square bg-background flex items-center justify-center">
+            <div className="rounded-2xl overflow-hidden mb-3 border aspect-square bg-background flex items-center justify-center">
               {confession.mediaType === 'image' ? (
-                <img 
-                  src={confession.mediaUrl} 
-                  alt="Confession media" 
+                <img
+                  src={confession.mediaUrl}
+                  alt="Confession media"
                   className="w-full h-full object-contain"
                   loading="lazy"
                 />
               ) : confession.mediaType === 'video' ? (
-                <video 
-                  src={confession.mediaUrl} 
-                  controls 
+                <video
+                  src={confession.mediaUrl}
+                  controls
                   preload="metadata"
                   playsInline
                   className="w-full h-full object-contain"
