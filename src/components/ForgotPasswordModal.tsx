@@ -62,8 +62,8 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
   };
 
   const resetPassword = async () => {
-    if (newPassword.length < 6) {
-      toast({ variant: 'destructive', description: 'Password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      toast({ variant: 'destructive', description: 'Password must be at least 8 characters' });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -143,7 +143,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
             <>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password (6+ characters)" className="pl-10 h-12" />
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password (8+ characters)" className="pl-10 h-12" />
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />

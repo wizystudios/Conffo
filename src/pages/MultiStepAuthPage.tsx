@@ -64,6 +64,15 @@ export default function MultiStepAuthPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  // If the user is registering with a phone number, the country they picked
+  // in the phone-dial-code selector also pre-fills the "country" step so they
+  // never have to pick it twice.
+  useEffect(() => {
+    if (signupMethod === 'phone' && phoneCountry && !country) {
+      setCountry(phoneCountry);
+    }
+  }, [signupMethod, phoneCountry, country]);
+
   function validateAge(birthdate: string) {
     const today = new Date();
     const birth = new Date(birthdate);
