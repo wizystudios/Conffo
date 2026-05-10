@@ -50,7 +50,7 @@ export default function MultiStepAuthPage() {
 
   const emailValid = email && /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
   const phoneValid = !!phoneCountry && phoneNumber.replace(/\D/g, '').length >= 6;
-  const passwordValid = password.length >= 6;
+  const passwordValid = password.length >= 8;
   const usernameValid = username.length >= 3 && username.length <= 30;
   const countryValid = !!country;
   const birthdateValid = birthdate && validateAge(birthdate) >= 13;
@@ -178,14 +178,31 @@ export default function MultiStepAuthPage() {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) localStorage.removeItem(key);
       });
 
-      const profileMeta = { username, birthdate, gender };
       const normalizedPhone = signupMethod === 'phone' ? normalizePhone(fullPhone()) : null;
+      // All registration details are forwarded as raw_user_meta_data so the
+      // handle_new_user() trigger can persist them into profiles even before
+      // the email link is clicked. This is what stops onboarding from asking
+      // for the username again and keeps account-settings fields populated.
+      const profileMeta = {
+        username,
+        birthdate,
+        gender,
+        location: country,
+        phone: normalizedPhone || undefined,
+      };
+
+      // Always send the confirmation link to the production Conffo URL —
+      // never localhost — so the email redirect is consistent for every user.
+      const PRODUCTION_URL = 'https://conffo.lovable.app';
+      const redirectOrigin = window.location.hostname.includes('localhost')
+        ? PRODUCTION_URL
+        : window.location.origin;
 
       const { data, error } = signupMethod === 'email'
         ? await supabase.auth.signUp({
             email,
             password,
-            options: { emailRedirectTo: `${window.location.origin}/`, data: profileMeta },
+            options: { emailRedirectTo: `${redirectOrigin}/auth`, data: profileMeta },
           })
         : await supabase.auth.signUp({
             phone: normalizedPhone!,
@@ -195,6 +212,8 @@ export default function MultiStepAuthPage() {
 
       if (error) throw error;
       if (data?.user) {
+        // Best-effort backup write — trigger does the real work, but if the
+        // session is already live (auto-confirm on) this keeps things in sync.
         await supabase.from('profiles').upsert({
           id: data.user.id,
           username,
@@ -203,10 +222,20 @@ export default function MultiStepAuthPage() {
           location: country,
           contact_email: signupMethod === 'email' ? email : null,
           contact_phone: signupMethod === 'phone' ? normalizedPhone : null,
+          onboarding_completed: true,
           updated_at: new Date().toISOString()
         });
-        window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Account created' } }));
-        setTimeout(() => { window.location.href = '/'; }, 1500);
+        if (signupMethod === 'email' && !data.session) {
+          // Email confirmation required — show clear feedback.
+          window.dispatchEvent(new CustomEvent('conffo-success', {
+            detail: { message: `Confirmation link sent to ${email}. Check your inbox.` }
+          }));
+          setAuthMode('signin');
+          resetForm();
+        } else {
+          window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Account created' } }));
+          setTimeout(() => { window.location.href = '/'; }, 1500);
+        }
       }
     } catch (error: any) {
       setAuthError(error?.message || 'Failed to create account');
@@ -361,7 +390,7 @@ export default function MultiStepAuthPage() {
           return (
             <input
               type="password"
-              placeholder="Password (min 6 chars)"
+              placeholder="Password (min 8 chars)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full h-12 bg-transparent border-0 border-b border-border/40 outline-none focus:border-primary text-base transition-colors placeholder:text-muted-foreground/60"
