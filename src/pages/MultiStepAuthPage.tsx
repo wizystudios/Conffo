@@ -7,6 +7,8 @@ import { ArrowLeft, Loader2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
 import { CountrySelector, PhoneInput, getCountryDial } from '@/components/CountrySelector';
+import { SavedAccountsRail } from '@/components/SavedAccountsRail';
+import { rememberAccount } from '@/utils/savedAccounts';
 
 type AuthMode = 'signin' | 'signup';
 type SigninMethod = 'email' | 'phone';
@@ -163,8 +165,25 @@ export default function MultiStepAuthPage() {
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('supabase.auth.') || key.includes('sb-')) localStorage.removeItem(key);
       });
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Remember this account as an avatar chip for one-tap re-login on this device.
+      try {
+        const uid = signInData?.user?.id;
+        if (uid) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', uid)
+            .maybeSingle();
+          rememberAccount({
+            id: uid,
+            email,
+            username: prof?.username || email.split('@')[0],
+            avatarUrl: prof?.avatar_url || undefined,
+          });
+        }
+      } catch {}
       window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Welcome back' } }));
       setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (error: any) {
@@ -286,6 +305,14 @@ export default function MultiStepAuthPage() {
     if (signinStep === 'identifier') {
       return (
         <div className="space-y-6" onKeyDown={handleKeyDown}>
+          <SavedAccountsRail
+            onPick={(acc) => {
+              setSigninMethod('email');
+              setEmail(acc.email);
+              setSigninStep('password');
+            }}
+          />
+
           {signinMethod === 'email' ? (
             <input
               type="email"
