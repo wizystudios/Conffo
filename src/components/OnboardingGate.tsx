@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { ConffoOnboarding } from "@/components/ConffoOnboarding";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
  * "what should we call you?" twice.
  */
 export function OnboardingGate() {
+  const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -49,6 +51,9 @@ export function OnboardingGate() {
       onComplete={async () => {
         setOpen(false);
         await refreshUser();
+        // First-run users always land on Explore so they immediately see
+        // discovery content instead of an empty home feed.
+        navigate('/explore', { replace: true });
       }}
     />
   );

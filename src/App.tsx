@@ -114,6 +114,7 @@ const App = () => {
                   <Route path="/stories" element={<StoriesPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/search" element={<SearchPage />} />
+                  <Route path="/explore" element={<SearchPage />} />
                   <Route path="/create" element={<CreatePostPage />} />
                   <Route path="/create-post" element={<CreatePostPage />} />
                   <Route path="/blocked" element={<BlockedUsersPage />} />

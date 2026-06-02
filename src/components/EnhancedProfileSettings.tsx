@@ -11,6 +11,7 @@ import { Shield, Globe, Users, Eye, MessageCircle, UserPlus, X, Plus } from 'luc
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { DeleteAccountSection } from '@/components/DeleteAccountSection';
 
 interface PrivacySettings {
   profile_visibility: 'public' | 'friends' | 'private';
@@ -478,6 +479,9 @@ export function EnhancedProfileSettings() {
           {isSaving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
+
+      {/* Permanent account deletion */}
+      <DeleteAccountSection />
     </div>
   );
 }
