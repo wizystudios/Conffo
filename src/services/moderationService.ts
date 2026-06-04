@@ -86,7 +86,7 @@ export async function tempBanUser(
   try {
     const { error } = await supabase
       .from("profiles")
-      .update({ banned_until: untilIso })
+      .update({ banned_until: untilIso } as never)
       .eq("id", userId);
     if (error) throw error;
     return ok();
