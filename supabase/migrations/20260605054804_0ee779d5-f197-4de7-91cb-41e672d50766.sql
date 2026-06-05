@@ -1,0 +1,1 @@
+ALTER TABLE public.rooms ADD COLUMN IF NOT EXISTS trending_threshold integer NOT NULL DEFAULT 25;

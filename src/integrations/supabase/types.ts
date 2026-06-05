@@ -881,6 +881,7 @@ export type Database = {
           id: string
           is_pinned: boolean
           name: string
+          trending_threshold: number
           updated_at: string
         }
         Insert: {
@@ -889,6 +890,7 @@ export type Database = {
           id: string
           is_pinned?: boolean
           name: string
+          trending_threshold?: number
           updated_at?: string
         }
         Update: {
@@ -897,6 +899,7 @@ export type Database = {
           id?: string
           is_pinned?: boolean
           name?: string
+          trending_threshold?: number
           updated_at?: string
         }
         Relationships: []
