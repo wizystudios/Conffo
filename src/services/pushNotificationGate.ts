@@ -44,9 +44,10 @@ const roomTimestamps = new Map<string, number[]>(); // key: `${recipient}:${room
 function eventSignature(event: PushEvent): string {
   switch (event.kind) {
     case "new_comment":
-      return `${event.recipientId}:new_comment:${event.confessionId}`;
+      // Include commentId so distinct comments on the same confession are not deduped.
+      return `${event.recipientId}:new_comment:${event.confessionId}:${event.commentId}`;
     case "new_reply":
-      return `${event.recipientId}:new_reply:${event.parentCommentId}`;
+      return `${event.recipientId}:new_reply:${event.parentCommentId}:${event.commentId}`;
     case "trending":
       return `${event.recipientId}:trending:${event.confessionId}`;
   }

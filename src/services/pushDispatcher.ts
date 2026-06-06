@@ -86,13 +86,14 @@ export async function dispatchPush(
 ): Promise<DispatchResult> {
   const key = buildIdempotencyKey(event);
 
-  // Idempotency: if we've already delivered (or marked dead), no-op.
+  // Idempotency: if we've already delivered (or marked dead), no-op. The
+  // `delivered` flag reports whether THIS call delivered — replays return false.
   const existing = deliveries.get(key);
   if (existing && (existing.status === "delivered" || existing.status === "dead")) {
     return {
       fire: false,
       reason: existing.status === "delivered" ? "already_delivered" : "previously_dead",
-      delivered: existing.status === "delivered",
+      delivered: false,
       idempotencyKey: key,
       attempts: existing.attempts,
       status: existing.status,
