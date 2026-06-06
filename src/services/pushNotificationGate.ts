@@ -159,6 +159,11 @@ export async function shouldFirePush(
   // Rate limit per recipient (checked last so deletes/dedup short-circuit cheaply).
   if (isRateLimited(event.recipientId, now)) return block("rate_limited");
 
+  // Per-room rate limit: prevents trending/comment spam in a single hot room.
+  const roomId = event.kind === "trending" ? event.roomId : null;
+  if (isRoomRateLimited(event.recipientId, roomId, now)) return block("room_rate_limited");
+
   recordPush(event, now);
+  recordRoomPush(event.recipientId, roomId, now);
   return allow();
 }
