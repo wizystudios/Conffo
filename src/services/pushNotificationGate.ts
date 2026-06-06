@@ -22,6 +22,10 @@ export const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 export const RATE_LIMIT_MAX = 8;
 export const RATE_WINDOW_MS = 60 * 1000; // 1 minute
 
+/** Max pushes per (recipient, room) inside the rate window — prevents trending spam. */
+export const ROOM_RATE_LIMIT_MAX = 3;
+export const ROOM_RATE_WINDOW_MS = 60 * 1000;
+
 export interface GateResult {
   fire: boolean;
   reason: string;
@@ -35,6 +39,7 @@ const block = (reason: string): GateResult => ({ fire: false, reason });
 // runs server-side in the edge function for cross-device dedup.
 const recentPushes = new Map<string, number>();
 const recipientTimestamps = new Map<string, number[]>();
+const roomTimestamps = new Map<string, number[]>(); // key: `${recipient}:${room}`
 
 function eventSignature(event: PushEvent): string {
   switch (event.kind) {
@@ -51,6 +56,23 @@ function eventSignature(event: PushEvent): string {
 export function __resetPushGateState() {
   recentPushes.clear();
   recipientTimestamps.clear();
+  roomTimestamps.clear();
+}
+
+function isRoomRateLimited(recipientId: string, roomId: string | null | undefined, now: number): boolean {
+  if (!roomId) return false;
+  const key = `${recipientId}:${roomId}`;
+  const arr = (roomTimestamps.get(key) ?? []).filter((t) => now - t < ROOM_RATE_WINDOW_MS);
+  roomTimestamps.set(key, arr);
+  return arr.length >= ROOM_RATE_LIMIT_MAX;
+}
+
+function recordRoomPush(recipientId: string, roomId: string | null | undefined, now: number) {
+  if (!roomId) return;
+  const key = `${recipientId}:${roomId}`;
+  const arr = roomTimestamps.get(key) ?? [];
+  arr.push(now);
+  roomTimestamps.set(key, arr);
 }
 
 function isDuplicate(event: PushEvent, now: number): boolean {
