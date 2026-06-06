@@ -1,5 +1,6 @@
-// Admin moderation actions. Kept as plain async functions so they can be
-// unit-tested with a mocked Supabase client and reused from AdminPage.
+// Admin moderation actions. All actions are routed through the `admin-moderate`
+// edge function which performs server-side super-admin verification — the
+// client never trusts its own role check.
 import { supabase } from "@/integrations/supabase/client";
 
 export type ModerationAction = "dismiss" | "delete" | "warn" | "temp_ban";
@@ -9,88 +10,27 @@ export interface ModerationResult {
   error?: string;
 }
 
-const ok = (): ModerationResult => ({ ok: true });
-const fail = (e: unknown): ModerationResult => ({
-  ok: false,
-  error: e instanceof Error ? e.message : String(e),
-});
-
-/** Mark a report resolved without taking action against the content/user. */
-export async function dismissReport(
-  reportId: string,
-  adminId: string,
-): Promise<ModerationResult> {
+async function invoke(body: Record<string, unknown>): Promise<ModerationResult> {
   try {
-    const { error } = await supabase
-      .from("reports")
-      .update({
-        resolved: true,
-        resolved_at: new Date().toISOString(),
-        resolved_by: adminId,
-      })
-      .eq("id", reportId);
-    if (error) throw error;
-    return ok();
+    const { data, error } = await supabase.functions.invoke("admin-moderate", { body });
+    if (error) return { ok: false, error: error.message };
+    if (data && typeof data === "object" && "error" in data) {
+      return { ok: false, error: String((data as { error: unknown }).error) };
+    }
+    return { ok: true };
   } catch (e) {
-    return fail(e);
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
-/** Permanently delete a reported confession and resolve the report. */
-export async function deleteReportedConfession(
-  reportId: string,
-  confessionId: string,
-  adminId: string,
-): Promise<ModerationResult> {
-  try {
-    const del = await supabase.from("confessions").delete().eq("id", confessionId);
-    if (del.error) throw del.error;
-    const upd = await supabase
-      .from("reports")
-      .update({
-        resolved: true,
-        resolved_at: new Date().toISOString(),
-        resolved_by: adminId,
-      })
-      .eq("id", reportId);
-    if (upd.error) throw upd.error;
-    return ok();
-  } catch (e) {
-    return fail(e);
-  }
-}
+export const dismissReport = (reportId: string, _adminId?: string) =>
+  invoke({ action: "dismiss", reportId });
 
-/** Send an in-app warning notification to a user. */
-export async function warnUser(
-  userId: string,
-  reason: string,
-): Promise<ModerationResult> {
-  try {
-    const { error } = await supabase.from("notifications").insert({
-      user_id: userId,
-      type: "moderation_warning",
-      content: `Warning from moderators: ${reason}`,
-    });
-    if (error) throw error;
-    return ok();
-  } catch (e) {
-    return fail(e);
-  }
-}
+export const deleteReportedConfession = (reportId: string, confessionId: string, _adminId?: string) =>
+  invoke({ action: "delete", reportId, confessionId });
 
-/** Temporarily ban a user until the supplied ISO date. Stored on profile. */
-export async function tempBanUser(
-  userId: string,
-  untilIso: string,
-): Promise<ModerationResult> {
-  try {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ banned_until: untilIso } as never)
-      .eq("id", userId);
-    if (error) throw error;
-    return ok();
-  } catch (e) {
-    return fail(e);
-  }
-}
+export const warnUser = (userId: string, reason: string) =>
+  invoke({ action: "warn", userId, reason });
+
+export const tempBanUser = (userId: string, untilIso: string) =>
+  invoke({ action: "temp_ban", userId, untilIso });

@@ -23,101 +23,121 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { dispatchPush, type PushProvider } from "./pushDispatcher";
+import {
+  dispatchPush,
+  __resetDispatcherState,
+  buildIdempotencyKey,
+  getDelivery,
+  type PushProvider,
+} from "./pushDispatcher";
 import { __resetPushGateState, DEFAULT_TRENDING_THRESHOLD } from "./pushNotificationGate";
 
-function makeProvider(): PushProvider & { sent: Array<{ to: string; title: string }> } {
-  const sent: Array<{ to: string; title: string }> = [];
+function provider(behaviour: ("ok" | "fail")[]): PushProvider & { calls: number } {
+  let i = 0;
   return {
-    sent,
-    async send(to, payload) {
-      sent.push({ to, title: payload.title });
+    calls: 0,
+    async send() {
+      this.calls++;
+      const r = behaviour[Math.min(i, behaviour.length - 1)];
+      i++;
+      if (r === "fail") throw new Error("provider down");
     },
   };
 }
+
+const noSleep = () => Promise.resolve();
 
 beforeEach(() => {
   existing.confessions = new Set(["conf-1"]);
   existing.comments = new Set(["cmt-1", "cmt-parent"]);
   __resetPushGateState();
+  __resetDispatcherState();
 });
 
-describe("dispatchPush — end-to-end via mock provider", () => {
-  it("delivers a push for a new comment", async () => {
-    const provider = makeProvider();
+describe("dispatchPush — delivery + status tracking", () => {
+  it("delivers and records a delivered status with attempts=1", async () => {
+    const p = provider(["ok"]);
+    const evt = {
+      kind: "new_comment" as const, confessionId: "conf-1", commentId: "cmt-1",
+      authorId: "a", recipientId: "b",
+    };
+    const res = await dispatchPush(evt, p, { sleepFn: noSleep });
+    expect(res.delivered).toBe(true);
+    expect(res.status).toBe("delivered");
+    expect(res.attempts).toBe(1);
+    expect(getDelivery(res.idempotencyKey)?.status).toBe("delivered");
+  });
+
+  it("records suppressed status when the gate blocks", async () => {
+    existing.confessions.delete("conf-1");
+    const p = provider(["ok"]);
     const res = await dispatchPush({
       kind: "new_comment", confessionId: "conf-1", commentId: "cmt-1",
       authorId: "a", recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(true);
-    expect(provider.sent).toEqual([{ to: "b", title: "New comment" }]);
+    }, p, { sleepFn: noSleep });
+    expect(res.status).toBe("suppressed");
+    expect(p.calls).toBe(0);
+  });
+});
+
+describe("dispatchPush — exponential backoff retries", () => {
+  it("retries on transient failure and eventually delivers", async () => {
+    const p = provider(["fail", "fail", "ok"]);
+    const waits: number[] = [];
+    const res = await dispatchPush(
+      { kind: "new_comment", confessionId: "conf-1", commentId: "cmt-1", authorId: "a", recipientId: "b" },
+      p,
+      { sleepFn: (ms) => { waits.push(ms); return Promise.resolve(); } },
+    );
+    expect(res.status).toBe("delivered");
+    expect(res.attempts).toBe(3);
+    // exponential: base 200 → 200, 400
+    expect(waits).toEqual([200, 400]);
   });
 
-  it("delivers a push for a new reply", async () => {
-    const provider = makeProvider();
-    const res = await dispatchPush({
-      kind: "new_reply", parentCommentId: "cmt-parent", commentId: "cmt-1",
+  it("marks dead after MAX_ATTEMPTS failures", async () => {
+    const p = provider(["fail", "fail", "fail", "fail"]);
+    const res = await dispatchPush(
+      { kind: "new_comment", confessionId: "conf-1", commentId: "cmt-1", authorId: "a", recipientId: "b" },
+      p,
+      { sleepFn: noSleep },
+    );
+    expect(res.delivered).toBe(false);
+    expect(res.status).toBe("dead");
+    expect(res.attempts).toBe(4);
+  });
+});
+
+describe("dispatchPush — idempotency keys", () => {
+  it("generates a stable key per event", () => {
+    const k1 = buildIdempotencyKey({ kind: "new_comment", confessionId: "c", commentId: "m", authorId: "a", recipientId: "b" });
+    const k2 = buildIdempotencyKey({ kind: "new_comment", confessionId: "c", commentId: "m", authorId: "a", recipientId: "b" });
+    expect(k1).toBe(k2);
+  });
+
+  it("never re-delivers when the same event is dispatched twice (webhook retry)", async () => {
+    const p = provider(["ok", "ok"]);
+    const evt = {
+      kind: "new_comment" as const, confessionId: "conf-1", commentId: "cmt-1",
       authorId: "a", recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(true);
-    expect(provider.sent[0].title).toBe("New reply");
+    };
+    const first = await dispatchPush(evt, p, { sleepFn: noSleep });
+    const second = await dispatchPush(evt, p, { sleepFn: noSleep });
+    expect(first.delivered).toBe(true);
+    expect(second.delivered).toBe(false);
+    expect(second.reason).toBe("already_delivered");
+    expect(p.calls).toBe(1); // provider invoked exactly once across retries
   });
 
-  it("delivers a push when the trending threshold is reached", async () => {
-    const provider = makeProvider();
-    const res = await dispatchPush({
-      kind: "trending", confessionId: "conf-1",
+  it("does not retry after a dead delivery", async () => {
+    const p = provider(["fail", "fail", "fail", "fail", "ok"]);
+    const evt = {
+      kind: "trending" as const, confessionId: "conf-1",
       reactionCount: DEFAULT_TRENDING_THRESHOLD, recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(true);
-    expect(provider.sent[0].title).toBe("Trending");
-  });
-
-  it("does NOT deliver a trending push below the threshold", async () => {
-    const provider = makeProvider();
-    const res = await dispatchPush({
-      kind: "trending", confessionId: "conf-1",
-      reactionCount: DEFAULT_TRENDING_THRESHOLD - 1, recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(false);
-    expect(provider.sent).toHaveLength(0);
-  });
-});
-
-describe("dispatchPush — moderation suppression integration", () => {
-  it("does NOT deliver a queued comment push after the confession is moderated away", async () => {
-    const provider = makeProvider();
-    // Candidate identified, then moderator deletes the confession before dispatch.
-    existing.confessions.delete("conf-1");
-    const res = await dispatchPush({
-      kind: "new_comment", confessionId: "conf-1", commentId: "cmt-1",
-      authorId: "a", recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(false);
-    expect(res.reason).toBe("confession_deleted");
-    expect(provider.sent).toHaveLength(0);
-  });
-
-  it("does NOT deliver a reply push after the parent comment is moderated away", async () => {
-    const provider = makeProvider();
-    existing.comments.delete("cmt-parent");
-    const res = await dispatchPush({
-      kind: "new_reply", parentCommentId: "cmt-parent", commentId: "cmt-1",
-      authorId: "a", recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(false);
-    expect(res.reason).toBe("parent_deleted");
-    expect(provider.sent).toHaveLength(0);
-  });
-
-  it("does NOT deliver a trending push after the confession is moderated away", async () => {
-    const provider = makeProvider();
-    existing.confessions.delete("conf-1");
-    const res = await dispatchPush({
-      kind: "trending", confessionId: "conf-1",
-      reactionCount: DEFAULT_TRENDING_THRESHOLD + 10, recipientId: "b",
-    }, provider);
-    expect(res.delivered).toBe(false);
-    expect(provider.sent).toHaveLength(0);
+    };
+    await dispatchPush(evt, p, { sleepFn: noSleep });
+    const replay = await dispatchPush(evt, p, { sleepFn: noSleep });
+    expect(replay.reason).toBe("previously_dead");
+    expect(p.calls).toBe(4); // not 5
   });
 });

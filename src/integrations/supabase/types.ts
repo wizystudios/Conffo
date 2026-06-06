@@ -663,6 +663,39 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          comments_enabled: boolean
+          created_at: string
+          replies_enabled: boolean
+          room_overrides: Json
+          topic_overrides: Json
+          trending_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments_enabled?: boolean
+          created_at?: string
+          replies_enabled?: boolean
+          room_overrides?: Json
+          topic_overrides?: Json
+          trending_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments_enabled?: boolean
+          created_at?: string
+          replies_enabled?: boolean
+          room_overrides?: Json
+          topic_overrides?: Json
+          trending_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           content: string
@@ -771,6 +804,51 @@ export type Database = {
           verification_date?: string | null
           verification_type?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      push_deliveries: {
+        Row: {
+          attempts: number
+          created_at: string
+          delivered_at: string | null
+          id: string
+          idempotency_key: string
+          kind: string
+          last_error: string | null
+          next_attempt_at: string | null
+          payload: Json
+          recipient_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          idempotency_key: string
+          kind: string
+          last_error?: string | null
+          next_attempt_at?: string | null
+          payload?: Json
+          recipient_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          last_error?: string | null
+          next_attempt_at?: string | null
+          payload?: Json
+          recipient_id?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -167,4 +167,34 @@ describe("pushNotificationGate — dedup + rate limit", () => {
     }, 1_500);
     expect(overflow).toEqual({ fire: false, reason: "rate_limited" });
   });
+
+  it("rate-limits trending pushes per room (prevents trending spam)", async () => {
+    // 3 trending pushes allowed per (recipient, room), 4th blocked.
+    for (let i = 0; i < 3; i++) {
+      const r = await shouldFirePush({
+        kind: "trending", confessionId: `conf-${i}`, roomId: "hot-room",
+        reactionCount: 999, recipientId: "rec",
+      }, 1_000 + i);
+      // Seed each confession so existence check passes
+      existing.confessions.add(`conf-${i}`);
+      // Re-run after seeding (first call would have failed deleted). Easier: pre-seed.
+      void r;
+    }
+    // Pre-seed and run cleanly:
+    __resetPushGateState();
+    for (let i = 0; i < 3; i++) existing.confessions.add(`conf-r${i}`);
+    for (let i = 0; i < 3; i++) {
+      const r = await shouldFirePush({
+        kind: "trending", confessionId: `conf-r${i}`, roomId: "hot-room",
+        reactionCount: 999, recipientId: "rec",
+      }, 2_000 + i);
+      expect(r.fire).toBe(true);
+    }
+    existing.confessions.add("conf-r-overflow");
+    const overflow = await shouldFirePush({
+      kind: "trending", confessionId: "conf-r-overflow", roomId: "hot-room",
+      reactionCount: 999, recipientId: "rec",
+    }, 2_100);
+    expect(overflow.reason).toBe("room_rate_limited");
+  });
 });

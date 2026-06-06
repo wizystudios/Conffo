@@ -1,85 +1,58 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the Supabase client BEFORE importing the service under test.
-const updateMock = vi.fn();
-const deleteMock = vi.fn();
-const insertMock = vi.fn();
-const eqUpdate = vi.fn();
-const eqDelete = vi.fn();
+const invokeMock = vi.fn();
 
-vi.mock("@/integrations/supabase/client", () => {
-  return {
-    supabase: {
-      from: vi.fn((_table: string) => ({
-        update: (...args: unknown[]) => {
-          updateMock(...args);
-          return { eq: (...e: unknown[]) => { eqUpdate(...e); return Promise.resolve({ error: null }); } };
-        },
-        delete: () => {
-          deleteMock();
-          return { eq: (...e: unknown[]) => { eqDelete(...e); return Promise.resolve({ error: null }); } };
-        },
-        insert: (...args: unknown[]) => {
-          insertMock(...args);
-          return Promise.resolve({ error: null });
-        },
-      })),
-    },
-  };
-});
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { functions: { invoke: (...args: unknown[]) => invokeMock(...args) } },
+}));
 
-import {
-  dismissReport,
-  deleteReportedConfession,
-  warnUser,
-  tempBanUser,
-} from "./moderationService";
+import { dismissReport, deleteReportedConfession, warnUser, tempBanUser } from "./moderationService";
 
-beforeEach(() => {
-  updateMock.mockClear();
-  deleteMock.mockClear();
-  insertMock.mockClear();
-  eqUpdate.mockClear();
-  eqDelete.mockClear();
-});
+beforeEach(() => invokeMock.mockReset());
 
-describe("moderationService", () => {
-  it("dismissReport marks the report resolved with admin id", async () => {
-    const res = await dismissReport("report-1", "admin-9");
-    expect(res.ok).toBe(true);
-    expect(updateMock).toHaveBeenCalledTimes(1);
-    const payload = updateMock.mock.calls[0][0] as Record<string, unknown>;
-    expect(payload.resolved).toBe(true);
-    expect(payload.resolved_by).toBe("admin-9");
-    expect(typeof payload.resolved_at).toBe("string");
-    expect(eqUpdate).toHaveBeenCalledWith("id", "report-1");
+describe("moderationService — routes through admin-moderate edge function", () => {
+  it("dismissReport calls edge function with dismiss action", async () => {
+    invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
+    const r = await dismissReport("r1");
+    expect(r.ok).toBe(true);
+    expect(invokeMock).toHaveBeenCalledWith("admin-moderate", { body: { action: "dismiss", reportId: "r1" } });
   });
 
-  it("deleteReportedConfession deletes the content then resolves the report", async () => {
-    const res = await deleteReportedConfession("r-1", "c-1", "admin-1");
-    expect(res.ok).toBe(true);
-    expect(deleteMock).toHaveBeenCalledTimes(1);
-    expect(eqDelete).toHaveBeenCalledWith("id", "c-1");
-    expect(updateMock).toHaveBeenCalledTimes(1);
-    expect(eqUpdate).toHaveBeenCalledWith("id", "r-1");
+  it("deleteReportedConfession forwards both ids", async () => {
+    invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
+    await deleteReportedConfession("r1", "c1");
+    expect(invokeMock).toHaveBeenCalledWith("admin-moderate", {
+      body: { action: "delete", reportId: "r1", confessionId: "c1" },
+    });
   });
 
-  it("warnUser inserts a moderation_warning notification with reason", async () => {
-    const res = await warnUser("user-1", "Be respectful");
-    expect(res.ok).toBe(true);
-    expect(insertMock).toHaveBeenCalledTimes(1);
-    const row = insertMock.mock.calls[0][0] as Record<string, unknown>;
-    expect(row.user_id).toBe("user-1");
-    expect(row.type).toBe("moderation_warning");
-    expect(String(row.content)).toContain("Be respectful");
+  it("warnUser sends reason text", async () => {
+    invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
+    await warnUser("u1", "stop spamming");
+    expect(invokeMock).toHaveBeenCalledWith("admin-moderate", {
+      body: { action: "warn", userId: "u1", reason: "stop spamming" },
+    });
   });
 
-  it("tempBanUser writes banned_until on the user's profile", async () => {
-    const until = new Date(Date.now() + 86_400_000).toISOString();
-    const res = await tempBanUser("user-7", until);
-    expect(res.ok).toBe(true);
-    const payload = updateMock.mock.calls[0][0] as Record<string, unknown>;
-    expect(payload.banned_until).toBe(until);
-    expect(eqUpdate).toHaveBeenCalledWith("id", "user-7");
+  it("tempBanUser sends ISO date", async () => {
+    invokeMock.mockResolvedValue({ data: { ok: true }, error: null });
+    await tempBanUser("u1", "2030-01-01T00:00:00Z");
+    expect(invokeMock).toHaveBeenCalledWith("admin-moderate", {
+      body: { action: "temp_ban", userId: "u1", untilIso: "2030-01-01T00:00:00Z" },
+    });
+  });
+
+  it("returns ok:false when the edge function rejects with 403", async () => {
+    invokeMock.mockResolvedValue({ data: { error: "forbidden" }, error: null });
+    const r = await dismissReport("r1");
+    expect(r.ok).toBe(false);
+    expect(r.error).toBe("forbidden");
+  });
+
+  it("returns ok:false when the http call itself fails", async () => {
+    invokeMock.mockResolvedValue({ data: null, error: { message: "network" } });
+    const r = await dismissReport("r1");
+    expect(r.ok).toBe(false);
+    expect(r.error).toBe("network");
   });
 });

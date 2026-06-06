@@ -22,6 +22,10 @@ export const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 export const RATE_LIMIT_MAX = 8;
 export const RATE_WINDOW_MS = 60 * 1000; // 1 minute
 
+/** Max pushes per (recipient, room) inside the rate window — prevents trending spam. */
+export const ROOM_RATE_LIMIT_MAX = 3;
+export const ROOM_RATE_WINDOW_MS = 60 * 1000;
+
 export interface GateResult {
   fire: boolean;
   reason: string;
@@ -35,13 +39,15 @@ const block = (reason: string): GateResult => ({ fire: false, reason });
 // runs server-side in the edge function for cross-device dedup.
 const recentPushes = new Map<string, number>();
 const recipientTimestamps = new Map<string, number[]>();
+const roomTimestamps = new Map<string, number[]>(); // key: `${recipient}:${room}`
 
 function eventSignature(event: PushEvent): string {
   switch (event.kind) {
     case "new_comment":
-      return `${event.recipientId}:new_comment:${event.confessionId}`;
+      // Include commentId so distinct comments on the same confession are not deduped.
+      return `${event.recipientId}:new_comment:${event.confessionId}:${event.commentId}`;
     case "new_reply":
-      return `${event.recipientId}:new_reply:${event.parentCommentId}`;
+      return `${event.recipientId}:new_reply:${event.parentCommentId}:${event.commentId}`;
     case "trending":
       return `${event.recipientId}:trending:${event.confessionId}`;
   }
@@ -51,6 +57,23 @@ function eventSignature(event: PushEvent): string {
 export function __resetPushGateState() {
   recentPushes.clear();
   recipientTimestamps.clear();
+  roomTimestamps.clear();
+}
+
+function isRoomRateLimited(recipientId: string, roomId: string | null | undefined, now: number): boolean {
+  if (!roomId) return false;
+  const key = `${recipientId}:${roomId}`;
+  const arr = (roomTimestamps.get(key) ?? []).filter((t) => now - t < ROOM_RATE_WINDOW_MS);
+  roomTimestamps.set(key, arr);
+  return arr.length >= ROOM_RATE_LIMIT_MAX;
+}
+
+function recordRoomPush(recipientId: string, roomId: string | null | undefined, now: number) {
+  if (!roomId) return;
+  const key = `${recipientId}:${roomId}`;
+  const arr = roomTimestamps.get(key) ?? [];
+  arr.push(now);
+  roomTimestamps.set(key, arr);
 }
 
 function isDuplicate(event: PushEvent, now: number): boolean {
@@ -137,6 +160,11 @@ export async function shouldFirePush(
   // Rate limit per recipient (checked last so deletes/dedup short-circuit cheaply).
   if (isRateLimited(event.recipientId, now)) return block("rate_limited");
 
+  // Per-room rate limit: prevents trending/comment spam in a single hot room.
+  const roomId = event.kind === "trending" ? event.roomId : null;
+  if (isRoomRateLimited(event.recipientId, roomId, now)) return block("room_rate_limited");
+
   recordPush(event, now);
+  recordRoomPush(event.recipientId, roomId, now);
   return allow();
 }
