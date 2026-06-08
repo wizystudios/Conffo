@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_rate_limits: {
+        Row: {
+          action: string
+          attempted_at: string
+          bucket_key: string
+          id: string
+        }
+        Insert: {
+          action: string
+          attempted_at?: string
+          bucket_key: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          attempted_at?: string
+          bucket_key?: string
+          id?: string
+        }
+        Relationships: []
+      }
       audio_posts: {
         Row: {
           audio_url: string
@@ -723,6 +744,48 @@ export type Database = {
           related_id?: string | null
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      password_reset_audit: {
+        Row: {
+          created_at: string
+          delivery_status: string
+          error: string | null
+          id: string
+          ip_address: string | null
+          method: string
+          requestor_email: string | null
+          requestor_id: string | null
+          target_email: string
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_status: string
+          error?: string | null
+          id?: string
+          ip_address?: string | null
+          method: string
+          requestor_email?: string | null
+          requestor_id?: string | null
+          target_email: string
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivery_status?: string
+          error?: string | null
+          id?: string
+          ip_address?: string | null
+          method?: string
+          requestor_email?: string | null
+          requestor_id?: string | null
+          target_email?: string
+          target_user_id?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }
