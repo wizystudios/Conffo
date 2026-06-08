@@ -98,3 +98,61 @@ Deno.test("RLS: anon cannot read sensitive profile columns", async () => {
     .limit(1);
   assert(error, "anon must be denied sensitive profile columns; got rows back");
 });
+
+Deno.test("RLS: anon CANNOT read profiles.is_admin / is_moderator", async () => {
+  const { error } = await anonClient().from("profiles").select("is_admin,is_moderator").limit(1);
+  assert(error, "anon SELECT of is_admin/is_moderator must be denied by column-level REVOKE");
+});
+
+Deno.test("RLS: authenticated user CANNOT read profiles.is_admin / is_moderator", async () => {
+  const a = await makeUser();
+  try {
+    const client = await authedClient(a.token);
+    const { error } = await client.from("profiles").select("is_admin,is_moderator").limit(1);
+    assert(error, "authenticated SELECT of is_admin/is_moderator must be denied");
+  } finally {
+    await cleanup(a.userId);
+  }
+});
+
+Deno.test("RLS: stories.viewed_by is NOT readable by anon or authenticated", async () => {
+  // anon
+  const anonRes = await anonClient().from("stories").select("viewed_by").limit(1);
+  assert(anonRes.error, "anon must be denied stories.viewed_by");
+  // authenticated
+  const a = await makeUser();
+  try {
+    const client = await authedClient(a.token);
+    const r = await client.from("stories").select("viewed_by").limit(1);
+    assert(r.error, "authenticated must be denied stories.viewed_by raw column");
+  } finally {
+    await cleanup(a.userId);
+  }
+});
+
+Deno.test("RLS: community member cannot self-insert with role='admin' or 'creator'", async () => {
+  const a = await makeUser();
+  try {
+    const svc = serviceClient();
+    // create a throwaway community owned by a different user
+    const owner = await makeUser();
+    const { data: room } = await svc.from("communities")
+      .insert({ name: `t-${crypto.randomUUID()}`, creator_id: owner.userId })
+      .select("id").single();
+    const client = await authedClient(a.token);
+    const evil = await client.from("community_members")
+      .insert({ community_id: room!.id, user_id: a.userId, role: "admin" });
+    assert(evil.error, "self-join as admin must be blocked");
+    const evil2 = await client.from("community_members")
+      .insert({ community_id: room!.id, user_id: a.userId, role: "creator" });
+    assert(evil2.error, "self-join as creator must be blocked");
+    // member join must work
+    const ok = await client.from("community_members")
+      .insert({ community_id: room!.id, user_id: a.userId, role: "member" });
+    assert(!ok.error, `member self-join should succeed: ${ok.error?.message}`);
+    await svc.from("communities").delete().eq("id", room!.id);
+    await cleanup(owner.userId);
+  } finally {
+    await cleanup(a.userId);
+  }
+});
