@@ -107,11 +107,24 @@ Deno.serve(async (req) => {
     return json(500, { error: e instanceof Error ? e.message : String(e) });
   }
 
-  // Audit trail
+  // Audit trail — both the legacy activity log and the new immutable moderation audit.
+  const ip =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    null;
   await admin.from("user_activity_log").insert({
     user_id: adminId,
     activity_type: "moderation_action",
     details: body as unknown as Record<string, unknown>,
+  }).then(() => undefined, () => undefined);
+  await admin.from("admin_moderation_audit").insert({
+    admin_id: adminId,
+    admin_email: userData.user.email,
+    action: body.action,
+    target_user_id: "userId" in body ? body.userId : null,
+    target_content_id: "confessionId" in body ? body.confessionId : null,
+    details: body as unknown as Record<string, unknown>,
+    ip_address: ip,
   }).then(() => undefined, () => undefined);
 
   return json(200, { ok: true });
