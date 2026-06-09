@@ -98,3 +98,30 @@ Deno.test("admin-moderate: super admin can dismiss a report and warn a user", as
     await cleanup(victim.userId);
   }
 });
+
+Deno.test("admin-moderate: super-admin actions appear in admin_moderation_audit", async () => {
+  const admin = await makeUser({ admin: true });
+  const victim = await makeUser();
+  try {
+    const s = svc();
+    const before = await s
+      .from("admin_moderation_audit")
+      .select("id", { count: "exact", head: true })
+      .eq("admin_id", admin.userId);
+    const beforeCount = before.count ?? 0;
+
+    const r = await call(admin.token, { action: "warn", userId: victim.userId, reason: "audit-check" });
+    assertEquals(r.status, 200);
+
+    // Give the async insert a moment.
+    await new Promise((res) => setTimeout(res, 500));
+    const after = await s
+      .from("admin_moderation_audit")
+      .select("id", { count: "exact", head: true })
+      .eq("admin_id", admin.userId);
+    assert((after.count ?? 0) > beforeCount, "moderation action must be recorded in audit log");
+  } finally {
+    await cleanup(admin.userId);
+    await cleanup(victim.userId);
+  }
+});
