@@ -20,6 +20,7 @@ const ConfessionPage = lazy(() => import("./pages/ConfessionPage"));
 const ConfessionFeedPage = lazy(() => import("./pages/ConfessionFeedPage"));
 const TrendingPage = lazy(() => import("./pages/TrendingPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminAuditPage = lazy(() => import("./pages/AdminAuditPage"));
 const MultiStepAuthPage = lazy(() => import("./pages/MultiStepAuthPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
