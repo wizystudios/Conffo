@@ -156,3 +156,42 @@ Deno.test("RLS: community member cannot self-insert with role='admin' or 'creato
     await cleanup(a.userId);
   }
 });
+
+Deno.test("RLS: non-admin authenticated user cannot read password_reset_audit", async () => {
+  const a = await makeUser();
+  try {
+    const client = await authedClient(a.token);
+    const { data, error } = await client.from("password_reset_audit").select("id").limit(1);
+    // Either RLS rejects or returns empty — both acceptable, what we MUST avoid is leaking rows.
+    assert(error || (data ?? []).length === 0, "non-admin must not see audit rows");
+  } finally {
+    await cleanup(a.userId);
+  }
+});
+
+Deno.test("RLS: password_reset_audit rows are immutable (UPDATE/DELETE blocked even for service_role)", async () => {
+  const svc = serviceClient();
+  const ins = await svc.from("password_reset_audit").insert({
+    target_email: `imm-${crypto.randomUUID()}@example.com`,
+    method: "email_link",
+    delivery_status: "sent",
+  }).select("id").single();
+  assert(!ins.error, `seed insert failed: ${ins.error?.message}`);
+  const upd = await svc.from("password_reset_audit").update({ delivery_status: "failed" }).eq("id", ins.data!.id);
+  assert(upd.error, "audit UPDATE must be blocked by trigger");
+  const del = await svc.from("password_reset_audit").delete().eq("id", ins.data!.id);
+  assert(del.error, "audit DELETE must be blocked by trigger");
+});
+
+Deno.test("RLS: admin_moderation_audit rows are immutable", async () => {
+  const svc = serviceClient();
+  const fakeAdmin = crypto.randomUUID();
+  const ins = await svc.from("admin_moderation_audit").insert({
+    admin_id: fakeAdmin, action: "dismiss", details: { test: true },
+  }).select("id").single();
+  assert(!ins.error, `seed insert failed: ${ins.error?.message}`);
+  const upd = await svc.from("admin_moderation_audit").update({ action: "delete" }).eq("id", ins.data!.id);
+  assert(upd.error, "moderation audit UPDATE must be blocked");
+  const del = await svc.from("admin_moderation_audit").delete().eq("id", ins.data!.id);
+  assert(del.error, "moderation audit DELETE must be blocked");
+});
