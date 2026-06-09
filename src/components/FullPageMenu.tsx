@@ -8,7 +8,8 @@ import {
   LogOut,
   Ban,
   BellRing,
-  Sparkles
+  Sparkles,
+  Shield
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -22,7 +23,7 @@ interface FullPageMenuProps {
 }
 
 export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -94,6 +95,30 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
               </div>
               <span className="text-base font-medium">Avatar</span>
             </button>
+
+            {isAdmin && (
+              <>
+                <div className="h-px bg-border my-3" />
+                <button
+                  onClick={() => handleNavigation('/admin')}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+                >
+                  <div className="h-11 w-11 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <span className="text-base font-medium">Admin Dashboard</span>
+                </button>
+                <button
+                  onClick={() => handleNavigation('/admin/audit')}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+                >
+                  <div className="h-11 w-11 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <BellRing className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <span className="text-base font-medium">Audit Logs &amp; Alerts</span>
+                </button>
+              </>
+            )}
 
             <div className="h-px bg-border my-3" />
 

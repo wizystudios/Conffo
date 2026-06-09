@@ -118,6 +118,28 @@ Deno.serve(async (req) => {
           delivery_status: "rate_limited",
           error: `bucket=${bucket}`,
         });
+        // Brute-force / abuse alert: count how many rate_limited events we've
+        // already raised for this bucket in the last hour, and escalate severity.
+        const sinceHour = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+        const { count: recentBlocks } = await admin
+          .from("password_reset_audit")
+          .select("id", { count: "exact", head: true })
+          .eq("delivery_status", "rate_limited")
+          .gte("created_at", sinceHour);
+          await admin.from("admin_alerts").insert({
+            kind: "admin_reset_password_rate_limited",
+            severity: (recentBlocks ?? 0) >= 10 ? "critical" : "warning",
+            message: `Admin password-reset blocked by rate limit (bucket=${bucket}). ` +
+              `${recentBlocks ?? 0} blocks in the last hour.`,
+            details: {
+              bucket,
+              requestor_id: userData.user.id,
+              requestor_email: userData.user.email,
+              target_email: targetEmail || null,
+              ip,
+              recent_blocks_last_hour: recentBlocks ?? 0,
+            },
+          }).then(() => undefined, () => undefined);
         return json(429, { error: "rate_limited" });
       }
     }
