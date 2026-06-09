@@ -122,6 +122,7 @@ const App = () => {
                   <Route path="/notification-settings" element={<NotificationSettingsPage />} />
                   <Route path="/communities" element={<CommunitiesPage />} />
                   <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/admin/audit" element={<AdminAuditPage />} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
