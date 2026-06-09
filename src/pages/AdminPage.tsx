@@ -221,8 +221,8 @@ export default function AdminPage() {
   };
   
   return (
-    <Layout>
-      <div className="space-y-6 p-4">
+    <Layout showNavBar>
+      <div className="space-y-6 p-4 pt-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
