@@ -35,6 +35,72 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_alerts: {
+        Row: {
+          acknowledged: boolean
+          created_at: string
+          details: Json
+          id: string
+          kind: string
+          message: string
+          severity: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          created_at?: string
+          details?: Json
+          id?: string
+          kind: string
+          message: string
+          severity?: string
+        }
+        Update: {
+          acknowledged?: boolean
+          created_at?: string
+          details?: Json
+          id?: string
+          kind?: string
+          message?: string
+          severity?: string
+        }
+        Relationships: []
+      }
+      admin_moderation_audit: {
+        Row: {
+          action: string
+          admin_email: string | null
+          admin_id: string
+          created_at: string
+          details: Json
+          id: string
+          ip_address: string | null
+          target_content_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_email?: string | null
+          admin_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          ip_address?: string | null
+          target_content_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_email?: string | null
+          admin_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          ip_address?: string | null
+          target_content_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       audio_posts: {
         Row: {
           audio_url: string
@@ -1291,6 +1357,7 @@ export type Database = {
         Args: { p_community_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_current_user_admin: { Args: never; Returns: boolean }
       is_user_blocked: {
         Args: { blocked_uuid: string; blocker_uuid: string }
         Returns: boolean
