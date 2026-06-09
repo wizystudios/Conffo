@@ -23,7 +23,7 @@ interface FullPageMenuProps {
 }
 
 export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
