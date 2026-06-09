@@ -41,9 +41,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('username, avatar_url, is_admin, onboarding_completed')
+        .select('username, avatar_url, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
+
+      // is_admin is read via a security-definer RPC because the column is
+      // revoked from authenticated clients.
+      let isAdminFlag = false;
+      try {
+        const { data: adminFlag } = await supabase.rpc('is_current_user_admin' as never);
+        isAdminFlag = Boolean(adminFlag);
+      } catch (e) {
+        console.warn('is_current_user_admin RPC failed', e);
+      }
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
