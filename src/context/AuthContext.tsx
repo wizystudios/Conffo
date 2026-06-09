@@ -77,7 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             profile = {
               username: emailUsername,
               avatar_url: null,
-              is_admin: false,
               onboarding_completed: false,
             };
             console.log('Created default profile');
@@ -89,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      setIsAdmin(profile?.is_admin || false);
+      setIsAdmin(isAdminFlag);
       
       return {
         ...authUser,
