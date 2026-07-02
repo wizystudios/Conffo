@@ -53,10 +53,10 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
         let priv: any = null;
         if (isOwnProfile) {
           const { data: p } = await supabase.rpc('get_my_profile_private' as never);
-          priv = Array.isArray(p) ? p[0] : p;
+          priv = Array.isArray(p as any) ? (p as any)[0] : (p as any);
         } else {
           const { data: p } = await supabase.rpc('get_profile_contact' as never, { target_id: userId } as never);
-          priv = Array.isArray(p) ? p[0] : p;
+          priv = Array.isArray(p as any) ? (p as any)[0] : (p as any);
         }
 
         setProfile({
