@@ -1373,6 +1373,12 @@ export type Database = {
           total_reactions: number
         }[]
       }
+      get_story_viewers: {
+        Args: { story_uuid: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       get_user_reactions: {
         Args: { confession_uuid: string; user_uuid: string }
         Returns: string[]
