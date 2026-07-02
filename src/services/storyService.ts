@@ -41,7 +41,7 @@ export async function createStory(
         expires_at: expiresAt.toISOString(),
         viewed_by: [],
       })
-      .select();
+      .select('id, user_id, media_url, media_type, caption, effects, created_at, expires_at');
 
     if (error) {
       console.error('Error creating story:', error);
