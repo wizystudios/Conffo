@@ -100,13 +100,22 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
               <>
                 <div className="h-px bg-border my-3" />
                 <button
+                  onClick={() => handleNavigation('/admin/dashboard')}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+                >
+                  <div className="h-11 w-11 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-base font-medium">Super Admin</span>
+                </button>
+                <button
                   onClick={() => handleNavigation('/admin')}
                   className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
                 >
                   <div className="h-11 w-11 rounded-full bg-blue-500/10 flex items-center justify-center">
                     <Shield className="h-5 w-5 text-blue-500" />
                   </div>
-                  <span className="text-base font-medium">Admin Dashboard</span>
+                  <span className="text-base font-medium">Moderation</span>
                 </button>
                 <button
                   onClick={() => handleNavigation('/admin/audit')}
