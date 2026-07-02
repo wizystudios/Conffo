@@ -380,25 +380,25 @@ export async function getStoryReactionCounts(storyId: string) {
  */
 export async function getStoryViewers(storyId: string) {
   try {
-    // Get the story to access the viewed_by array
-    const { data: story, error: storyError } = await supabase
-      .from('stories')
-      .select('viewed_by')
-      .eq('id', storyId)
-      .single();
+    // viewed_by is revoked from client roles; use security-definer RPC.
+    const { data: viewerRows, error: storyError } = await supabase.rpc(
+      'get_story_viewers' as never,
+      { story_uuid: storyId } as never,
+    );
 
     if (storyError) {
       console.error('Error fetching story viewers:', storyError);
       return { count: 0, viewers: [] };
     }
 
-    const viewerIds = story.viewed_by || [];
-    
+    const viewerIds: string[] = ((viewerRows as any[]) || [])
+      .map((r) => (typeof r === 'string' ? r : r.user_id))
+      .filter(Boolean);
+
     if (viewerIds.length === 0) {
       return { count: 0, viewers: [] };
     }
 
-    // Get the profile info for each viewer
     const { data: viewers, error: viewersError } = await supabase
       .from('profiles')
       .select('id, username, avatar_url')
@@ -411,7 +411,7 @@ export async function getStoryViewers(storyId: string) {
 
     return {
       count: viewerIds.length,
-      viewers: viewers
+      viewers: viewers,
     };
   } catch (error) {
     console.error('Error in getStoryViewers:', error);
