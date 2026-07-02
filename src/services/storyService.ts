@@ -157,7 +157,7 @@ export async function getActiveStories(viewerId?: string): Promise<Story[]> {
       // Fallback to direct query
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('stories')
-        .select('*')
+        .select('id, user_id, media_url, media_type, caption, effects, created_at, expires_at')
         .order('created_at', { ascending: false });
       
       if (fallbackError) return [];
@@ -171,7 +171,7 @@ export async function getActiveStories(viewerId?: string): Promise<Story[]> {
         effects: story.effects,
         createdAt: story.created_at,
         expiresAt: story.expires_at,
-        isViewed: viewerId ? (story.viewed_by || []).includes(viewerId) : false,
+        isViewed: false,
       }));
     }
 
