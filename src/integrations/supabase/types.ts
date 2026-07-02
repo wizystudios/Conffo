@@ -1336,6 +1336,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_admin_metrics: { Args: never; Returns: Json }
       get_comment_count: { Args: { confession_uuid: string }; Returns: number }
       get_comment_like_count: {
         Args: { comment_uuid: string }
@@ -1395,6 +1396,21 @@ export type Database = {
       is_user_blocked: {
         Args: { blocked_uuid: string; blocker_uuid: string }
         Returns: boolean
+      }
+      list_users_admin: {
+        Args: { p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: {
+          avatar_url: string
+          banned_until: string
+          contact_email: string
+          contact_phone: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          is_moderator: boolean
+          is_verified: boolean
+          username: string
+        }[]
       }
       mark_story_viewed: {
         Args: { story_uuid: string; viewer_uuid: string }
