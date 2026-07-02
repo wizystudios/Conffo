@@ -72,13 +72,18 @@ export function EnhancedProfileSettings() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+      const [{ data, error }, priv] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('username, bio, website, interests, privacy_settings')
+          .eq('id', user.id)
+          .maybeSingle(),
+        supabase.rpc('get_my_profile_private' as never),
+      ]);
 
       if (error) throw error;
+
+      const p = Array.isArray((priv as any)?.data) ? (priv as any).data[0] : (priv as any)?.data;
 
       if (data) {
         // Safely parse privacy_settings from JSONB
@@ -91,11 +96,11 @@ export function EnhancedProfileSettings() {
           username: data.username || '',
           bio: data.bio || '',
           website: data.website || '',
-          location: data.location || '',
-          contact_email: data.contact_email || '',
-          contact_phone: data.contact_phone || '',
-          date_of_birth: data.date_of_birth || '',
-          gender: data.gender || '',
+          location: p?.location || '',
+          contact_email: p?.contact_email || '',
+          contact_phone: p?.contact_phone || '',
+          date_of_birth: p?.date_of_birth || '',
+          gender: p?.gender || '',
           interests: data.interests || [],
           privacy_settings: privacySettings
         });
