@@ -21,6 +21,7 @@ const ConfessionFeedPage = lazy(() => import("./pages/ConfessionFeedPage"));
 const TrendingPage = lazy(() => import("./pages/TrendingPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AdminAuditPage = lazy(() => import("./pages/AdminAuditPage"));
+const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
 const MultiStepAuthPage = lazy(() => import("./pages/MultiStepAuthPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
@@ -122,6 +123,7 @@ const App = () => {
                   <Route path="/notification-settings" element={<NotificationSettingsPage />} />
                   <Route path="/communities" element={<CommunitiesPage />} />
                   <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
                   <Route path="/admin/audit" element={<AdminAuditPage />} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />
