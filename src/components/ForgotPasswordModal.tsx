@@ -46,12 +46,12 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
         toast({ description: 'Password reset link sent. Check your inbox.' });
         setStep('success');
       } else {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('contact_phone', identifier.replace(/\s/g, ''))
-          .maybeSingle();
-        if (data) setStep('newPassword');
+        const { data } = await supabase.rpc(
+          'find_login_identity' as never,
+          { identifier: identifier.replace(/\s/g, '') } as never,
+        );
+        const hit: any = Array.isArray(data as any) ? (data as any)[0] : (data as any);
+        if (hit?.user_id) setStep('newPassword');
         else toast({ variant: 'destructive', description: 'No account found with this phone number' });
       }
     } catch (e: any) {

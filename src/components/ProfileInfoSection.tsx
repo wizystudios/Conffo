@@ -37,11 +37,6 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
             username,
             bio,
             website,
-            location,
-            gender,
-            date_of_birth,
-            contact_email,
-            contact_phone,
             interests,
             privacy_settings,
             is_public
@@ -54,7 +49,24 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
           return;
         }
 
-        setProfile(data);
+        // Sensitive columns come via RPC to enforce privacy at the DB layer.
+        let priv: any = null;
+        if (isOwnProfile) {
+          const { data: p } = await supabase.rpc('get_my_profile_private' as never);
+          priv = Array.isArray(p as any) ? (p as any)[0] : (p as any);
+        } else {
+          const { data: p } = await supabase.rpc('get_profile_contact' as never, { target_id: userId } as never);
+          priv = Array.isArray(p as any) ? (p as any)[0] : (p as any);
+        }
+
+        setProfile({
+          ...(data as any),
+          location: priv?.location ?? null,
+          gender: priv?.gender ?? null,
+          date_of_birth: priv?.date_of_birth ?? null,
+          contact_email: priv?.contact_email ?? null,
+          contact_phone: priv?.contact_phone ?? null,
+        } as UserProfile);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -63,7 +75,7 @@ export function ProfileInfoSection({ userId, isOwnProfile }: ProfileInfoSectionP
     };
 
     fetchProfile();
-  }, [userId]);
+  }, [userId, isOwnProfile]);
 
   if (loading) {
     return (

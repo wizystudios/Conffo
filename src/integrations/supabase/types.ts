@@ -1311,6 +1311,13 @@ export type Database = {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: boolean
       }
+      find_login_identity: {
+        Args: { identifier: string }
+        Returns: {
+          contact_email: string
+          user_id: string
+        }[]
+      }
       follow_user: {
         Args: { follower_uuid: string; following_uuid: string }
         Returns: undefined
@@ -1337,12 +1344,39 @@ export type Database = {
       get_current_user_role: { Args: never; Returns: string }
       get_followers_count: { Args: { user_uuid: string }; Returns: number }
       get_following_count: { Args: { user_uuid: string }; Returns: number }
+      get_my_profile_private: {
+        Args: never
+        Returns: {
+          birthdate: string
+          contact_email: string
+          contact_phone: string
+          date_of_birth: string
+          gender: string
+          location: string
+        }[]
+      }
+      get_profile_contact: {
+        Args: { target_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+          date_of_birth: string
+          gender: string
+          location: string
+        }[]
+      }
       get_reaction_counts: { Args: { confession_uuid: string }; Returns: Json }
       get_reaction_counts_for_all_confessions: {
         Args: never
         Returns: {
           confession_id: string
           total_reactions: number
+        }[]
+      }
+      get_story_viewers: {
+        Args: { story_uuid: string }
+        Returns: {
+          user_id: string
         }[]
       }
       get_user_reactions: {

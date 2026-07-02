@@ -27,7 +27,7 @@ export function ProfileUpdateForm() {
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('username, is_public, contact_phone')
+          .select('username, is_public')
           .eq('id', user.id)
           .single();
 
@@ -49,7 +49,9 @@ export function ProfileUpdateForm() {
         }
 
         setIsProfilePublic(profile?.is_public !== false);
-        setContactPhone(profile?.contact_phone || '');
+        const { data: priv } = await supabase.rpc('get_my_profile_private' as never);
+        const p = Array.isArray(priv) ? (priv as any)[0] : (priv as any);
+        setContactPhone(p?.contact_phone || '');
       } catch (error) {
         console.error('Error initializing profile:', error);
         // Fallback to email-derived username

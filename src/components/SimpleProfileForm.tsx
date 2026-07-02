@@ -29,19 +29,19 @@ export function SimpleProfileForm() {
       setUsername(user.username || user.email?.split('@')[0] || '');
       // Load additional profile data
       const loadProfile = async () => {
-        const { data } = await supabase
-          .from('profiles')
-          .select('bio, contact_email, contact_phone, is_public, location')
-          .eq('id', user.id)
-          .maybeSingle();
-        
+        const [{ data }, priv] = await Promise.all([
+          supabase.from('profiles').select('bio, is_public').eq('id', user.id).maybeSingle(),
+          supabase.rpc('get_my_profile_private' as never),
+        ]);
         if (data) {
           setBio(data.bio || '');
-          setContactEmail(data.contact_email || '');
-          setContactPhone(data.contact_phone || '');
           setIsProfilePublic(data.is_public ?? true);
-          // Parse country from location if stored there
-          setCountry(data.location || '');
+        }
+        const p = Array.isArray((priv as any)?.data) ? (priv as any).data[0] : (priv as any)?.data;
+        if (p) {
+          setContactEmail(p.contact_email || '');
+          setContactPhone(p.contact_phone || '');
+          setCountry(p.location || '');
         }
       };
       loadProfile();
