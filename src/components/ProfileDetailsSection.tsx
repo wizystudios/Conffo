@@ -27,24 +27,37 @@ export function ProfileDetailsSection({ userId, isBlocked }: ProfileDetailsSecti
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select(`
-            bio,
-            website,
-            location,
-            gender,
-            date_of_birth,
-            contact_email,
-            contact_phone,
-            interests
-          `)
-          .eq('id', userId)
-          .single();
+        const [{ data, error }, { data: currentUser }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select(`bio, website, interests`)
+            .eq('id', userId)
+            .single(),
+          supabase.auth.getUser(),
+        ]);
 
-        if (!error && data) {
-          setProfile(data);
+        if (error || !data) {
+          return;
         }
+
+        const isSelf = currentUser?.user?.id === userId;
+        let priv: any = null;
+        if (isSelf) {
+          const { data: p } = await supabase.rpc('get_my_profile_private' as never);
+          priv = Array.isArray(p as any) ? (p as any)[0] : (p as any);
+        } else {
+          const { data: p } = await supabase.rpc('get_profile_contact' as never, { target_id: userId } as never);
+          priv = Array.isArray(p as any) ? (p as any)[0] : (p as any);
+        }
+
+        setProfile({
+          ...(data as any),
+          location: priv?.location ?? null,
+          gender: priv?.gender ?? null,
+          date_of_birth: priv?.date_of_birth ?? null,
+          contact_email: priv?.contact_email ?? null,
+          contact_phone: priv?.contact_phone ?? null,
+        } as UserProfile);
       } catch (error) {
         console.error('Error fetching profile details:', error);
       } finally {
