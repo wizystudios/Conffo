@@ -131,22 +131,26 @@ export default function MultiStepAuthPage() {
       try {
         setLoading(true);
         const normalized = normalizePhone(fullPhone());
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .or(`contact_phone.eq.${normalized},contact_phone.eq.${phoneNumber}`)
-          .maybeSingle();
-        if (!profile?.id) throw new Error('No account found with this phone number');
-        const { data: userWithEmail } = await supabase
-          .from('profiles')
-          .select('contact_email')
-          .eq('id', profile.id)
-          .maybeSingle();
-        if (!userWithEmail?.contact_email) throw new Error('Add email in settings to enable phone login');
+        // Use security-definer RPC — contact_phone/contact_email columns are
+        // revoked from anon/authenticated to prevent PII enumeration.
+        const { data: found } = await supabase.rpc(
+          'find_login_identity' as never,
+          { identifier: normalized } as never,
+        );
+        let hit: any = Array.isArray(found as any) ? (found as any)[0] : (found as any);
+        if (!hit?.contact_email) {
+          const { data: found2 } = await supabase.rpc(
+            'find_login_identity' as never,
+            { identifier: phoneNumber } as never,
+          );
+          hit = Array.isArray(found2 as any) ? (found2 as any)[0] : (found2 as any);
+        }
+        if (!hit?.user_id) throw new Error('No account found with this phone number');
+        if (!hit?.contact_email) throw new Error('Add email in settings to enable phone login');
         Object.keys(localStorage).forEach((key) => {
           if (key.startsWith('supabase.auth.') || key.includes('sb-')) localStorage.removeItem(key);
         });
-        const { error } = await supabase.auth.signInWithPassword({ email: userWithEmail.contact_email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: hit.contact_email, password });
         if (error) throw error;
         window.dispatchEvent(new CustomEvent('conffo-success', { detail: { message: 'Welcome back' } }));
         setTimeout(() => { window.location.href = '/'; }, 1500);
