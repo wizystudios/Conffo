@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -100,6 +100,24 @@ export default function SuperAdminDashboard() {
     },
     enabled: !!user && isAdmin,
   });
+
+  // Real-time: refresh metrics/user list when tracked tables change.
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    const invalidate = () => {
+      qc.invalidateQueries({ queryKey: ['admin-metrics'] });
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+    };
+    const channel = supabase
+      .channel('admin-dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'confessions' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, invalidate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, invalidate)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, isAdmin, qc]);
 
   if (!user || !isAdmin) return <Navigate to="/" replace />;
 

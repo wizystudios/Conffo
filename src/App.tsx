@@ -42,6 +42,7 @@ import { LoadingFallback } from "./components/LoadingFallback";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
 import { AuthGate } from "./components/AuthGate";
+import { AdminRoute } from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
 
 const App = () => {
@@ -122,9 +123,9 @@ const App = () => {
                   <Route path="/blocked" element={<BlockedUsersPage />} />
                   <Route path="/notification-settings" element={<NotificationSettingsPage />} />
                   <Route path="/communities" element={<CommunitiesPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
-                  <Route path="/admin/audit" element={<AdminAuditPage />} />
+                  <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+                  <Route path="/admin/dashboard" element={<AdminRoute><SuperAdminDashboard /></AdminRoute>} />
+                  <Route path="/admin/audit" element={<AdminRoute><AdminAuditPage /></AdminRoute>} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />

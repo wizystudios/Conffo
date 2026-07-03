@@ -172,42 +172,99 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let currentAdmin = false;
+
+    const logAdminEvent = async (event: 'sign_in' | 'sign_out' | 'token_refresh' | 'session_restored') => {
+      try {
+        await supabase.rpc('log_admin_session_event' as never, {
+          p_event: event,
+          p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+        } as never);
+      } catch (e) {
+        console.warn('log_admin_session_event failed', e);
+      }
+    };
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchUserProfile(session.user.id).then(setUser);
+        const u = await fetchUserProfile(session.user.id);
+        setUser(u);
+        currentAdmin = !!u && isAdmin;
+        // Fire-and-forget: audit log runs server-side and only records for admins.
+        logAdminEvent('session_restored');
       }
       setIsLoading(false);
     });
+
+    // Recover from token refresh failure (expired refresh token, revoked session, etc.)
+    // by clearing local state and pushing user to /auth instead of leaving them stuck.
+    const handleRefreshFailure = () => {
+      console.warn('Token refresh failed — signing out.');
+      setSession(null);
+      setUser(null);
+      setIsAdmin(false);
+    };
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       setSession(session);
-      
+
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        handleRefreshFailure();
+        return;
+      }
+
       if (session?.user) {
-        // Use setTimeout to prevent potential deadlocks
         setTimeout(async () => {
           const userWithProfile = await fetchUserProfile(session.user.id);
           setUser(userWithProfile);
           setIsLoading(false);
-          
-          // Dispatch auth-restored event for stories/moments refetch
+
+          if (event === 'SIGNED_IN') logAdminEvent('sign_in');
+          if (event === 'TOKEN_REFRESHED') logAdminEvent('token_refresh');
+
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            window.dispatchEvent(new CustomEvent('auth-restored', { 
-              detail: { userId: session.user.id } 
+            window.dispatchEvent(new CustomEvent('auth-restored', {
+              detail: { userId: session.user.id },
             }));
           }
         }, 0);
       } else {
+        if (event === 'SIGNED_OUT' && currentAdmin) {
+          // Best-effort — request may 401 after sign-out, that's fine.
+          logAdminEvent('sign_out');
+        }
         setUser(null);
         setIsAdmin(false);
         setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Preserve session across restart: proactively refresh when tab becomes visible
+    // again, so a long-idle tab doesn't sit on a stale access token.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data }) => {
+          if (!data.session) return;
+          const expiresAt = (data.session.expires_at ?? 0) * 1000;
+          if (expiresAt - Date.now() < 60_000) {
+            supabase.auth.refreshSession().catch(handleRefreshFailure);
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onVisible);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signOut = async () => {
