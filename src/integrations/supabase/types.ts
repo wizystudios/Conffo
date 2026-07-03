@@ -101,6 +101,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_session_audit: {
+        Row: {
+          admin_email: string | null
+          admin_id: string
+          created_at: string
+          event_type: string
+          id: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_email?: string | null
+          admin_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_email?: string | null
+          admin_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       audio_posts: {
         Row: {
           audio_url: string
@@ -1411,6 +1438,10 @@ export type Database = {
           is_verified: boolean
           username: string
         }[]
+      }
+      log_admin_session_event: {
+        Args: { p_event: string; p_user_agent?: string }
+        Returns: undefined
       }
       mark_story_viewed: {
         Args: { story_uuid: string; viewer_uuid: string }
