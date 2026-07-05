@@ -8,7 +8,7 @@
   "mcp": {
     "server": {
       "name": "conffo-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "Conffo"
     },
     "tools": [
@@ -81,6 +81,40 @@
           "required": [
             "id"
           ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_trending_confessions",
+        "title": "Get trending confessions",
+        "description": "Return the most-reacted-to confessions from the last N hours, optionally filtered by room. Ranked by total reactions.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "roomId": {
+              "type": "string",
+              "description": "Room ID to filter by (e.g. 'relationships')."
+            },
+            "hours": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 720,
+              "description": "Lookback window in hours (default 48)."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max confessions to return (default 10)."
+            }
+          },
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
