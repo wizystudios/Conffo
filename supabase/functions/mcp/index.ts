@@ -105,13 +105,69 @@ var get_confession_default = defineTool3({
   }
 });
 
+// src/lib/mcp/tools/get-trending-confessions.ts
+import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z3 } from "npm:zod@^3.25.76";
+function anonClient4() {
+  return createClient4(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
+var get_trending_confessions_default = defineTool4({
+  name: "get_trending_confessions",
+  title: "Get trending confessions",
+  description: "Return the most-reacted-to confessions from the last N hours, optionally filtered by room. Ranked by total reactions.",
+  inputSchema: {
+    roomId: z3.string().trim().optional().describe("Room ID to filter by (e.g. 'relationships')."),
+    hours: z3.number().int().min(1).max(720).optional().describe("Lookback window in hours (default 48)."),
+    limit: z3.number().int().min(1).max(50).optional().describe("Max confessions to return (default 10).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ roomId, hours, limit }) => {
+    const client = anonClient4();
+    const sinceISO = new Date(Date.now() - (hours ?? 48) * 36e5).toISOString();
+    const max = limit ?? 10;
+    let cq = client.from("confessions").select("id, content, room_id, created_at, tags, media_type").gte("created_at", sinceISO);
+    if (roomId) cq = cq.eq("room_id", roomId);
+    const { data: confessions, error } = await cq.limit(500);
+    if (error) {
+      return { content: [{ type: "text", text: error.message }], isError: true };
+    }
+    if (!confessions?.length) {
+      return {
+        content: [{ type: "text", text: "[]" }],
+        structuredContent: { trending: [] }
+      };
+    }
+    const ids = confessions.map((c) => c.id);
+    const { data: reactions } = await client.from("reactions").select("confession_id").in("confession_id", ids);
+    const counts = /* @__PURE__ */ new Map();
+    for (const r of reactions ?? []) {
+      counts.set(r.confession_id, (counts.get(r.confession_id) ?? 0) + 1);
+    }
+    const ranked = confessions.map((c) => ({ ...c, reaction_count: counts.get(c.id) ?? 0 })).sort((a, b) => b.reaction_count - a.reaction_count).slice(0, max);
+    return {
+      content: [{ type: "text", text: JSON.stringify(ranked) }],
+      structuredContent: { trending: ranked, window_hours: hours ?? 48 }
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var mcp_default = defineMcp({
   name: "conffo-mcp",
   title: "Conffo",
-  version: "0.1.0",
-  instructions: "Read-only access to public anonymous confessions on Conffo. Use `list_rooms` to discover topics, `search_confessions` to browse or filter by room/keyword, and `get_confession` to fetch a specific confession with its comments.",
-  tools: [list_rooms_default, search_confessions_default, get_confession_default]
+  version: "0.2.0",
+  instructions: "Read-only access to public anonymous confessions on Conffo. All tools are read-only by design; writing confessions/reactions/comments and admin moderation require OAuth (not yet enabled). Use `list_rooms` to discover topics, `search_confessions` to browse or filter, `get_confession` for a single item with comments, and `get_trending_confessions` to rank by reactions within a lookback window.",
+  tools: [
+    list_rooms_default,
+    search_confessions_default,
+    get_confession_default,
+    get_trending_confessions_default
+  ]
 });
 
 // lovable-mcp-supabase-entry.ts
