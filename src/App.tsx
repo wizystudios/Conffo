@@ -36,6 +36,7 @@ const BlockedUsersPage = lazy(() => import("./pages/BlockedUsersPage"));
 const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettingsPage"));
 const CommunitiesPage = lazy(() => import("./pages/CommunitiesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
@@ -127,6 +128,7 @@ const App = () => {
                   <Route path="/admin/dashboard" element={<AdminRoute><SuperAdminDashboard /></AdminRoute>} />
                   <Route path="/admin/audit" element={<AdminRoute><AdminAuditPage /></AdminRoute>} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
+                  <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />

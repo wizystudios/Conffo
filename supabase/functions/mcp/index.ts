@@ -3,7 +3,7 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/list-rooms.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.49.4";
@@ -156,17 +156,349 @@ var get_trending_confessions_default = defineTool4({
   }
 });
 
+// src/lib/mcp/tools/follow-room.ts
+import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z4 } from "npm:zod@^3.25.76";
+function userClient(ctx) {
+  return createClient5(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var follow_room_default = defineTool5({
+  name: "follow_room",
+  title: "Follow room",
+  description: "Follow a Conffo room as the authenticated user.",
+  inputSchema: { roomId: z4.string().trim().min(1).describe("Room ID to follow.") },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ roomId }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { error } = await userClient(ctx).from("room_follows").upsert({ user_id: ctx.getUserId(), room_id: roomId }, { onConflict: "user_id,room_id" });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Following ${roomId}` }],
+      structuredContent: { ok: true, roomId }
+    };
+  }
+});
+
+// src/lib/mcp/tools/unfollow-room.ts
+import { createClient as createClient6 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z5 } from "npm:zod@^3.25.76";
+function userClient2(ctx) {
+  return createClient6(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var unfollow_room_default = defineTool6({
+  name: "unfollow_room",
+  title: "Unfollow room",
+  description: "Unfollow a Conffo room as the authenticated user.",
+  inputSchema: { roomId: z5.string().trim().min(1).describe("Room ID to unfollow.") },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ roomId }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { error } = await userClient2(ctx).from("room_follows").delete().eq("user_id", ctx.getUserId()).eq("room_id", roomId);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Unfollowed ${roomId}` }],
+      structuredContent: { ok: true, roomId }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-followed-rooms.ts
+import { createClient as createClient7 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.20.0";
+function userClient3(ctx) {
+  return createClient7(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var list_followed_rooms_default = defineTool7({
+  name: "list_followed_rooms",
+  title: "List followed rooms",
+  description: "List rooms the authenticated user follows.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_input, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { data, error } = await userClient3(ctx).from("room_follows").select("room_id, created_at").eq("user_id", ctx.getUserId()).order("created_at", { ascending: false });
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { follows: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/create-confession.ts
+import { createClient as createClient8 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z6 } from "npm:zod@^3.25.76";
+function userClient4(ctx) {
+  return createClient8(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var create_confession_default = defineTool8({
+  name: "create_confession",
+  title: "Post confession",
+  description: "Post a new anonymous confession as the authenticated user. The user_id is taken from the verified token \u2014 never from input.",
+  inputSchema: {
+    content: z6.string().trim().min(1).max(4e3).describe("Confession text."),
+    roomId: z6.string().trim().min(1).describe("Target room ID."),
+    tags: z6.array(z6.string().trim().min(1)).max(10).optional().describe("Optional topic tags.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ content, roomId, tags }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { data, error } = await userClient4(ctx).from("confessions").insert({ content, room_id: roomId, tags: tags ?? [], user_id: ctx.getUserId() }).select("id, content, room_id, created_at, tags").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { confession: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/add-reaction.ts
+import { createClient as createClient9 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool9 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z7 } from "npm:zod@^3.25.76";
+function userClient5(ctx) {
+  return createClient9(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var ReactionType = z7.enum(["like", "laugh", "shock", "heart"]);
+var add_reaction_default = defineTool9({
+  name: "add_reaction",
+  title: "React to confession",
+  description: "Add a reaction to a confession as the authenticated user. Valid types: like (Felt this), heart (Loved), laugh, shock (Changed my view).",
+  inputSchema: {
+    confessionId: z7.string().uuid().describe("Confession UUID to react to."),
+    type: ReactionType.describe("Reaction type.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ confessionId, type }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { error } = await userClient5(ctx).from("reactions").upsert(
+      { confession_id: confessionId, user_id: ctx.getUserId(), type },
+      { onConflict: "confession_id,user_id,type" }
+    );
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: `Reacted ${type}` }],
+      structuredContent: { ok: true, confessionId, type }
+    };
+  }
+});
+
+// src/lib/mcp/tools/add-comment.ts
+import { createClient as createClient10 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool10 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z8 } from "npm:zod@^3.25.76";
+function userClient6(ctx) {
+  return createClient10(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var add_comment_default = defineTool10({
+  name: "add_comment",
+  title: "Comment on confession",
+  description: "Post an anonymous comment on a confession as the authenticated user. The user_id is enforced server-side from the verified token.",
+  inputSchema: {
+    confessionId: z8.string().uuid().describe("Confession UUID to comment on."),
+    content: z8.string().trim().min(1).max(2e3).describe("Comment text."),
+    parentCommentId: z8.string().uuid().optional().describe("Parent comment for threaded replies.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  handler: async ({ confessionId, content, parentCommentId }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const { data, error } = await userClient6(ctx).from("comments").insert({
+      confession_id: confessionId,
+      content,
+      user_id: ctx.getUserId(),
+      parent_comment_id: parentCommentId ?? null
+    }).select("id, content, confession_id, created_at, parent_comment_id").single();
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { comment: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/list-pending-reports.ts
+import { createClient as createClient11 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool11 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z9 } from "npm:zod@^3.25.76";
+function adminClient() {
+  return createClient11(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+async function requireAdmin(ctx) {
+  if (!ctx.isAuthenticated()) return false;
+  const { data } = await adminClient().from("profiles").select("is_admin").eq("id", ctx.getUserId()).maybeSingle();
+  return !!data?.is_admin;
+}
+var list_pending_reports_default = defineTool11({
+  name: "list_pending_reports",
+  title: "List pending reports (admin)",
+  description: "Admin only. List unresolved moderation reports. Requires the caller to be a super admin (profiles.is_admin).",
+  inputSchema: {
+    limit: z9.number().int().min(1).max(100).optional().describe("Max reports to return (default 50).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ limit }, ctx) => {
+    if (!await requireAdmin(ctx)) {
+      return { content: [{ type: "text", text: "forbidden" }], isError: true };
+    }
+    const { data, error } = await adminClient().from("reports").select("id, item_type, item_id, reason, details, user_id, created_at").eq("resolved", false).order("created_at", { ascending: false }).limit(limit ?? 50);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: { reports: data }
+    };
+  }
+});
+
+// src/lib/mcp/tools/resolve-report.ts
+import { createClient as createClient12 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool12 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z10 } from "npm:zod@^3.25.76";
+function adminClient2() {
+  return createClient12(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+async function requireAdmin2(ctx) {
+  if (!ctx.isAuthenticated()) return false;
+  const { data } = await adminClient2().from("profiles").select("is_admin").eq("id", ctx.getUserId()).maybeSingle();
+  return !!data?.is_admin;
+}
+var resolve_report_default = defineTool12({
+  name: "resolve_report",
+  title: "Resolve report by deleting content (admin)",
+  description: "Admin only. Deletes the reported confession and marks the report resolved. Writes an entry to admin_moderation_audit.",
+  inputSchema: {
+    reportId: z10.string().uuid().describe("Report UUID."),
+    confessionId: z10.string().uuid().describe("Confession UUID to delete.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+  handler: async ({ reportId, confessionId }, ctx) => {
+    if (!await requireAdmin2(ctx)) {
+      return { content: [{ type: "text", text: "forbidden" }], isError: true };
+    }
+    const admin = adminClient2();
+    const adminId = ctx.getUserId();
+    const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+    const d = await admin.from("confessions").delete().eq("id", confessionId);
+    if (d.error) return { content: [{ type: "text", text: d.error.message }], isError: true };
+    const u = await admin.from("reports").update({ resolved: true, resolved_at: nowIso, resolved_by: adminId }).eq("id", reportId);
+    if (u.error) return { content: [{ type: "text", text: u.error.message }], isError: true };
+    await admin.from("admin_moderation_audit").insert({
+      admin_id: adminId,
+      admin_email: ctx.getUserEmail?.() ?? null,
+      action: "delete",
+      target_content_id: confessionId,
+      details: { reportId, confessionId, via: "mcp" }
+    }).then(() => void 0, () => void 0);
+    return {
+      content: [{ type: "text", text: "Report resolved and confession deleted." }],
+      structuredContent: { ok: true, reportId, confessionId }
+    };
+  }
+});
+
+// src/lib/mcp/tools/dismiss-report.ts
+import { createClient as createClient13 } from "npm:@supabase/supabase-js@^2.49.4";
+import { defineTool as defineTool13 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z11 } from "npm:zod@^3.25.76";
+function adminClient3() {
+  return createClient13(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+async function requireAdmin3(ctx) {
+  if (!ctx.isAuthenticated()) return false;
+  const { data } = await adminClient3().from("profiles").select("is_admin").eq("id", ctx.getUserId()).maybeSingle();
+  return !!data?.is_admin;
+}
+var dismiss_report_default = defineTool13({
+  name: "dismiss_report",
+  title: "Dismiss report (admin)",
+  description: "Admin only. Marks a moderation report resolved with no action. Writes an entry to admin_moderation_audit.",
+  inputSchema: { reportId: z11.string().uuid().describe("Report UUID.") },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ reportId }, ctx) => {
+    if (!await requireAdmin3(ctx)) {
+      return { content: [{ type: "text", text: "forbidden" }], isError: true };
+    }
+    const admin = adminClient3();
+    const adminId = ctx.getUserId();
+    const nowIso = (/* @__PURE__ */ new Date()).toISOString();
+    const { error } = await admin.from("reports").update({ resolved: true, resolved_at: nowIso, resolved_by: adminId }).eq("id", reportId);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    await admin.from("admin_moderation_audit").insert({
+      admin_id: adminId,
+      admin_email: ctx.getUserEmail?.() ?? null,
+      action: "dismiss",
+      details: { reportId, via: "mcp" }
+    }).then(() => void 0, () => void 0);
+    return {
+      content: [{ type: "text", text: "Report dismissed." }],
+      structuredContent: { ok: true, reportId }
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
+var projectRef = "obijcwprhqyslfplnego";
 var mcp_default = defineMcp({
   name: "conffo-mcp",
   title: "Conffo",
-  version: "0.2.0",
-  instructions: "Read-only access to public anonymous confessions on Conffo. All tools are read-only by design; writing confessions/reactions/comments and admin moderation require OAuth (not yet enabled). Use `list_rooms` to discover topics, `search_confessions` to browse or filter, `get_confession` for a single item with comments, and `get_trending_confessions` to rank by reactions within a lookback window.",
+  version: "0.3.0",
+  instructions: "Read/write access to Conffo. Read tools (list_rooms, search_confessions, get_confession, get_trending_confessions) work without auth. Write tools (follow_room, unfollow_room, list_followed_rooms, create_confession, add_reaction, add_comment) require Supabase OAuth \u2014 the caller's user_id is always taken from the verified token, never from input. Admin tools (list_pending_reports, resolve_report, dismiss_report) additionally require profiles.is_admin and write to admin_moderation_audit.",
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated"
+  }),
   tools: [
     list_rooms_default,
     search_confessions_default,
     get_confession_default,
-    get_trending_confessions_default
+    get_trending_confessions_default,
+    follow_room_default,
+    unfollow_room_default,
+    list_followed_rooms_default,
+    create_confession_default,
+    add_reaction_default,
+    add_comment_default,
+    list_pending_reports_default,
+    resolve_report_default,
+    dismiss_report_default
   ]
 });
 

@@ -3,12 +3,16 @@
   "sdk_version": "0.20.0",
   "path": "/functions/v1/mcp",
   "auth": {
-    "type": "none"
+    "type": "oauth",
+    "issuer": "https://obijcwprhqyslfplnego.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
   },
   "mcp": {
     "server": {
       "name": "conffo-mcp",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "title": "Conffo"
     },
     "tools": [
@@ -115,6 +119,274 @@
               "description": "Max confessions to return (default 10)."
             }
           },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "follow_room",
+        "title": "Follow room",
+        "description": "Follow a Conffo room as the authenticated user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "roomId": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Room ID to follow."
+            }
+          },
+          "required": [
+            "roomId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "unfollow_room",
+        "title": "Unfollow room",
+        "description": "Unfollow a Conffo room as the authenticated user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "roomId": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Room ID to unfollow."
+            }
+          },
+          "required": [
+            "roomId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_followed_rooms",
+        "title": "List followed rooms",
+        "description": "List rooms the authenticated user follows.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_confession",
+        "title": "Post confession",
+        "description": "Post a new anonymous confession as the authenticated user. The user_id is taken from the verified token — never from input.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "description": "Confession text."
+            },
+            "roomId": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Target room ID."
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 10,
+              "description": "Optional topic tags."
+            }
+          },
+          "required": [
+            "content",
+            "roomId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_reaction",
+        "title": "React to confession",
+        "description": "Add a reaction to a confession as the authenticated user. Valid types: like (Felt this), heart (Loved), laugh, shock (Changed my view).",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "confessionId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Confession UUID to react to."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "like",
+                "laugh",
+                "shock",
+                "heart"
+              ],
+              "description": "Reaction type."
+            }
+          },
+          "required": [
+            "confessionId",
+            "type"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_comment",
+        "title": "Comment on confession",
+        "description": "Post an anonymous comment on a confession as the authenticated user. The user_id is enforced server-side from the verified token.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "confessionId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Confession UUID to comment on."
+            },
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "description": "Comment text."
+            },
+            "parentCommentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Parent comment for threaded replies."
+            }
+          },
+          "required": [
+            "confessionId",
+            "content"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_pending_reports",
+        "title": "List pending reports (admin)",
+        "description": "Admin only. List unresolved moderation reports. Requires the caller to be a super admin (profiles.is_admin).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Max reports to return (default 50)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "resolve_report",
+        "title": "Resolve report by deleting content (admin)",
+        "description": "Admin only. Deletes the reported confession and marks the report resolved. Writes an entry to admin_moderation_audit.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "reportId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Report UUID."
+            },
+            "confessionId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Confession UUID to delete."
+            }
+          },
+          "required": [
+            "reportId",
+            "confessionId"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "dismiss_report",
+        "title": "Dismiss report (admin)",
+        "description": "Admin only. Marks a moderation report resolved with no action. Writes an entry to admin_moderation_audit.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "reportId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Report UUID."
+            }
+          },
+          "required": [
+            "reportId"
+          ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
