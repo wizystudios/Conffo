@@ -106,7 +106,8 @@ const App = () => {
             <AuthProvider>
               {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
               <Suspense fallback={null}>
-                <AuthGate>
+                 <AuthGate>
+                 <BackgroundServices />
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/chat" element={<ChatListPage />} />
