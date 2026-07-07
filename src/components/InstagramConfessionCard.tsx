@@ -521,8 +521,9 @@ export function InstagramConfessionCard({ confession, onUpdate }: InstagramConfe
                 <button 
                   onClick={() => setShowLikesList(true)}
                   className="text-sm font-medium hover:underline cursor-pointer"
+                  title="Felt this — this resonated with people"
                 >
-                  {localReactions.heart}
+                  {localReactions.heart} <span className="text-[11px] font-normal text-muted-foreground">Felt this</span>
                 </button>
               )}
             </div>
