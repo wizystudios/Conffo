@@ -46,6 +46,14 @@ import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
 import { AuthGate } from "./components/AuthGate";
 import { AdminRoute } from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import { useTrendingRoomNotifications } from "./hooks/useTrendingRoomNotifications";
+import { usePushNotifications } from "./hooks/usePushNotifications";
+
+function BackgroundServices() {
+  useTrendingRoomNotifications();
+  usePushNotifications();
+  return null;
+}
 
 const App = () => {
   const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
