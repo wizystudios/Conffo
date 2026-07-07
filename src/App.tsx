@@ -37,6 +37,7 @@ const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettings
 const CommunitiesPage = lazy(() => import("./pages/CommunitiesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const ModerationTimelinePage = lazy(() => import("./pages/ModerationTimelinePage"));
 
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
@@ -45,6 +46,14 @@ import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
 import { AuthGate } from "./components/AuthGate";
 import { AdminRoute } from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import { useTrendingRoomNotifications } from "./hooks/useTrendingRoomNotifications";
+import { usePushNotifications } from "./hooks/usePushNotifications";
+
+function BackgroundServices() {
+  useTrendingRoomNotifications();
+  usePushNotifications();
+  return null;
+}
 
 const App = () => {
   const { showAnimation, message, triggerSuccess, hideAnimation } = useSuccessAnimation();
@@ -97,7 +106,8 @@ const App = () => {
             <AuthProvider>
               {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
               <Suspense fallback={null}>
-                <AuthGate>
+                 <AuthGate>
+                 <BackgroundServices />
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/chat" element={<ChatListPage />} />
@@ -129,6 +139,7 @@ const App = () => {
                   <Route path="/admin/audit" element={<AdminRoute><AdminAuditPage /></AdminRoute>} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+                  <Route path="/moderation/reports" element={<ModerationTimelinePage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />

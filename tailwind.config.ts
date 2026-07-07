@@ -20,7 +20,8 @@ export default {
 		},
 	extend: {
 			fontFamily: {
-				'glacial': ['Glacial Indifference', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+				'glacial': ['Calibri', 'Carlito', 'Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+				'sans': ['Calibri', 'Carlito', 'Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 			},
 			screens: {
 				'xs': '480px',
