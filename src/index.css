@@ -107,7 +107,7 @@
 
   body {
     @apply bg-background text-foreground p-0 m-0;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, "Inter", sans-serif;
+    font-family: Calibri, "Carlito", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 13px; /* Optimized base font size for mobile */
