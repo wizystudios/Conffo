@@ -5,6 +5,7 @@ import { Layout } from '@/components/Layout';
 import { ConffoRoomCard } from '@/components/ConffoRoomCard';
 import { WAPageHeader } from '@/components/WAPageHeader';
 import { HomeUserCircles } from '@/components/HomeUserCircles';
+import { DailyRoomPrompt } from '@/components/DailyRoomPrompt';
 import { useQuery } from '@tanstack/react-query';
 import { getRooms } from '@/services/supabaseDataService';
 import { getConversations } from '@/services/chatService';
