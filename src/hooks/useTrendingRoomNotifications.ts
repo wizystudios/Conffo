@@ -36,7 +36,7 @@ export function useTrendingRoomNotifications() {
           const last = Number(localStorage.getItem(cooldownKey) || '0');
           if (Date.now() - last < NOTIFY_COOLDOWN_MS) continue;
 
-          const { data: confs } = await supabase
+          const { data: confs } = await (supabase as any)
             .from('confessions')
             .select('id')
             .eq('room', room_id)
