@@ -57,6 +57,11 @@ export default function HomePage() {
           onTabChange={(id) => setActiveTab(id as HomeTab)}
         />
 
+        {/* Daily prompt — a calm, guided nudge for what to reflect on today */}
+        {activeTab === 'all' && (
+          <DailyRoomPrompt onWrite={(room) => navigate(room ? `/create?room=${room}` : '/create')} />
+        )}
+
         {/* People circles row - always visible on All */}
         {activeTab === 'all' && isAuthenticated && (
           <HomeUserCircles onUserTap={(userId) => navigate(`/user/${userId}`)} />
