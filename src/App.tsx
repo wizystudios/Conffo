@@ -37,6 +37,7 @@ const NotificationSettingsPage = lazy(() => import("./pages/NotificationSettings
 const CommunitiesPage = lazy(() => import("./pages/CommunitiesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const ModerationTimelinePage = lazy(() => import("./pages/ModerationTimelinePage"));
 
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
