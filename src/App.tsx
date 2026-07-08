@@ -143,7 +143,6 @@ const App = () => {
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                   <Route path="/moderation/reports" element={<ModerationTimelinePage />} />
-                  <Route path="/moderation/reports" element={<ModerationTimelinePage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />
