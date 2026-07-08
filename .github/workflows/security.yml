@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Nightly re-scan so drift gets caught even without commits
+    - cron: '17 4 * * *'
 
 jobs:
   rls-and-moderation:
@@ -24,8 +27,10 @@ jobs:
           : "${VITE_SUPABASE_URL:?missing}"
           : "${VITE_SUPABASE_PUBLISHABLE_KEY:?missing}"
           : "${SUPABASE_SERVICE_ROLE_KEY:?missing}"
-      - name: RLS regression tests
+      - name: Baseline RLS regression tests
         run: deno test --allow-net --allow-env --allow-read supabase/functions/_rls_tests/rls_test.ts
+      - name: Per-role RLS tests (anon / authenticated / admin)
+        run: deno test --allow-net --allow-env --allow-read supabase/functions/_rls_tests/rls_roles_test.ts
       - name: admin-moderate E2E
         run: deno test --allow-net --allow-env --allow-read supabase/functions/admin-moderate/index_test.ts
       - name: admin-reset-password E2E
@@ -41,12 +46,14 @@ jobs:
       - run: bunx vitest run
 
   supabase-linter:
-    name: Supabase linter (security scan)
+    name: Supabase linter (security scan + alert on new findings)
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      SECURITY_SCAN_MONITOR_TOKEN: ${{ secrets.SECURITY_SCAN_MONITOR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
@@ -61,6 +68,18 @@ jobs:
       - name: Link project
         if: steps.gate.outputs.skip != 'true'
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
-      - name: Run linter
+      - name: Run linter (fail on warnings)
         if: steps.gate.outputs.skip != 'true'
-        run: supabase db lint --level warning
+        run: supabase db lint --level warning --output json | tee /tmp/lint.json
+      - name: Post findings to security-scan-monitor
+        if: always() && steps.gate.outputs.skip != 'true' && env.SECURITY_SCAN_MONITOR_TOKEN != '' && env.VITE_SUPABASE_URL != ''
+        run: |
+          if [ ! -s /tmp/lint.json ]; then echo '{"findings":[]}' > /tmp/payload.json;
+          else
+            # Normalize linter output → { findings: [{ id, name, level, description }] }
+            jq '{ findings: ( . | map({ id: (.name // .cache_key // .title), name: (.title // .name), level: (.level // "warn"), description: .description })) }' /tmp/lint.json > /tmp/payload.json
+          fi
+          curl -sS -X POST "$VITE_SUPABASE_URL/functions/v1/security-scan-monitor" \
+            -H "Authorization: Bearer $SECURITY_SCAN_MONITOR_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/payload.json

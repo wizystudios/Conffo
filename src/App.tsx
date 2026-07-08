@@ -46,6 +46,8 @@ import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
 import { AuthGate } from "./components/AuthGate";
 import { AdminRoute } from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import { BiometricGate } from "./components/BiometricGate";
+import { BiometricSetupPrompt } from "./components/BiometricSetupPrompt";
 import { useTrendingRoomNotifications } from "./hooks/useTrendingRoomNotifications";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 
@@ -107,6 +109,7 @@ const App = () => {
               {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
               <Suspense fallback={null}>
                  <AuthGate>
+                 <BiometricGate>
                  <BackgroundServices />
                 <Routes>
                   <Route path="/" element={<HomePage />} />
@@ -144,6 +147,8 @@ const App = () => {
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                <BiometricSetupPrompt />
+                </BiometricGate>
                 </AuthGate>
               </Suspense>
               <OnboardingGate />
