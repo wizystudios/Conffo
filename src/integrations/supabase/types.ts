@@ -1167,6 +1167,33 @@ export type Database = {
           },
         ]
       }
+      security_scan_snapshots: {
+        Row: {
+          finding_hash: string
+          first_seen_at: string
+          last_seen_at: string
+          level: string
+          name: string
+          payload: Json
+        }
+        Insert: {
+          finding_hash: string
+          first_seen_at?: string
+          last_seen_at?: string
+          level: string
+          name: string
+          payload?: Json
+        }
+        Update: {
+          finding_hash?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          level?: string
+          name?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           caption: string | null
