@@ -46,6 +46,8 @@ import { PasswordPolicyGate } from "./components/PasswordPolicyGate";
 import { AuthGate } from "./components/AuthGate";
 import { AdminRoute } from "./components/AdminRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import { BiometricGate } from "./components/BiometricGate";
+import { BiometricSetupPrompt } from "./components/BiometricSetupPrompt";
 import { useTrendingRoomNotifications } from "./hooks/useTrendingRoomNotifications";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 
