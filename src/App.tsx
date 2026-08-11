@@ -38,6 +38,8 @@ const CommunitiesPage = lazy(() => import("./pages/CommunitiesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const ModerationTimelinePage = lazy(() => import("./pages/ModerationTimelinePage"));
+const AdminSecurityPage = lazy(() => import("./pages/AdminSecurityPage"));
+const LinkDevicePage = lazy(() => import("./pages/LinkDevicePage"));
 
 // Import the LoadingFallback component
 import { LoadingFallback } from "./components/LoadingFallback";
@@ -140,6 +142,8 @@ const App = () => {
                   <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                   <Route path="/admin/dashboard" element={<AdminRoute><SuperAdminDashboard /></AdminRoute>} />
                   <Route path="/admin/audit" element={<AdminRoute><AdminAuditPage /></AdminRoute>} />
+                  <Route path="/admin/security" element={<AdminRoute><AdminSecurityPage /></AdminRoute>} />
+                  <Route path="/link-device" element={<LinkDevicePage />} />
                   <Route path="/auth" element={<MultiStepAuthPage />} />
                   <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                   <Route path="/moderation/reports" element={<ModerationTimelinePage />} />

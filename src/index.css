@@ -803,7 +803,7 @@ blockquote::before {
   top: -0.5em;
   left: -0.3em;
   font-size: 3em;
-  font-family: Georgia, serif;
+  font-family: Calibri, "Carlito", "Segoe UI", sans-serif;
   color: hsl(var(--primary) / 0.15);
   line-height: 1;
   pointer-events: none;

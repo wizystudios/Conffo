@@ -87,6 +87,16 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
             </button>
 
             <button
+              onClick={() => handleNavigation('/link-device')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+            >
+              <div className="h-11 w-11 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Smartphone className="h-5 w-5 text-emerald-500" />
+              </div>
+              <span className="text-base font-medium">Link this device</span>
+            </button>
+
+            <button
               onClick={() => handleNavigation('/profile?tab=avatar')}
               className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
             >
@@ -125,6 +135,15 @@ export function FullPageMenu({ isOpen, onClose }: FullPageMenuProps) {
                     <BellRing className="h-5 w-5 text-amber-500" />
                   </div>
                   <span className="text-base font-medium">Audit Logs &amp; Alerts</span>
+                </button>
+                <button
+                  onClick={() => handleNavigation('/admin/security')}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted active:scale-[0.98] transition-all"
+                >
+                  <div className="h-11 w-11 rounded-full bg-red-500/10 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-red-500" />
+                  </div>
+                  <span className="text-base font-medium">Security Scans</span>
                 </button>
               </>
             )}
