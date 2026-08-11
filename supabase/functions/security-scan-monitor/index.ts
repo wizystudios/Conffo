@@ -152,8 +152,15 @@ Deno.serve(async (req) => {
       newFindings.map((h) => `<li><b>[${h.f.level}]</b> ${h.f.name}<br/><small>${h.f.description ?? ""}</small></li>`).join("") +
       `</ul>`;
     const emailResult = await sendEmail(`[Security] ${summary}`, html);
+    const webhookResult = await sendWebhook(summary, newFindings.map((h) => h.f));
     return new Response(
-      JSON.stringify({ ok: true, new: newFindings.length, seen: hashed.length - newFindings.length, email: emailResult }),
+      JSON.stringify({
+        ok: true,
+        new: newFindings.length,
+        seen: hashed.length - newFindings.length,
+        email: emailResult,
+        webhook: webhookResult,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
