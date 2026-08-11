@@ -181,3 +181,221 @@ Deno.test("RLS: regular authenticated user CANNOT read admin_moderation_audit", 
     assert(error || (data ?? []).length === 0, "non-admin must not see moderation audit rows");
   } finally { await cleanup(u.id); }
 });
+
+// ────────────────────────────────────────────────────────────────
+// Follows (user_follows / room_follows)
+// ────────────────────────────────────────────────────────────────
+
+Deno.test("RLS: anon CANNOT insert a room follow", async () => {
+  const { error } = await anonClient()
+    .from("room_follows").insert({ room_id: "random", user_id: crypto.randomUUID() });
+  assert(error, "anon must not be able to follow a room");
+});
+
+Deno.test("RLS: user CANNOT create a room follow on behalf of another user", async () => {
+  const a = await makeUser();
+  const b = await makeUser();
+  try {
+    const { error } = await tokenClient(a.token)
+      .from("room_follows").insert({ room_id: "random", user_id: b.id });
+    assert(error, "spoofed user_id on room_follows must be rejected");
+  } finally { await cleanup(a.id); await cleanup(b.id); }
+});
+
+Deno.test("RLS: user CAN follow a room for themselves and only sees their own follows", async () => {
+  const a = await makeUser();
+  const b = await makeUser();
+  try {
+    const ca = tokenClient(a.token);
+    const { error: insErr } = await ca.from("room_follows").insert({ room_id: "random", user_id: a.id });
+    assert(!insErr, `self follow must succeed: ${insErr?.message}`);
+    await serviceClient().from("room_follows").insert({ room_id: "random", user_id: b.id });
+    const { data } = await ca.from("room_follows").select("user_id");
+    assert((data ?? []).every((r) => r.user_id === a.id), "user must only see their own room follows");
+  } finally { await cleanup(a.id); await cleanup(b.id); }
+});
+
+Deno.test("RLS: user CANNOT create a user_follow with a spoofed follower_id", async () => {
+  const a = await makeUser();
+  const b = await makeUser();
+  try {
+    const { error } = await tokenClient(a.token)
+      .from("user_follows").insert({ follower_id: b.id, following_id: a.id });
+    assert(error, "spoofed follower_id must be rejected");
+  } finally { await cleanup(a.id); await cleanup(b.id); }
+});
+
+Deno.test("RLS: user CANNOT delete another user's follow edge", async () => {
+  const a = await makeUser();
+  const b = await makeUser();
+  try {
+    const svc = serviceClient();
+    await svc.from("user_follows").insert({ follower_id: b.id, following_id: a.id });
+    await tokenClient(a.token).from("user_follows").delete().eq("follower_id", b.id).eq("following_id", a.id);
+    const { data } = await svc.from("user_follows").select("id")
+      .eq("follower_id", b.id).eq("following_id", a.id);
+    assert((data ?? []).length === 1, "another user's follow edge must survive");
+  } finally { await cleanup(a.id); await cleanup(b.id); }
+});
+
+// ────────────────────────────────────────────────────────────────
+// Room permissions
+// ────────────────────────────────────────────────────────────────
+
+Deno.test("RLS: anon CAN read rooms (public catalog) but CANNOT insert", async () => {
+  const c = anonClient();
+  const { error: readErr } = await c.from("rooms").select("id,name").limit(1);
+  assert(!readErr, `rooms must be publicly readable: ${readErr?.message}`);
+  const { error: insErr } = await c.from("rooms")
+    .insert({ id: `t-${crypto.randomUUID()}`, name: "x", description: "x" });
+  assert(insErr, "anon must not create rooms");
+});
+
+Deno.test("RLS: regular authenticated user CANNOT create, update or delete rooms", async () => {
+  const u = await makeUser();
+  const id = `t-${crypto.randomUUID()}`;
+  try {
+    const c = tokenClient(u.token);
+    const { error: insErr } = await c.from("rooms").insert({ id, name: "x", description: "x" });
+    assert(insErr, "non-admin must not create rooms");
+
+    await serviceClient().from("rooms").insert({ id, name: "temp", description: "temp" });
+    await c.from("rooms").update({ name: "hacked" }).eq("id", id);
+    const { data } = await serviceClient().from("rooms").select("name").eq("id", id).maybeSingle();
+    assert(data?.name === "temp", "non-admin must not update rooms");
+
+    await c.from("rooms").delete().eq("id", id);
+    const { data: still } = await serviceClient().from("rooms").select("id").eq("id", id);
+    assert((still ?? []).length === 1, "non-admin must not delete rooms");
+  } finally {
+    await serviceClient().from("rooms").delete().eq("id", id);
+    await cleanup(u.id);
+  }
+});
+
+// ────────────────────────────────────────────────────────────────
+// Confession visibility by room + ownership
+// ────────────────────────────────────────────────────────────────
+
+async function seedConfession(userId: string, room = "random"): Promise<string> {
+  const svc = serviceClient();
+  const { data, error } = await svc.from("confessions")
+    .insert({ content: `rls-${crypto.randomUUID()}`, room_id: room, user_id: userId })
+    .select("id").single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+Deno.test("RLS: confessions are readable per room by anon and authenticated", async () => {
+  const owner = await makeUser();
+  let id = "";
+  try {
+    id = await seedConfession(owner.id, "random");
+    const { data: anonRows, error: anonErr } = await anonClient()
+      .from("confessions").select("id,room_id").eq("room_id", "random").limit(50);
+    assert(!anonErr, `room-scoped read must work for anon: ${anonErr?.message}`);
+    assert((anonRows ?? []).every((r) => r.room_id === "random"), "room filter must hold");
+
+    const { data: authRows, error: authErr } = await tokenClient(owner.token)
+      .from("confessions").select("id").eq("id", id);
+    assert(!authErr && (authRows ?? []).length === 1, "authenticated must read the confession");
+  } finally {
+    if (id) await serviceClient().from("confessions").delete().eq("id", id);
+    await cleanup(owner.id);
+  }
+});
+
+Deno.test("RLS: user CANNOT edit or delete another user's confession", async () => {
+  const owner = await makeUser();
+  const other = await makeUser();
+  let id = "";
+  try {
+    id = await seedConfession(owner.id);
+    const c = tokenClient(other.token);
+    await c.from("confessions").update({ content: "hijacked" }).eq("id", id);
+    const svc = serviceClient();
+    const { data } = await svc.from("confessions").select("content").eq("id", id).maybeSingle();
+    assert(data?.content !== "hijacked", "non-owner must not update a confession");
+
+    await c.from("confessions").delete().eq("id", id);
+    const { data: still } = await svc.from("confessions").select("id").eq("id", id);
+    assert((still ?? []).length === 1, "non-owner must not delete a confession");
+  } finally {
+    if (id) await serviceClient().from("confessions").delete().eq("id", id);
+    await cleanup(owner.id); await cleanup(other.id);
+  }
+});
+
+Deno.test("RLS: user CANNOT insert a confession attributed to another user", async () => {
+  const a = await makeUser();
+  const b = await makeUser();
+  try {
+    const { error } = await tokenClient(a.token)
+      .from("confessions").insert({ content: "spoof", room_id: "random", user_id: b.id });
+    assert(error, "spoofed confession author must be rejected");
+  } finally { await cleanup(a.id); await cleanup(b.id); }
+});
+
+// ────────────────────────────────────────────────────────────────
+// Moderation actions (reports + audit) per role
+// ────────────────────────────────────────────────────────────────
+
+Deno.test("RLS: reporter CAN file a report but CANNOT resolve it", async () => {
+  const reporter = await makeUser();
+  const owner = await makeUser();
+  let confessionId = "";
+  try {
+    confessionId = await seedConfession(owner.id);
+    const c = tokenClient(reporter.token);
+    const { data, error } = await c.from("reports")
+      .insert({ item_type: "confession", item_id: confessionId, reason: "spam", user_id: reporter.id })
+      .select("id").single();
+    assert(!error, `report insert must succeed: ${error?.message}`);
+
+    await c.from("reports").update({ resolved: true }).eq("id", data!.id);
+    const { data: row } = await serviceClient().from("reports").select("resolved").eq("id", data!.id).maybeSingle();
+    assert(row?.resolved === false, "non-admin must not resolve reports");
+  } finally {
+    if (confessionId) await serviceClient().from("confessions").delete().eq("id", confessionId);
+    await cleanup(reporter.id); await cleanup(owner.id);
+  }
+});
+
+Deno.test("RLS: regular user CANNOT ban another user via profiles.banned_until", async () => {
+  const a = await makeUser();
+  const b = await makeUser();
+  try {
+    await tokenClient(a.token).from("profiles")
+      .update({ banned_until: new Date(Date.now() + 864e5).toISOString() }).eq("id", b.id);
+    const { data } = await serviceClient().from("profiles").select("banned_until").eq("id", b.id).maybeSingle();
+    assert(!data?.banned_until, "non-admin must not ban other users");
+  } finally { await cleanup(a.id); await cleanup(b.id); }
+});
+
+Deno.test("RLS: nobody can write or mutate admin_moderation_audit from a client role", async () => {
+  const admin = await makeUser({ admin: true });
+  try {
+    const { error: insErr } = await tokenClient(admin.token).from("admin_moderation_audit")
+      .insert({ admin_id: admin.id, action: "forged" });
+    assert(insErr, "client roles must not insert moderation audit rows");
+
+    const svc = serviceClient();
+    const { data: seeded } = await svc.from("admin_moderation_audit")
+      .insert({ admin_id: admin.id, action: "seeded" }).select("id").single();
+    const { error: updErr } = await svc.from("admin_moderation_audit")
+      .update({ action: "tampered" }).eq("id", seeded!.id);
+    assert(updErr, "audit rows must be immutable even for service_role");
+  } finally { await cleanup(admin.id); }
+});
+
+Deno.test("RLS: device link + recovery code tables are unreachable from client roles", async () => {
+  const u = await makeUser();
+  try {
+    for (const table of ["device_link_codes", "account_recovery_codes"]) {
+      const { data: anonData, error: anonErr } = await anonClient().from(table).select("id").limit(1);
+      assert(anonErr || (anonData ?? []).length === 0, `anon must not read ${table}`);
+      const { data: authData, error: authErr } = await tokenClient(u.token).from(table).select("id").limit(1);
+      assert(authErr || (authData ?? []).length === 0, `authenticated must not read ${table}`);
+    }
+  } finally { await cleanup(u.id); }
+});
