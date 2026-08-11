@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_recovery_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          label: string | null
+          updated_at: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          updated_at?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          updated_at?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_action_rate_limits: {
         Row: {
           action: string
@@ -626,6 +656,45 @@ export type Database = {
         }
         Relationships: []
       }
+      device_link_codes: {
+        Row: {
+          claimed_at: string | null
+          code: string
+          created_at: string
+          device_label: string | null
+          expires_at: string
+          id: string
+          status: string
+          token_hash: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          code: string
+          created_at?: string
+          device_label?: string | null
+          expires_at?: string
+          id?: string
+          status?: string
+          token_hash?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          code?: string
+          created_at?: string
+          device_label?: string | null
+          expires_at?: string
+          id?: string
+          status?: string
+          token_hash?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       image_verification: {
         Row: {
           created_at: string
@@ -1169,26 +1238,38 @@ export type Database = {
       }
       security_scan_snapshots: {
         Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           finding_hash: string
           first_seen_at: string
           last_seen_at: string
           level: string
+          muted: boolean
           name: string
           payload: Json
         }
         Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           finding_hash: string
           first_seen_at?: string
           last_seen_at?: string
           level: string
+          muted?: boolean
           name: string
           payload?: Json
         }
         Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           finding_hash?: string
           first_seen_at?: string
           last_seen_at?: string
           level?: string
+          muted?: boolean
           name?: string
           payload?: Json
         }

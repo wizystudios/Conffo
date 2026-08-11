@@ -746,10 +746,12 @@
    CONFESSION JOURNEY - EDITORIAL DESIGN
    ========================================== */
 
-/* Serif typography for confessions */
+/* Confession typography intentionally matches the global app font so every
+   surface reads like "Tap an avatar to create your own Conffo account". */
 .font-serif {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: Calibri, "Carlito", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
+
 
 /* Warm, editorial background tones */
 .conffo-editorial-bg {
@@ -801,7 +803,7 @@ blockquote::before {
   top: -0.5em;
   left: -0.3em;
   font-size: 3em;
-  font-family: Georgia, serif;
+  font-family: Calibri, "Carlito", "Segoe UI", sans-serif;
   color: hsl(var(--primary) / 0.15);
   line-height: 1;
   pointer-events: none;
