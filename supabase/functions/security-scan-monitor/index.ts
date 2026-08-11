@@ -23,6 +23,31 @@ const RESEND_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const ALERT_TO = Deno.env.get("SECURITY_ALERT_EMAIL") ?? "";
 const ALERT_FROM = Deno.env.get("SECURITY_ALERT_FROM") ?? "onboarding@resend.dev";
+const WEBHOOK_URL = Deno.env.get("SECURITY_ALERT_WEBHOOK_URL") ?? "";
+
+/**
+ * Push new findings to Slack or Discord. The provider is detected from the URL so a
+ * single secret works for either: Discord webhooks accept `{ content }`, Slack
+ * incoming webhooks accept `{ text }`.
+ */
+async function sendWebhook(summary: string, findings: Finding[]): Promise<{ sent: boolean; reason?: string }> {
+  if (!WEBHOOK_URL) return { sent: false, reason: "SECURITY_ALERT_WEBHOOK_URL not set" };
+  const lines = findings.map((f) => `• [${f.level.toUpperCase()}] ${f.name}${f.description ? ` — ${f.description}` : ""}`);
+  const text = [`🔐 *${summary}*`, ...lines].join("\n").slice(0, 1900);
+  const isDiscord = /discord(app)?\.com\/api\/webhooks/i.test(WEBHOOK_URL);
+  try {
+    const r = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(isDiscord ? { content: text } : { text }),
+    });
+    if (!r.ok) return { sent: false, reason: `webhook ${r.status}: ${(await r.text()).slice(0, 200)}` };
+    return { sent: true };
+  } catch (e) {
+    return { sent: false, reason: String(e) };
+  }
+}
+
 
 async function fingerprint(f: Finding): Promise<string> {
   const s = `${f.id ?? ""}::${f.name}::${f.level}`;
