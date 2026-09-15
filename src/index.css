@@ -253,7 +253,7 @@
 /* Conffo unique button styles */
 .conffo-btn-connect {
   @apply text-[10px] font-semibold px-3 py-1 rounded-full;
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(252 65% 55%) 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
   color: hsl(var(--primary-foreground));
   transition: all 0.2s ease;
 }
