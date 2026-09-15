@@ -1148,6 +1148,45 @@ export type Database = {
         }
         Relationships: []
       }
+      rls_test_runs: {
+        Row: {
+          commit_sha: string | null
+          created_at: string
+          details_url: string | null
+          failed_checks: number
+          failures: Json
+          id: string
+          passed_checks: number
+          run_label: string
+          status: string
+          total_checks: number
+        }
+        Insert: {
+          commit_sha?: string | null
+          created_at?: string
+          details_url?: string | null
+          failed_checks?: number
+          failures?: Json
+          id?: string
+          passed_checks?: number
+          run_label: string
+          status?: string
+          total_checks?: number
+        }
+        Update: {
+          commit_sha?: string | null
+          created_at?: string
+          details_url?: string | null
+          failed_checks?: number
+          failures?: Json
+          id?: string
+          passed_checks?: number
+          run_label?: string
+          status?: string
+          total_checks?: number
+        }
+        Relationships: []
+      }
       room_follows: {
         Row: {
           created_at: string
