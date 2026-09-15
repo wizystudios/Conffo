@@ -165,5 +165,65 @@ Deno.serve(async (req) => {
     return json({ token_hash: minted.token_hash, email: minted.email });
   }
 
+  // ── 5. list linked devices (signed in) ──
+  if (action === "list_devices") {
+    const user = await requireUser(req);
+    if (!user) return json({ error: "unauthorized" }, 401);
+    const { data, error } = await admin.from("device_link_codes")
+      .select("id,device_label,status,created_at,claimed_at,expires_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return json({ error: error.message }, 500);
+    return json({ devices: data ?? [] });
+  }
+
+  // ── 6. revoke a linked device (signed in) ──
+  if (action === "revoke_device") {
+    const user = await requireUser(req);
+    if (!user) return json({ error: "unauthorized" }, 401);
+    const id = String((body as { id?: string }).id ?? "");
+    if (!id) return json({ error: "missing device id" }, 400);
+
+    const { data: row } = await admin.from("device_link_codes")
+      .select("id,user_id").eq("id", id).maybeSingle();
+    if (!row || row.user_id !== user.id) return json({ error: "device not found" }, 404);
+
+    const { error } = await admin.from("device_link_codes")
+      .update({ status: "revoked" }).eq("id", id);
+    if (error) return json({ error: error.message }, 500);
+
+    // Optionally end every other active session for this account.
+    if ((body as { sign_out_others?: boolean }).sign_out_others) {
+      const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+      try { await admin.auth.admin.signOut(jwt, "others"); } catch { /* best effort */ }
+    }
+
+    await admin.from("user_activity_log").insert({
+      user_id: user.id, activity_type: "device_revoked", details: { device_id: id },
+    }).then(() => {}, () => {});
+
+    return json({ ok: true });
+  }
+
+  // ── 7. recovery code status (signed in) ──
+  if (action === "recovery_status") {
+    const user = await requireUser(req);
+    if (!user) return json({ error: "unauthorized" }, 401);
+    const { data, error } = await admin.from("account_recovery_codes")
+      .select("id,label,used_at,created_at").eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) return json({ error: error.message }, 500);
+    const rows = data ?? [];
+    const used = rows.filter((r) => r.used_at);
+    return json({
+      total: rows.length,
+      unused: rows.length - used.length,
+      used: used.length,
+      last_used_at: used[0]?.used_at ?? null,
+      generated_at: rows[0]?.created_at ?? null,
+    });
+  }
+
   return json({ error: "unknown action" }, 400);
 });
